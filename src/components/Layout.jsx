@@ -4,27 +4,19 @@ import { useCart } from "../context/CartContext";
 
 // Keep the Logo import from your version
 import Logo from '../assets/Logo — Jem 8 Circle Trading Co (1).png';
-import {me} from '../api/auth'
+
 export function Header() {
   const location    = useLocation();
   const navigate    = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled]     = useState(false);
   const { totalItems }              = useCart();
-  const [isAccountLogin, setIsAccountLogin] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    if(me()){
-      console.log("account log in ")
-    }
-
-  },[])
 
   // Close mobile menu whenever route changes
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
@@ -34,6 +26,7 @@ export function Header() {
   const NAV_LINKS = [
     { to: "/",           label: "Home"       },
     { to: "/products",   label: "Products"   },
+    { to: "/categories", label: "Categories" },
     { to: "/blog",       label: "Blog"       },
     { to: "/about",      label: "About"      },
     { to: "/contact",    label: "Contact"    },
@@ -122,7 +115,7 @@ export function Header() {
             </Link>
 
             {/* ── Profile Avatar Button ─────────────────────────────────── */}
-            {!isAccountLogin ? <button
+            <button
               onClick={() => navigate("/Profilepersonal")}
               aria-label="My Profile"
               title="My Profile"
@@ -164,11 +157,7 @@ export function Header() {
               }}>
                 J
               </span>
-            </button>:
-              <button onClick={navigate("/login")} className="cursor-pointer">
-                Sign in
-              </button>
-            }
+            </button>
             {/* ─────────────────────────────────────────────────────────── */}
 
             {/* Hamburger */}

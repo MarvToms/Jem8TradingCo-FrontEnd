@@ -1,31 +1,20 @@
 import api from "./axios";
-import axios from "axios";
 import { toast } from "react-toastify";
-
-const BASE_URL = "http://127.0.0.1:8000";
 
 // ==============================
 // SANCTUM CSRF (Only if needed)
 // ==============================
-export const ensureCsrf = async () => {
-  try {
-    await axios.get(`${BASE_URL}/sanctum/csrf-cookie`, {
-      withCredentials: true,
-    });
-  } catch (error) {
-    console.warn("CSRF cookie not required.");
-  }
-};
+
 
 // ==============================
 // GET AUTHENTICATED USER
 // ==============================
 export const me = async () => {
   try {
-    const { data } = await api.get("/me");
+    const data  = await api.get("/me");
     return data;
   } catch (error) {
-    return null;
+    throw error.response?.data || error;
   }
 };
 
@@ -34,8 +23,6 @@ export const me = async () => {
 // ==============================
 export const loginUser = async (credentials) => {
   try {
-    await ensureCsrf(); // needed for Sanctum SPA login
-
     const { data } = await api.post("/login", credentials);
 
     toast.success("Login successful ✅");

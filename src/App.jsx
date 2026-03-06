@@ -1,7 +1,8 @@
 import { Routes, Route, Outlet } from 'react-router-dom'
 import { Header, Footer } from './components/Layout'
 import { CartProvider } from "./context/CartContext";
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 // ── PUBLIC PAGES ──
 import Jem8HomePage from './Jem8HomePage'
 import About from './pages/About'
@@ -99,6 +100,7 @@ export default function App() {
           <Route path="/adminMessage" element={<AdminMessage />} />
         </Route>
       </Routes>
+      <ToastContainer position="bottom-right" autoClose={3000} />
     </CartProvider>
   );
 }
