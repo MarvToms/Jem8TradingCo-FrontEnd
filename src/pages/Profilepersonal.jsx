@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { logout, me, updateProfile } from "../api/auth";
 import '../style/Profilepersonal.css';
@@ -7,10 +8,11 @@ import '../style/PasswordSecurity.css';
 import '../style/Notification.css';
 import OrdersOverview from './OrdersOverview';
 import PasswordSecurity from './PasswordSecurity';
-import Notification     from './Notification';
+import Notification from './Notification';
 import { toast } from "react-toastify";
-import { getUserAddresses, addAddress as apiAddAddress, updateAddress as apiUpdateAddress, deleteAddress as apiDeleteAddress } from "../api/address"; 
-// ─── Icons ───────────────────────────────────────────────────────────────────
+import { getUserAddresses, addAddress as apiAddAddress, updateAddress as apiUpdateAddress, deleteAddress as apiDeleteAddress } from "../api/address";
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
 const UserIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
@@ -75,6 +77,12 @@ const MapPinIcon = () => (
     <circle cx="12" cy="10" r="3" />
   </svg>
 );
+const MapPinSmIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
 const CheckIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
     <polyline points="20 6 9 17 4 12" />
@@ -94,14 +102,130 @@ const TrashIcon = () => (
     <path d="M9 6V4h6v2" />
   </svg>
 );
+const BuildingIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M3 9h18M9 21V9" />
+  </svg>
+);
+const PersonIcon2 = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+// ─── Modal Styles ─────────────────────────────────────────────────────────────
+const MODAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+
+  @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .addr-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,10,0.55);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    animation: modalBackdropIn 0.2s ease;
+    font-family: 'DM Sans', sans-serif;
+    padding: 16px;
+  }
+  .addr-modal-box {
+    background: #fff;
+    border-radius: 18px;
+    width: 100%; max-width: 500px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
+    overflow: hidden;
+    animation: modalSlideUp 0.26s cubic-bezier(0.34,1.26,0.64,1);
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+  }
+  .addr-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+  }
+  .addr-modal-icon-wrap {
+    width: 36px; height: 36px; background: #f4f4f4;
+    border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1a1a1a;
+  }
+  .addr-modal-title { font-size: 15px; font-weight: 600; color: #111; line-height: 1.2; }
+  .addr-modal-subtitle { font-size: 12px; color: #999; margin-top: 1px; }
+  .addr-modal-close {
+    width: 32px; height: 32px; background: #f5f5f5; border: none; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #666; transition: background 0.15s, color 0.15s;
+  }
+  .addr-modal-close:hover { background: #efefef; color: #111; }
+  .addr-type-toggle { display: flex; gap: 8px; padding: 16px 24px 4px; flex-shrink: 0; }
+  .addr-type-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 9px 14px; border-radius: 10px; border: 1.5px solid #e8e8e8;
+    background: #fafafa; font-size: 13px; font-weight: 500; color: #666;
+    cursor: pointer; transition: all 0.15s ease; font-family: 'DM Sans', sans-serif;
+  }
+  .addr-type-btn:hover { border-color: #ccc; color: #333; }
+  .addr-type-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+  .addr-modal-body {
+    padding: 16px 24px; display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto; flex: 1;
+  }
+  .addr-section-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #aaa; margin-top: 4px; margin-bottom: -4px;
+  }
+  .addr-field-row { display: flex; gap: 10px; }
+  .addr-field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .addr-label { font-size: 11px; font-weight: 600; color: #555; letter-spacing: 0.04em; }
+  .addr-input {
+    border: 1.5px solid #e8e8e8; border-radius: 9px; padding: 9px 12px;
+    font-size: 14px; color: #111; background: #fafafa; outline: none;
+    width: 100%; box-sizing: border-box; font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .addr-input:focus { border-color: #1a1a1a; background: #fff; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+  .addr-input::placeholder { color: #bbb; }
+  .addr-divider { height: 1px; background: #f0f0f0; margin: 4px 0; }
+  .addr-modal-footer {
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    padding: 14px 24px; border-top: 1px solid #f0f0f0; background: #fafafa; flex-shrink: 0;
+  }
+  .addr-btn-ghost {
+    background: none; border: 1.5px solid #e0e0e0; border-radius: 9px;
+    padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; color: #666;
+    font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, color 0.15s;
+  }
+  .addr-btn-ghost:hover { border-color: #bbb; color: #333; }
+  .addr-btn-primary {
+    background: #1a1a1a; color: #fff; border: none; border-radius: 9px;
+    padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 7px; font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .addr-btn-primary:hover { background: #333; }
+  .addr-btn-primary:active { transform: scale(0.98); }
+  .addr-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+`;
 
 // ─── Address Modal ────────────────────────────────────────────────────────────
 function AddressModal({ onClose, onSave, editingAddress }) {
   const [form, setForm] = useState(
-    editingAddress || { label: "", street: "", city: "", province: "", zip: "", country: "" }
+    editingAddress || {
+      type: "personal",
+      company_name: "", company_role: "", company_number: "", company_email: "",
+      street: "", barangay: "", city: "", province: "", postal_code: "",
+      country: "Philippines", status: "active",
+    }
   );
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const setType = (type) => setForm({ ...form, type });
 
   const handleSubmit = () => {
     if (!form.street || !form.city) return;
@@ -110,98 +234,106 @@ function AddressModal({ onClose, onSave, editingAddress }) {
   };
 
   return (
-    <div style={modalStyles.overlay} onClick={onClose}>
-      <div style={modalStyles.box} onClick={(e) => e.stopPropagation()}>
-        <div style={modalStyles.header}>
-          <div style={modalStyles.title}>
-            <MapPinIcon />
-            <span>{editingAddress ? "Edit Address" : "Add New Address"}</span>
-          </div>
-          <button style={modalStyles.closeBtn} onClick={onClose}><XIcon /></button>
-        </div>
+    <>
+      <style>{MODAL_STYLES}</style>
+      <div className="addr-modal-overlay" onClick={onClose}>
+        <div className="addr-modal-box" onClick={(e) => e.stopPropagation()}>
 
-        <div style={modalStyles.body}>
-          <div style={modalStyles.fieldRow}>
-            <div style={modalStyles.field}>
-              <label style={modalStyles.label}>
-                Label <span style={{ color: "#aaa", fontWeight: 400 }}>(e.g. Home, Office)</span>
-              </label>
-              <input
-                style={modalStyles.input}
-                name="label"
-                value={form.label}
-                onChange={handleChange}
-                placeholder="Home"
-              />
+          {/* Header */}
+          <div className="addr-modal-header">
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="addr-modal-icon-wrap"><MapPinSmIcon /></div>
+              <div>
+                <div className="addr-modal-title">{editingAddress ? "Edit Address" : "Add New Address"}</div>
+                <div className="addr-modal-subtitle">{editingAddress ? "Update your saved location" : "Save a delivery location"}</div>
+              </div>
+            </div>
+            <button className="addr-modal-close" onClick={onClose}><XIcon /></button>
+          </div>
+
+          {/* Type Toggle */}
+          <div className="addr-type-toggle">
+            <button className={`addr-type-btn${form.type === "personal" ? " active" : ""}`} onClick={() => setType("personal")}>
+              <PersonIcon2 /> Personal
+            </button>
+            <button className={`addr-type-btn${form.type === "company" ? " active" : ""}`} onClick={() => setType("company")}>
+              <BuildingIcon /> Company
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="addr-modal-body">
+            {form.type === "company" && (
+              <>
+                <div className="addr-section-label">Company Details</div>
+                <div className="addr-field">
+                  <label className="addr-label">Company Name</label>
+                  <input className="addr-input" name="company_name" value={form.company_name} onChange={handleChange} placeholder="ABC Corporation" />
+                </div>
+                <div className="addr-field-row">
+                  <div className="addr-field">
+                    <label className="addr-label">Role / Position</label>
+                    <input className="addr-input" name="company_role" value={form.company_role} onChange={handleChange} placeholder="Manager" />
+                  </div>
+                  <div className="addr-field">
+                    <label className="addr-label">Company Phone</label>
+                    <input className="addr-input" name="company_number" value={form.company_number} onChange={handleChange} placeholder="+63 912 345 6789" />
+                  </div>
+                </div>
+                <div className="addr-field">
+                  <label className="addr-label">Company Email</label>
+                  <input className="addr-input" name="company_email" value={form.company_email} onChange={handleChange} placeholder="company@email.com" />
+                </div>
+                <div className="addr-divider" />
+              </>
+            )}
+
+            <div className="addr-section-label">Location</div>
+            <div className="addr-field">
+              <label className="addr-label">Street Address <span style={{ color: "#e05" }}>*</span></label>
+              <input className="addr-input" name="street" value={form.street} onChange={handleChange} placeholder="123 Rizal Street" />
+            </div>
+            <div className="addr-field-row">
+              <div className="addr-field">
+                <label className="addr-label">Barangay</label>
+                <input className="addr-input" name="barangay" value={form.barangay} onChange={handleChange} placeholder="Barangay 1" />
+              </div>
+              <div className="addr-field">
+                <label className="addr-label">City <span style={{ color: "#e05" }}>*</span></label>
+                <input className="addr-input" name="city" value={form.city} onChange={handleChange} placeholder="Manila" />
+              </div>
+            </div>
+            <div className="addr-field-row">
+              <div className="addr-field">
+                <label className="addr-label">Province</label>
+                <input className="addr-input" name="province" value={form.province} onChange={handleChange} placeholder="Metro Manila" />
+              </div>
+              <div className="addr-field">
+                <label className="addr-label">Postal Code</label>
+                <input className="addr-input" name="postal_code" value={form.postal_code} onChange={handleChange} placeholder="1000" />
+              </div>
+            </div>
+            <div className="addr-field">
+              <label className="addr-label">Country</label>
+              <input className="addr-input" name="country" value={form.country} onChange={handleChange} />
             </div>
           </div>
 
-          <div style={modalStyles.field}>
-            <label style={modalStyles.label}>Street Address</label>
-            <input
-              style={modalStyles.input}
-              name="street"
-              value={form.street}
-              onChange={handleChange}
-              placeholder="123 Main St, Apt 4B"
-            />
+          {/* Footer */}
+          <div className="addr-modal-footer">
+            <button className="addr-btn-ghost" onClick={onClose}>Cancel</button>
+            <button
+              className="addr-btn-primary"
+              onClick={handleSubmit}
+              disabled={!form.street || !form.city}
+            >
+              <CheckIcon />
+              {editingAddress ? "Save Changes" : "Add Address"}
+            </button>
           </div>
-
-          <div style={modalStyles.fieldRow}>
-            <div style={modalStyles.field}>
-              <label style={modalStyles.label}>City</label>
-              <input
-                style={modalStyles.input}
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-                placeholder="Antipolo"
-              />
-            </div>
-            <div style={modalStyles.field}>
-              <label style={modalStyles.label}>Province</label>
-              <input
-                style={modalStyles.input}
-                name="province"
-                value={form.province}
-                onChange={handleChange}
-                placeholder="Rizal"
-              />
-            </div>
-          </div>
-
-          <div style={modalStyles.fieldRow}>
-            <div style={modalStyles.field}>
-              <label style={modalStyles.label}>ZIP Code</label>
-              <input
-                style={modalStyles.input}
-                name="zip"
-                value={form.zip}
-                onChange={handleChange}
-                placeholder="1870"
-              />
-            </div>
-            <div style={modalStyles.field}>
-              <label style={modalStyles.label}>Country</label>
-              <input
-                style={modalStyles.input}
-                name="country"
-                value={form.country}
-                onChange={handleChange}
-                placeholder="Philippines"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div style={modalStyles.footer}>
-          <button style={modalStyles.btnGhost} onClick={onClose}>Cancel</button>
-          <button style={modalStyles.btnPrimary} onClick={handleSubmit}>
-            <CheckIcon /> {editingAddress ? "Save Changes" : "Add Address"}
-          </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -211,13 +343,7 @@ function EditableField({ label, value, name, isEditing, onChange }) {
     <div className="profile-field">
       <span className="profile-field__label">{label}</span>
       {isEditing ? (
-        <input
-          style={editableStyles.input}
-          name={name}
-          value={value || ""}
-          onChange={onChange}
-          placeholder={label}
-        />
+        <input style={editableStyles.input} name={name} value={value || ""} onChange={onChange} placeholder={label} />
       ) : (
         <div className="profile-field__input" style={editableStyles.display}>
           {value || <span style={{ color: "#bbb" }}>—</span>}
@@ -227,8 +353,69 @@ function EditableField({ label, value, name, isEditing, onChange }) {
   );
 }
 
+// ─── Address Card ─────────────────────────────────────────────────────────────
+function AddressCard({ addr, onEdit, onDelete }) {
+  const isCompany = addr.type === "company";
+
+  return (
+    <div style={addressStyles.card}>
+      {/* Card Header */}
+      <div style={addressStyles.cardHeader}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            ...addressStyles.typeBadge,
+            background: isCompany ? "#f0f4ff" : "#f0faf4",
+            color: isCompany ? "#3b5bdb" : "#2f9e44",
+          }}>
+            {isCompany ? <BuildingIcon /> : <PersonIcon2 />}
+            {isCompany ? "Company" : "Personal"}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button style={addressStyles.actionBtn} onClick={onEdit} title="Edit">
+            <EditSmallIcon />
+          </button>
+          <button style={{ ...addressStyles.actionBtn, color: "#e57373" }} onClick={onDelete} title="Delete">
+            <TrashIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* Company Info */}
+      {isCompany && addr.company_name && (
+        <div style={addressStyles.companyName}>{addr.company_name}</div>
+      )}
+
+      {/* Address Lines */}
+      <div style={addressStyles.addressBlock}>
+        {addr.street && <div style={addressStyles.line}>{addr.street}</div>}
+        {(addr.barangay || addr.city) && (
+          <div style={addressStyles.line}>
+            {[addr.barangay, addr.city].filter(Boolean).join(", ")}
+          </div>
+        )}
+        {(addr.province || addr.postal_code) && (
+          <div style={addressStyles.line}>
+            {[addr.province, addr.postal_code].filter(Boolean).join(" ")}
+          </div>
+        )}
+        {addr.country && <div style={{ ...addressStyles.line, color: "#999" }}>{addr.country}</div>}
+      </div>
+
+      {/* Company Contact */}
+      {isCompany && (addr.company_number || addr.company_email) && (
+        <div style={addressStyles.contactBlock}>
+          {addr.company_number && <span style={addressStyles.contact}>📞 {addr.company_number}</span>}
+          {addr.company_email && <span style={addressStyles.contact}>✉ {addr.company_email}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Personal Information Tab ─────────────────────────────────────────────────
-function PersonalInformation({ user, onUserUpdate }) {
+// NOW receives addresses + setAddresses as props (lifted up from ProfilePersonal)
+function PersonalInformation({ user, onUserUpdate, addresses, setAddresses }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     first_name:    user?.first_name    || "",
@@ -240,10 +427,9 @@ function PersonalInformation({ user, onUserUpdate }) {
     business_type: user?.business_type || "",
   });
 
-  const [addresses, setAddresses]       = useState([]);
-  const [showModal, setShowModal]       = useState(false);
+  const [showModal, setShowModal]           = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingIndex, setEditingIndex]     = useState(null);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -265,25 +451,23 @@ function PersonalInformation({ user, onUserUpdate }) {
     setIsEditing(false);
   };
 
-  const handleAddAddress = async (addr) => {
+  const handleSaveAddress = async (addr) => {
     try {
       if (editingIndex !== null) {
-        // Update existing address
         const addrId = addresses[editingIndex].id;
         const res = await apiUpdateAddress(addrId, addr);
-
         const updated = [...addresses];
-        updated[editingIndex] = res.data; // assume API returns updated address
+        updated[editingIndex] = res.data;
         setAddresses(updated);
         toast.success("Address updated successfully");
       } else {
-        // Add new address
         const res = await apiAddAddress(addr);
-        setAddresses([...addresses, res.data]); // add returned address
+        setAddresses([...addresses, res.data]);
         toast.success("Address added successfully");
       }
     } catch (error) {
       console.error("Address save failed:", error);
+      toast.error("Failed to save address");
     } finally {
       setEditingAddress(null);
       setEditingIndex(null);
@@ -302,8 +486,10 @@ function PersonalInformation({ user, onUserUpdate }) {
       const addrId = addresses[idx].id;
       await apiDeleteAddress(addrId);
       setAddresses(addresses.filter((_, i) => i !== idx));
+      toast.success("Address removed");
     } catch (error) {
       console.error("Delete failed:", error);
+      toast.error("Failed to delete address");
     }
   };
 
@@ -318,7 +504,7 @@ function PersonalInformation({ user, onUserUpdate }) {
       {showModal && (
         <AddressModal
           onClose={() => { setShowModal(false); setEditingAddress(null); setEditingIndex(null); }}
-          onSave={handleAddAddress}
+          onSave={handleSaveAddress}
           editingAddress={editingAddress}
         />
       )}
@@ -338,17 +524,13 @@ function PersonalInformation({ user, onUserUpdate }) {
               <div className="profile-card__subtitle">Your personal and business information</div>
             </div>
           </div>
-
           <div style={{ display: "flex", gap: 8 }}>
             {isEditing ? (
               <>
-                <button className="btn-profile-outline" onClick={handleCancel} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                <button className="btn-profile-outline" onClick={handleCancel} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <XIcon /> Cancel
                 </button>
-                <button
-                  onClick={handleSave}
-                  style={{ display:"flex", alignItems:"center", gap:5, background:"#1a1a1a", color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}
-                >
+                <button onClick={handleSave} style={{ display: "flex", alignItems: "center", gap: 5, background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   <CheckIcon /> Save
                 </button>
               </>
@@ -363,23 +545,21 @@ function PersonalInformation({ user, onUserUpdate }) {
         <div className="profile-card__user-strip">
           <div className="profile-card__user-avatar"><UserIcon /></div>
           <div>
-            <div className="profile-card__user-name">
-              {user?.first_name} {user?.last_name}
-            </div>
+            <div className="profile-card__user-name">{user?.first_name} {user?.last_name}</div>
             <div className="profile-card__user-meta">{user?.email}</div>
             <div className="profile-card__user-meta">{user?.phone_number || "No phone number"}</div>
           </div>
         </div>
 
         <div className="profile-card__fields">
-          <EditableField label="First Name"                   name="first_name"    value={form.first_name}    isEditing={isEditing} onChange={handleChange} />
-          <EditableField label="Last Name"                    name="last_name"     value={form.last_name}     isEditing={isEditing} onChange={handleChange} />
-          <EditableField label="Email Address"                name="email"         value={form.email}         isEditing={isEditing} onChange={handleChange} />
-          <EditableField label="Phone / Mobile Number"        name="phone_number"  value={form.phone_number}  isEditing={isEditing} onChange={handleChange} />
-          <EditableField label="Company Name (Optional)"      name="company"       value={form.company}       isEditing={isEditing} onChange={handleChange} />
-          <EditableField label="Position / Title (Optional)"  name="position"      value={form.position}      isEditing={isEditing} onChange={handleChange} />
+          <EditableField label="First Name"                  name="first_name"    value={form.first_name}    isEditing={isEditing} onChange={handleChange} />
+          <EditableField label="Last Name"                   name="last_name"     value={form.last_name}     isEditing={isEditing} onChange={handleChange} />
+          <EditableField label="Email Address"               name="email"         value={form.email}         isEditing={isEditing} onChange={handleChange} />
+          <EditableField label="Phone / Mobile Number"       name="phone_number"  value={form.phone_number}  isEditing={isEditing} onChange={handleChange} />
+          <EditableField label="Company Name (Optional)"     name="company"       value={form.company}       isEditing={isEditing} onChange={handleChange} />
+          <EditableField label="Position / Title (Optional)" name="position"      value={form.position}      isEditing={isEditing} onChange={handleChange} />
           <div className="profile-field--full">
-            <EditableField label="Business Type (Optional)"   name="business_type" value={form.business_type} isEditing={isEditing} onChange={handleChange} />
+            <EditableField label="Business Type (Optional)"  name="business_type" value={form.business_type} isEditing={isEditing} onChange={handleChange} />
           </div>
         </div>
       </div>
@@ -416,23 +596,14 @@ function PersonalInformation({ user, onUserUpdate }) {
           ) : (
             <>
               {addresses.map((addr, idx) => (
-                <div key={idx} style={addressStyles.card}>
-                  <div style={addressStyles.cardHeader}>
-                    <span style={addressStyles.label}>{addr.label || "Address"}</span>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button style={addressStyles.actionBtn} onClick={() => handleEditAddress(idx)}>
-                        <EditSmallIcon />
-                      </button>
-                      <button style={{ ...addressStyles.actionBtn, color: "#e57373" }} onClick={() => handleDeleteAddress(idx)}>
-                        <TrashIcon />
-                      </button>
-                    </div>
-                  </div>
-                  <div style={addressStyles.line}>{addr.street}</div>
-                  <div style={addressStyles.line}>{[addr.city, addr.province, addr.zip].filter(Boolean).join(", ")}</div>
-                  <div style={addressStyles.line}>{addr.country}</div>
-                </div>
+                <AddressCard
+                  key={addr.id ?? idx}
+                  addr={addr}
+                  onEdit={() => handleEditAddress(idx)}
+                  onDelete={() => handleDeleteAddress(idx)}
+                />
               ))}
+              {/* Always show an "add more" slot */}
               <div className="profile-address-empty">
                 <div className="profile-address-empty__icon"><PlusIcon /></div>
                 <span>Add another address</span>
@@ -447,51 +618,6 @@ function PersonalInformation({ user, onUserUpdate }) {
 }
 
 // ─── Style Objects ────────────────────────────────────────────────────────────
-const modalStyles = {
-  overlay: {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-    zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center",
-    backdropFilter: "blur(3px)",
-  },
-  box: {
-    background: "#fff", borderRadius: 14, width: "100%", maxWidth: 520,
-    boxShadow: "0 24px 64px rgba(0,0,0,0.18)", overflow: "hidden",
-    animation: "addrModalIn 0.22s cubic-bezier(.4,0,.2,1)",
-  },
-  header: {
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "18px 24px", borderBottom: "1px solid #f0f0f0",
-  },
-  title: { display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: "#1a1a1a" },
-  closeBtn: {
-    background: "#f4f4f4", border: "none", borderRadius: 6,
-    width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", color: "#666",
-  },
-  body: { padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 },
-  fieldRow: { display: "flex", gap: 14 },
-  field: { display: "flex", flexDirection: "column", gap: 5, flex: 1 },
-  label: { fontSize: 11, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" },
-  input: {
-    border: "1.5px solid #e8e8e8", borderRadius: 8, padding: "9px 12px",
-    fontSize: 14, color: "#1a1a1a", outline: "none", background: "#fafafa",
-    width: "100%", boxSizing: "border-box",
-  },
-  footer: {
-    display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10,
-    padding: "14px 24px", borderTop: "1px solid #f0f0f0", background: "#fafafa",
-  },
-  btnGhost: {
-    background: "none", border: "1.5px solid #e0e0e0", borderRadius: 8,
-    padding: "8px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", color: "#666",
-  },
-  btnPrimary: {
-    background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 8,
-    padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-    display: "flex", alignItems: "center", gap: 6,
-  },
-};
-
 const editableStyles = {
   input: {
     border: "1.5px solid #1a1a1a", borderRadius: 8, padding: "9px 12px",
@@ -506,17 +632,34 @@ const editableStyles = {
 
 const addressStyles = {
   card: {
-    border: "1.5px solid #e8e8e8", borderRadius: 10, padding: "14px 16px",
-    background: "#fafafa", display: "flex", flexDirection: "column", gap: 4,
+    border: "1.5px solid #e8e8e8", borderRadius: 12, padding: "14px 16px",
+    background: "#fafafa", display: "flex", flexDirection: "column", gap: 6,
   },
-  cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
-  label: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#555" },
+  cardHeader: {
+    display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4,
+  },
+  typeBadge: {
+    display: "inline-flex", alignItems: "center", gap: 5,
+    fontSize: 11, fontWeight: 700, padding: "3px 8px",
+    borderRadius: 20, letterSpacing: "0.03em",
+  },
+  companyName: {
+    fontSize: 13, fontWeight: 600, color: "#1a1a1a",
+  },
+  addressBlock: {
+    display: "flex", flexDirection: "column", gap: 1,
+  },
+  line: { fontSize: 13, color: "#444", lineHeight: 1.7 },
+  contactBlock: {
+    display: "flex", flexDirection: "column", gap: 2,
+    paddingTop: 6, borderTop: "1px solid #f0f0f0", marginTop: 4,
+  },
+  contact: { fontSize: 12, color: "#888" },
   actionBtn: {
     background: "#f0f0f0", border: "none", borderRadius: 6,
     width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
     cursor: "pointer", color: "#444",
   },
-  line: { fontSize: 13, color: "#444", lineHeight: 1.6 },
 };
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────
@@ -532,9 +675,11 @@ export default function ProfilePersonal() {
   const [activeMenu, setActiveMenu] = useState("personal");
   const [user, setUser]             = useState(null);
   const [loading, setLoading]       = useState(true);
-  const navigate = useNavigate();
 
-  console.log(user)
+  // ✅ addresses state lives HERE so the fetch can populate it correctly
+  const [addresses, setAddresses]   = useState([]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -542,18 +687,21 @@ export default function ProfilePersonal() {
         const response = await me();
         if (response.status === 200 && response.data.status === "success") {
           setUser(response.data.data);
-          
-          // Fetch addresses
-          const addrRes = await getUserAddresses();
-          if (addrRes.status === 200) {
-            setAddresses(addrRes.data); // set fetched addresses
+
+          // ✅ Fetch addresses and store in state
+          try {
+            const addrRes = await getUserAddresses();
+            if (addrRes.status === 200) {
+              // Handle both { data: [...] } and plain array responses
+              const addrData = addrRes.data?.data ?? addrRes.data ?? [];
+              setAddresses(Array.isArray(addrData) ? addrData : []);
+            }
+          } catch (addrErr) {
+            console.error("Failed to fetch addresses:", addrErr);
           }
-        } else {
-          // navigate("/login");
         }
       } catch (error) {
         console.error(error);
-        // navigate("/login");
       } finally {
         setLoading(false);
       }
@@ -562,23 +710,12 @@ export default function ProfilePersonal() {
   }, []);
 
   const handleUserUpdate = async (updatedFields) => {
-    // Merge updated fields with current user
     const updatedUser = { ...user, ...updatedFields };
-
-    // Update state immediately
     setUser(updatedUser);
-
     try {
-      // Send the updated data to API
       const res = await updateProfile(updatedUser);
-
-      // Optionally, if API returns the updated user, sync it back:
-      if (res.user) {
-        setUser(res.user);
-      }
-
+      if (res.user) setUser(res.user);
     } catch (error) {
-      // Errors already handled inside updateProfile toast
       console.error("Update failed:", error);
     }
   };
@@ -591,7 +728,15 @@ export default function ProfilePersonal() {
       case "orders":   return <OrdersOverview />;
       case "password": return <PasswordSecurity />;
       case "notif":    return <Notification />;
-      default: return <PersonalInformation user={user} onUserUpdate={handleUserUpdate} />;
+      default:
+        return (
+          <PersonalInformation
+            user={user}
+            onUserUpdate={handleUserUpdate}
+            addresses={addresses}       // ✅ pass down
+            setAddresses={setAddresses} // ✅ pass down
+          />
+        );
     }
   };
 
@@ -601,53 +746,44 @@ export default function ProfilePersonal() {
   };
 
   return (
-    <>
-      <style>{`
-        @keyframes addrModalIn {
-          from { opacity: 0; transform: translateY(18px) scale(0.98); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
+    <div className="profile-page">
+      <div className="profile-page__inner">
 
-      <div className="profile-page">
-        <div className="profile-page__inner">
+        {/* Sidebar */}
+        <aside className="profile-sidebar">
+          <div className="profile-sidebar__avatar-wrap">
+            <div className="profile-sidebar__avatar"><UserIcon /></div>
+            <span className="profile-sidebar__name">{user.first_name} {user.last_name}</span>
+            <span className="profile-sidebar__email">{user.email}</span>
+            <span className="profile-sidebar__phone">{user.phone_number || "—"}</span>
+          </div>
 
-          {/* Sidebar */}
-          <aside className="profile-sidebar">
-            <div className="profile-sidebar__avatar-wrap">
-              <div className="profile-sidebar__avatar"><UserIcon /></div>
-              <span className="profile-sidebar__name">{user.first_name} {user.last_name}</span>
-              <span className="profile-sidebar__email">{user.email}</span>
-              <span className="profile-sidebar__phone">{user.phone_number || "—"}</span>
-            </div>
-
-            <nav className="profile-sidebar__nav">
-              <span className="profile-sidebar__nav-label">Overview</span>
-              {MENU_ITEMS.map(({ key, label, Icon, badge }) => (
-                <button
-                  key={key}
-                  className={`profile-sidebar__item${activeMenu === key ? " active" : ""}`}
-                  onClick={() => setActiveMenu(key)}
-                >
-                  <Icon />{label}
-                  {badge && <span className="profile-sidebar__badge">{badge}</span>}
-                </button>
-              ))}
-            </nav>
-
-            <div className="profile-sidebar__divider" />
-
-            <div className="profile-sidebar__logout-wrap">
-              <button className="profile-sidebar__item danger" onClick={Logout}>
-                <LogoutIcon /> Logout
+          <nav className="profile-sidebar__nav">
+            <span className="profile-sidebar__nav-label">Overview</span>
+            {MENU_ITEMS.map(({ key, label, Icon, badge }) => (
+              <button
+                key={key}
+                className={`profile-sidebar__item${activeMenu === key ? " active" : ""}`}
+                onClick={() => setActiveMenu(key)}
+              >
+                <Icon />{label}
+                {badge && <span className="profile-sidebar__badge">{badge}</span>}
               </button>
-            </div>
-          </aside>
+            ))}
+          </nav>
 
-          {/* Tab Content */}
-          {renderContent()}
-        </div>
+          <div className="profile-sidebar__divider" />
+
+          <div className="profile-sidebar__logout-wrap">
+            <button className="profile-sidebar__item danger" onClick={Logout}>
+              <LogoutIcon /> Logout
+            </button>
+          </div>
+        </aside>
+
+        {/* Tab Content */}
+        {renderContent()}
       </div>
-    </>
+    </div>
   );
 }
