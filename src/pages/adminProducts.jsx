@@ -2,35 +2,34 @@ import { useState, useEffect, useRef } from "react";
 import AdminNav from "../components/AdminNav";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const API_BASE      = "http://127.0.0.1:8000/api/admin"; 
-const CATEGORY_URL  = "http://127.0.0.1:8000/api/admin/categories"; 
+const API_BASE      = "http://127.0.0.1:8000/api/admin";
+const CATEGORY_URL  = "http://127.0.0.1:8000/api/admin/categories";
 
-// ─── AUTH HEADER ─────────────────────────────────────────────────────────────
-const authHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem("token")}`,
-});
+
 
 // ─── API HELPERS ──────────────────────────────────────────────────────────────
 const api = {
   getAll: async () => {
-    const res = await fetch(`${API_BASE}/products`, {
-      headers: authHeader(),
-    });
+    const res = await fetch(`${API_BASE}/products`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
-
   getCategories: async () => {
     const res = await fetch(CATEGORY_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
   create: async (formData) => {
     const res = await fetch(`${API_BASE}/products`, {
       method: "POST",
-      headers: authHeader(),
       body: formData,
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     return res.json();
   },
 
@@ -38,17 +37,23 @@ const api = {
     formData.append("_method", "PUT");
     const res = await fetch(`${API_BASE}/products/${id}`, {
       method: "POST",
-      headers: authHeader(),
       body: formData,
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     return res.json();
   },
 
   delete: async (id) => {
     const res = await fetch(`${API_BASE}/products/${id}`, {
       method: "DELETE",
-      headers: authHeader(),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     return res.json();
   },
 };
@@ -174,34 +179,27 @@ const AdminProducts = () => {
     setFetchLoading(true);
     try {
       const data = await api.getAll();
-      const list = data.products ?? data.data ?? data ?? [];
+      // ✅ FIX: Handle all possible response shapes from Laravel
+      const list = data.products ?? data.data ?? (Array.isArray(data) ? data : []);
       setProducts(Array.isArray(list) ? list : []);
-    } catch {
+    } catch (err) {
+      console.error("loadProducts error:", err);
       showToast("Cannot connect to Laravel API. Is your server running?", "error");
     } finally {
       setFetchLoading(false);
     }
   };
 
-  // ── Load categories — separate fetch, no auth needed
- const loadCategories = async () => {
-  try {
-    const res = await fetch(CATEGORY_URL);
-    
-    if (!res.ok) {
-      console.error("Categories HTTP error:", res.status, res.statusText);
-      return;
+  // ── Load categories
+  const loadCategories = async () => {
+    try {
+      const data = await api.getCategories();
+      const list = data.categories ?? data.data ?? (Array.isArray(data) ? data : []);
+      setCategories(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error("Categories fetch error:", err);
     }
-    
-    const data = await res.json();
-    console.log("Categories response:", data);
-    
-    const list = data.categories ?? data.data ?? data ?? [];
-    setCategories(Array.isArray(list) ? list : []);
-  } catch (err) {
-    console.error("Categories fetch error:", err);
-  }
-};
+  };
 
   useEffect(() => {
     loadProducts();
@@ -247,6 +245,7 @@ const AdminProducts = () => {
     setImagePreviews(files.map((f) => URL.createObjectURL(f)));
   };
 
+  // ✅ FIX: Close modal first, THEN reload so the new product is visible immediately
   const handleSubmit = async () => {
     if (!form.product_name.trim() || !form.price || !form.category_id) {
       showToast("Product name, category, and price are required.", "error");
@@ -255,27 +254,37 @@ const AdminProducts = () => {
     setLoading(true);
     try {
       const fd = new FormData();
-      fd.append("product_name",   form.product_name);
+      fd.append("product_name",   form.product_name.trim());
       fd.append("category_id",    form.category_id);
       fd.append("product_stocks", form.product_stocks || 0);
       fd.append("description",    form.description);
       fd.append("price",          form.price);
       fd.append("isSale",         form.isSale ? 1 : 0);
+
+      // Debug: confirm images are attached
+      console.log("Images to upload:", imageFiles.length, imageFiles.map(f => f.name));
       imageFiles.forEach((img) => fd.append("images[]", img));
 
       if (editingId) {
-        const res = await api.update(editingId, fd);
-        if (res.success === false) throw new Error(res.message ?? "Update failed");
+        await api.update(editingId, fd);
         showToast("Product updated successfully!");
       } else {
         const res = await api.create(fd);
-        if (res.success === false) throw new Error(res.message ?? "Create failed");
+        // ✅ FIX: Optimistically add the returned product to state immediately
+        // so it shows up without waiting for a full reload
+        if (res.product) {
+          setProducts((prev) => [res.product, ...prev]);
+        }
         showToast("Product added successfully!");
       }
 
       closeModal();
-      loadProducts();
+
+      // ✅ FIX: Always do a full reload AFTER closing modal to sync with DB
+      await loadProducts();
+
     } catch (err) {
+      console.error("handleSubmit error:", err);
       showToast(err.message || "Something went wrong.", "error");
     } finally {
       setLoading(false);
@@ -286,15 +295,16 @@ const AdminProducts = () => {
     if (!showDelete) return;
     setLoading(true);
     try {
-      const res = await api.delete(showDelete.product_id);
-      if (res.success === false) throw new Error(res.message ?? "Delete failed");
+      await api.delete(showDelete.product_id);
       showToast("Product deleted.");
+      // ✅ Remove from local state immediately, then reload
       setProducts((prev) => prev.filter((p) => p.product_id !== showDelete.product_id));
+      setShowDelete(null);
+      loadProducts(); // sync with DB in background
     } catch (err) {
       showToast(err.message || "Delete failed.", "error");
     } finally {
       setLoading(false);
-      setShowDelete(null);
     }
   };
 
@@ -547,7 +557,6 @@ const AdminProducts = () => {
         </Field>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          {/* ✅ CATEGORY DROPDOWN — galing sa database */}
           <Field label="Category" required>
             <select style={inputStyle} value={form.category_id}
               onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
@@ -584,7 +593,8 @@ const AdminProducts = () => {
         </Field>
 
         <Field label="Images">
-          <div onClick={() => fileRef.current.click()} style={{
+          <label htmlFor="product-image-upload" style={{
+            display: "block",
             border: "2px dashed #D1D5DB", borderRadius: "8px", padding: "16px",
             textAlign: "center", cursor: "pointer", background: "#F9FAFB", fontSize: "12px", color: "#9CA3AF",
           }}>
@@ -593,11 +603,22 @@ const AdminProducts = () => {
                   {imagePreviews.map((src, i) => (
                     <img key={i} src={src} alt="" style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "6px", border: "1px solid #E5E7EB" }} />
                   ))}
+                  <div style={{ width: "100%", marginTop: "6px", color: "#6B7280" }}>
+                    {imagePreviews.length} image{imagePreviews.length > 1 ? "s" : ""} selected — click to change
+                  </div>
                 </div>
               : <span>📁 Click to upload images (JPEG, PNG, GIF — max 5MB each)</span>
             }
-          </div>
-          <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/gif" onChange={handleImages} style={{ display: "none" }} />
+          </label>
+          <input
+            id="product-image-upload"
+            ref={fileRef}
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={handleImages}
+            style={{ display: "none" }}
+          />
         </Field>
 
         <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#374151", cursor: "pointer", marginTop: "4px" }}>
