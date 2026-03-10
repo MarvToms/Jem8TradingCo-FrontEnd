@@ -13,6 +13,12 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+    // Basic validation
+    if (!emailOrPhone || !password) {
+      setError("Email and password are required");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -24,14 +30,15 @@ const Login = () => {
 
       console.log("Login success:", data);
 
-      // Save token if using JWT
+      // If you ever switch to JWT:
       // if (data.token) {
       //   localStorage.setItem("token", data.token);
       // }
 
       navigate("/");
     } catch (err) {
-      setError(err.message || "Login failed");
+      console.log("Login error:", err);
+      setError(err?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -42,65 +49,81 @@ const Login = () => {
       <div className="login-card">
         <h2 className="title">Log in</h2>
 
-        {/* {error && <p className="error-text">{error}</p>} */}
+        {/* Show error */}
+        {error && <p className="error-text">{error}</p>}
 
-        <div className="form-group">
-          <label>Email address or Phone number</label>
-          <div className="input-wrapper">
-            <input
-              type="text"
-              value={emailOrPhone}
-              onChange={(e) => setEmailOrPhone(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>Password</label>
-          <div className="input-wrapper">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <span
-              className="eye-icon"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? "🙈" : "👁"}
-            </span>
-          </div>
-        </div>
-
-        <div className="options">
-          <a
-            onClick={() => navigate("/forgot-password")}
-            className="forgot"
-          >
-            Forgot password?
-          </a>
-
-          <label className="remember">
-            <input type="checkbox" />
-            Remember Me
-          </label>
-        </div>
-
-        <button
-          className="login-btn"
-          onClick={handleLogin}
-          disabled={loading}
+        {/* FORM WRAPPER (IMPORTANT) */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault(); // prevent page refresh
+            handleLogin();
+          }}
         >
-          {loading ? "Logging in..." : "Log in"}
-        </button>
+          <div className="form-group">
+            <label>Email address or Phone number</label>
+            <div className="input-wrapper">
+              <input
+                type="text"
+                value={emailOrPhone}
+                onChange={(e) => setEmailOrPhone(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Password</label>
+            <div className="input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <span
+                className="eye-icon"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁"}
+              </span>
+            </div>
+          </div>
+
+          <div className="options">
+            <span
+              onClick={() => navigate("/forgot-password")}
+              className="forgot"
+              style={{ cursor: "pointer" }}
+            >
+              Forgot password?
+            </span>
+
+            <label className="remember">
+              <input type="checkbox" />
+              Remember Me
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            className="login-btn"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Log in"}
+          </button>
+        </form>
 
         <p className="register-text">
-          Don't have account? <a href="/register">Register Now</a>
+          Don't have account?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            style={{ cursor: "pointer" }}
+          >
+            Register Now
+          </span>
         </p>
 
         <div className="divider">Or Login with</div>
 
-        <button className="google-btn">
+        <button type="button" className="google-btn">
           <img
             src="https://www.svgrepo.com/show/475656/google-color.svg"
             alt="google"
