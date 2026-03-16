@@ -248,7 +248,7 @@ export default function Checkout() {
       try {
         setLoadingCart(true);
         setCartError(null);
-        const res       = await axios.get(`${BASE}/cart`, { withCredentials: true });
+        const res       = await axios.get(`${BASE}/cart?isCheckout=false`, { withCredentials: true });
         const cartItems = res.data.cartItems ?? [];
         const formatted = cartItems.map((c) => ({
           id:        c.cart_id,
