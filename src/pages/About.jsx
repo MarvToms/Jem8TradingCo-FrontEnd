@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
 
-// Leader images
-import Shella from '../assets/Shella_Ricafrente-Acibar.png';
-import Jinkie from '../assets/Jinkie_Ricafrente-Malinag.png';
-import Akiko from '../assets/Akiko_Serrano.png';
-import Ruby from '../assets/Ruby_Ann_Castillo.png';
-import Charisse from '../assets/Charisse_Decano.png';
-import Adrian from '../assets/Adrian_Mallanao.png';
-import Vhernaldo from '../assets/Vhernaldo_Ricafrente.png';
-import Mark from '../assets/Mark_Edward_C_Malinag.png';
-import Daniel from '../assets/Daniel_Kian_Rodriguez_Cadena.png';
-import Kayla from '../assets/Kayla_R_Bacsafra.png';
-import Cristina from '../assets/Cristina_A_Saturnio.png';
+const BASE = 'http://127.0.0.1:8000';
+
+const getInitials = (name) =>
+  name.replace(/^(Ms\.|Mr\.)\s+/, '').split(' ').slice(0, 2).map((n) => n[0]).join('');
+
+const resolveImg = (path) => {
+  if (!path) return null;
+  return path.startsWith('http') ? path : `${BASE}/storage/${path}`;
+};
 
 const About = () => {
   const [stats] = useState({ since: 2016, employees: '1–7', clients: 250 });
@@ -429,6 +426,13 @@ const About = () => {
           </a>
         </div>
       </section>
+
+      <style>{`
+        @keyframes about-shimmer {
+          0%   { background-position: -200% 0 }
+          100% { background-position:  200% 0 }
+        }
+      `}</style>
 
     </div>
   );
