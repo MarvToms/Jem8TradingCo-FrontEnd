@@ -4,7 +4,6 @@ import axios from "axios";
 
 const BASE = "http://127.0.0.1:8000";
 
-// Category names sent directly to the API as `category_name`
 const CATEGORIES = ["All", "Announcement", "Travel Blog", "Business Trips", "Product Updates"];
 
 const categoryMap = {
@@ -16,7 +15,7 @@ const categoryMap = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// Shared sub-components
+// Shared sub-components (matching AdminProducts style)
 // ─────────────────────────────────────────────────────────────
 const labelStyle = {
   display: "block", fontSize: "11px", fontWeight: 600, color: "#374151",
@@ -27,7 +26,6 @@ const inputStyle = {
   fontSize: "13px", color: "#0F172A", background: "#fff", outline: "none",
   boxSizing: "border-box", fontFamily: "inherit",
 };
-
 
 function Overlay({ children, onClose, wide }) {
   return (
@@ -93,19 +91,21 @@ function ImageUploadZone({ id, onChange, preview, onRemove, label }) {
         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#CBD5E1")}
       >
         {preview ? (
-          <img
-            src={preview}
-            alt="preview"
-            style={{ maxHeight: "160px", maxWidth: "100%", borderRadius: "8px", objectFit: "cover" }}
-          />
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <img
+              src={preview}
+              alt="preview"
+              style={{ maxHeight: "160px", maxWidth: "100%", borderRadius: "8px", objectFit: "cover" }}
+            />
+          </div>
         ) : (
           <>
-            <div style={{ fontSize: "26px", marginBottom: "4px" }} >🖼️</div>
+            <div style={{ fontSize: "26px", marginBottom: "4px" }}>🖼️</div>
             <div style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Click to upload image</div>
             <div style={{ fontSize: "11px", color: "#94A3B8", marginTop: "2px" }}>PNG, JPG, WEBP</div>
           </>
         )}
-        <input id={id} type="file" accept="image/*" multiple onChange={onChange} style={{ display: "none" }} />
+        <input id={id} type="file" accept="image/*" onChange={onChange} style={{ display: "none" }} />
       </label>
       {preview && (
         <button
@@ -150,40 +150,10 @@ function CategorySelect({ name, value, onChange }) {
   );
 }
 
-// Used in the Edit modal — update endpoint validates category_blog_id (integer)
-const CATEGORY_ID_MAP = {
-  "Announcement":    1,
-  "Travel Blog":     2,
-  "Business Trips":  3,
-  "Product Updates": 4,
-};
-
-function CategorySelectById({ name, value, onChange }) {
-  return (
-    <div style={{ position: "relative" }}>
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        style={{
-          ...inputStyle, appearance: "none", WebkitAppearance: "none",
-          paddingRight: "32px", cursor: "pointer",
-          color: value ? "#0F172A" : "#9CA3AF",
-        }}
-      >
-        <option value="" disabled>Select a category</option>
-        {Object.entries(CATEGORY_ID_MAP).map(([label, id]) => (
-          <option key={id} value={id}>{label}</option>
-        ))}
-      </select>
-      <div style={{
-        position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)",
-        pointerEvents: "none", color: "#94A3B8", fontSize: "11px",
-      }}>▾</div>
-    </div>
-  );
-}
-
+// ─────────────────────────────────────────────────────────────
+// Field wrapper — must live OUTSIDE the main component
+// so it is never recreated on render (avoids input unfocus)
+// ─────────────────────────────────────────────────────────────
 function Field({ label, children }) {
   return (
     <div style={{ marginBottom: "16px" }}>
@@ -204,11 +174,11 @@ export default function AdminBlogpost() {
   const [search, setSearch]             = useState("");
 
   // ── Modal states ──
-  const [showAddModal, setShowAddModal]       = useState(false);
-  const [showViewModal, setShowViewModal]     = useState(false);
-  const [showEditModal, setShowEditModal]     = useState(false);
+  const [showAddModal, setShowAddModal]     = useState(false);
+  const [showViewModal, setShowViewModal]   = useState(false);
+  const [showEditModal, setShowEditModal]   = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [activePost, setActivePost]           = useState(null);
+  const [activePost, setActivePost]         = useState(null);
 
   // ── Submitting flags ──
   const [submitting, setSubmitting] = useState(false);
@@ -218,39 +188,17 @@ export default function AdminBlogpost() {
   // ── Error state ──
   const [error, setError] = useState(null);
 
-  // ── Add form: store endpoint needs `category_name` string ──
-  const emptyForm = { blog_title: "", blog_text: "", category_name: "", status: "published" };
-  const [addForm, setAddForm]       = useState(emptyForm);
-  const [addPreviews, setAddPreviews] = useState([]);   // array of { url, file }
-  const [addFiles, setAddFiles]     = useState([]);
+  // ── Add form ──
+  const emptyForm = { title: "", description: "", category: "", date: "", content: "" };
+  const [addForm, setAddForm]     = useState(emptyForm);
+  const [addPreview, setAddPreview] = useState(null);
+  const [addFile, setAddFile]     = useState(null);
 
-  // ── Edit form: update endpoint uses `category_blog_id` integer ──
-  const emptyEditForm = { blog_title: "", blog_text: "", category_blog_id: "", status: "published" };
-  const [editForm, setEditForm]         = useState(emptyEditForm);
-  const [editPreviews, setEditPreviews] = useState([]);
-  const [editFiles, setEditFiles]       = useState([]);
-  const [removeImages, setRemoveImages] = useState(false);
-
-  // ─────────────────────────────────
-  // Helpers: resolve image URLs
-  // ─────────────────────────────────
-  const resolveImg = (post) => {
-    if (!post) return null;
-    // API returns images as an array of paths
-    const imgs = post.images;
-    if (Array.isArray(imgs) && imgs.length > 0) {
-      const path = imgs[0];
-      return path.startsWith("http") ? path : `${BASE}/storage/${path}`;
-    }
-    return null;
-  };
-
-  const resolveAllImgs = (post) => {
-    if (!post) return [];
-    const imgs = post.images;
-    if (!Array.isArray(imgs)) return [];
-    return imgs.map((path) => path.startsWith("http") ? path : `${BASE}/storage/${path}`);
-  };
+  // ── Edit form ──
+  const [editForm, setEditForm]       = useState(emptyForm);
+  const [editPreview, setEditPreview] = useState(null);
+  const [editFile, setEditFile]       = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
 
   // ─────────────────────────────────
   // API helpers
@@ -259,11 +207,7 @@ export default function AdminBlogpost() {
     setLoading(true);
     setError(null);
     try {
-      const res  = await axios.get(`${BASE}/api/blogs`, {
-        withCredentials: true,
-        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
-      });
-      // Support both { data: [...] } and { posts: [...] } and plain array
+      const res  = await axios.get(`${BASE}/api/blogs`, { withCredentials: true, headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" } });
       const data = res.data?.data ?? res.data?.posts ?? res.data;
       setPosts(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -279,44 +223,53 @@ export default function AdminBlogpost() {
   // ─────────────────────────────────
   // Derived data
   // ─────────────────────────────────
-  // API returns blog with eager-loaded category: { category: { category_name: "..." } }
-  // Falls back to category_blog_id numeric lookup via the map if relation is missing
-  const getCatName = (post) => {
-    if (post.category?.category_name) return post.category.category_name;
-    return "Uncategorized";
-  };
-
   const filtered = posts.filter((p) => {
-    const catName     = getCatName(p);
-    const matchCat    = activeCategory === "All" || catName === activeCategory;
-    const matchSearch = (p.blog_title ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchCat    = activeCategory === "All" || (p.category ?? p.category_name) === activeCategory;
+    const matchSearch = (p.title ?? "").toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
 
   const counts = CATEGORIES.reduce((acc, cat) => {
     acc[cat] = cat === "All"
       ? posts.length
-      : posts.filter((p) => getCatName(p) === cat).length;
+      : posts.filter((p) => (p.category ?? p.category_name) === cat).length;
     return acc;
   }, {});
+
+  const resolveImg = (post) => {
+    if (!post) return null;
+    if (post.image_path) return `${BASE}/storage/${post.image_path}`;
+    if (post.image)      return post.image.startsWith("http") ? post.image : `${BASE}/storage/${post.image}`;
+    return null;
+  };
 
   // ─────────────────────────────────
   // Open modal helpers
   // ─────────────────────────────────
   const openView = (post) => { setActivePost(post); setShowViewModal(true); };
 
+  const toInputDate = (val) => {
+    if (!val) return "";
+    // Already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    // Try parsing any other format
+    const d = new Date(val);
+    if (isNaN(d)) return "";
+    return d.toISOString().slice(0, 10);
+  };
+
   const openEdit = (post) => {
     setActivePost(post);
     setEditForm({
-      blog_title:       post.blog_title       ?? "",
-      blog_text:        post.blog_text        ?? "",
-      category_blog_id: post.category_blog_id ?? "",
-      status:           post.status           ?? "published",
+      title:       post.title       ?? "",
+      description: post.description ?? post.excerpt ?? "",
+      category:    post.category    ?? post.category_name ?? "",
+      date:        toInputDate(post.date ?? post.published_at ?? ""),
+      content:     post.content     ?? post.body          ?? "",
     });
-    const existingImgs = resolveAllImgs(post);
-    setEditPreviews(existingImgs.map((url) => ({ url, file: null })));
-    setEditFiles([]);
-    setRemoveImages(false);
+    setEditPreview(resolveImg(post));
+    setEditFile(null);
+    setRemoveImage(false);
     setShowEditModal(true);
   };
 
@@ -329,28 +282,18 @@ export default function AdminBlogpost() {
   const handleEditChange = (e) => setEditForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleAddImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    setAddFiles((prev) => [...prev, ...files]);
-    setAddPreviews((prev) => [...prev, ...files.map((f) => ({ url: URL.createObjectURL(f), file: f }))]);
-  };
-
-  const removeAddPreview = (idx) => {
-    setAddPreviews((prev) => prev.filter((_, i) => i !== idx));
-    setAddFiles((prev) => prev.filter((_, i) => i !== idx));
+    const file = e.target.files[0];
+    if (!file) return;
+    setAddFile(file);
+    setAddPreview(URL.createObjectURL(file));
   };
 
   const handleEditImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    setEditFiles((prev) => [...prev, ...files]);
-    setEditPreviews((prev) => [...prev, ...files.map((f) => ({ url: URL.createObjectURL(f), file: f }))]);
-    setRemoveImages(false);
-  };
-
-  const removeEditPreview = (idx) => {
-    setEditPreviews((prev) => prev.filter((_, i) => i !== idx));
-    setEditFiles((prev) => prev.filter((_, i) => i !== idx));
+    const file = e.target.files[0];
+    if (!file) return;
+    setEditFile(file);
+    setEditPreview(URL.createObjectURL(file));
+    setRemoveImage(false);
   };
 
   // ─────────────────────────────────
@@ -361,36 +304,21 @@ export default function AdminBlogpost() {
     setSubmitting(true);
     try {
       const fd = new FormData();
-      fd.append("blog_title",    addForm.blog_title);
-      fd.append("blog_text",     addForm.blog_text);
-      fd.append("category_name", addForm.category_name);   // ← storeBlog validates this
-      fd.append("status",        addForm.status);
-
-      // Append each image under images[] — adjust key to what your API expects
-      addFiles.forEach((file) => fd.append("images[]", file));
+      Object.entries(addForm).forEach(([k, v]) => fd.append(k, v));
+      if (addFile) fd.append("image", addFile);
 
       await axios.post(`${BASE}/api/blogs`, fd, {
         withCredentials: true,
-        headers: {
-          Accept: "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", "Content-Type": "multipart/form-data" },
       });
-
       setShowAddModal(false);
-      setAddForm(emptyForm);   // { blog_title, blog_text, category_name, status }
-      setAddPreviews([]);
-      setAddFiles([]);
+      setAddForm(emptyForm);
+      setAddPreview(null);
+      setAddFile(null);
       fetchPosts();
     } catch (err) {
       console.error("Add failed:", err);
-      const errData = err.response?.data;
-      // Laravel validation errors come back as { message: { field: ["msg"] } }
-      const msg = typeof errData?.message === "object"
-        ? Object.values(errData.message).flat().join("\n")
-        : (errData?.message ?? "Failed to create post.");
-      alert(msg);
+      alert(err.response?.data?.message ?? "Failed to create post.");
     } finally {
       setSubmitting(false);
     }
@@ -405,41 +333,25 @@ export default function AdminBlogpost() {
     setSaving(true);
     try {
       const fd = new FormData();
-      fd.append("blog_title",       editForm.blog_title);
-      fd.append("blog_text",        editForm.blog_text);
-      fd.append("category_blog_id", editForm.category_blog_id);
-      fd.append("status",           editForm.status);
-      fd.append("_method",          "PUT"); // Laravel method spoofing
+      Object.entries(editForm).forEach(([k, v]) => fd.append(k, v));
+      if (editFile)       fd.append("image", editFile);
+      if (removeImage)    fd.append("remove_image", "1");
+      fd.append("_method", "PUT"); // Laravel method spoofing
 
-      // Only append newly selected files
-      editFiles.forEach((file) => fd.append("images[]", file));
-      if (removeImages) fd.append("remove_images", "1");
-
-      const postId = activePost.blog_id;
+      const postId = activePost.id ?? activePost.post_id;
       await axios.post(`${BASE}/api/blogs/${postId}`, fd, {
         withCredentials: true,
-        headers: {
-          Accept: "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", "Content-Type": "multipart/form-data" },
       });
-
       setShowEditModal(false);
       fetchPosts();
     } catch (err) {
       console.error("Edit failed:", err);
-      const errData = err.response?.data;
-      const msg = typeof errData?.message === "object"
-        ? Object.values(errData.message).flat().join("\n")
-        : (errData?.message ?? "Failed to update post.");
-      alert(msg);
+      alert(err.response?.data?.message ?? "Failed to update post.");
     } finally {
       setSaving(false);
     }
   };
-
-  // console.log(preview);
 
   // ─────────────────────────────────
   // Submit: Delete
@@ -448,8 +360,8 @@ export default function AdminBlogpost() {
     if (!activePost) return;
     setDeleting(true);
     try {
-      const postId = activePost.blog_id;
-      await axios.delete(`${BASE}/api/blogs/${postId}`, {  // ← fixed missing slash
+      const postId = activePost.id ?? activePost.post_id;
+      await axios.delete(`${BASE}/api/blogs${postId}`, {
         withCredentials: true,
         headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
       });
@@ -463,62 +375,6 @@ export default function AdminBlogpost() {
       setDeleting(false);
     }
   };
-
-  // ─────────────────────────────────
-  // Multi-image preview strip
-  // ─────────────────────────────────
-  function ImagePreviewStrip({ previews, onRemove, id, onChange, label }) {
-    return (
-      <div style={{ marginBottom: "20px" }}>
-        <label style={{ ...labelStyle, marginBottom: "8px" }}>{label ?? "Images"}</label>
-
-        {/* Existing / new previews */}
-        {previews.length > 0 && (
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-            {previews.map((p, i) => (
-              <div key={i} style={{ position: "relative" }}>
-                <img
-                  src={p.url}
-                  alt={`preview-${i}`}
-                  style={{ width: "80px", height: "60px", objectFit: "cover", borderRadius: "8px", border: "1px solid #E2E8F0" }}
-                />
-                <button
-                  type="button"
-                  onClick={() => onRemove(i)}
-                  style={{
-                    position: "absolute", top: "-6px", right: "-6px",
-                    width: "18px", height: "18px", borderRadius: "50%",
-                    border: "none", background: "#DC2626", color: "#fff",
-                    fontSize: "10px", cursor: "pointer", display: "flex",
-                    alignItems: "center", justifyContent: "center", lineHeight: 1,
-                  }}
-                >×</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Upload zone */}
-        <label
-          htmlFor={id}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-            border: "2px dashed #CBD5E1", borderRadius: "10px", padding: "14px",
-            cursor: "pointer", background: "#F8FAFC",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#155DFC")}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#CBD5E1")}
-        >
-          <span style={{ fontSize: "20px" }}>🖼️</span>
-          <div>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Click to add images</div>
-            <div style={{ fontSize: "11px", color: "#94A3B8" }}>PNG, JPG, WEBP — multiple allowed</div>
-          </div>
-          <input id={id} type="file" accept="image/*" multiple onChange={onChange} style={{ display: "none" }} />
-        </label>
-      </div>
-    );
-  }
 
   // ─────────────────────────────────────────────────────────
   // Render
@@ -548,55 +404,28 @@ export default function AdminBlogpost() {
           <Overlay onClose={() => setShowAddModal(false)}>
             <ModalHeader title="New Blog Post" subtitle="Fill in the details to publish a new post" onClose={() => setShowAddModal(false)} />
             <form onSubmit={handleAddSubmit} style={{ padding: "20px 24px 24px" }}>
-
-              <ImagePreviewStrip
-                id="addImg"
-                label="Images"
-                previews={addPreviews}
-                onChange={handleAddImageChange}
-                onRemove={removeAddPreview}
-              />
+              <ImageUploadZone id="addImg" onChange={handleAddImageChange} preview={addPreview} onRemove={() => { setAddPreview(null); setAddFile(null); }} />
 
               <Field label="Title">
-                <input
-                  name="blog_title"
-                  value={addForm.blog_title}
-                  onChange={handleAddChange}
-                  required
-                  placeholder="e.g. Jem 8 at MSME Expo 2025"
-                  style={inputStyle}
-                />
+                <input name="title" value={addForm.title} onChange={handleAddChange} required placeholder="e.g. Jem 8 at MSME Expo 2025" style={inputStyle} />
               </Field>
 
-              <Field label="Content">
-                <textarea
-                  name="blog_text"
-                  value={addForm.blog_text}
-                  onChange={handleAddChange}
-                  placeholder="Full post content…"
-                  style={{ ...inputStyle, height: "120px", resize: "vertical" }}
-                />
+              <Field label="Description / Excerpt">
+                <textarea name="description" value={addForm.description} onChange={handleAddChange} placeholder="Short summary shown on cards…" style={{ ...inputStyle, height: "72px", resize: "vertical" }} />
               </Field>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <Field label="Category">
-                  <CategorySelect name="category_name" value={addForm.category_name} onChange={handleAddChange} />
+                  <CategorySelect name="category" value={addForm.category} onChange={handleAddChange} />
                 </Field>
-                <Field label="Status">
-                  <div style={{ position: "relative" }}>
-                    <select
-                      name="status"
-                      value={addForm.status}
-                      onChange={handleAddChange}
-                      style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none", paddingRight: "32px", cursor: "pointer" }}
-                    >
-                      <option value="published">Published</option>
-                      <option value="draft">Draft</option>
-                    </select>
-                    <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#94A3B8", fontSize: "11px" }}>▾</div>
-                  </div>
+                <Field label="Date">
+                  <input type="date" name="date" value={addForm.date} onChange={handleAddChange} style={inputStyle} />
                 </Field>
               </div>
+
+              <Field label="Content (optional)">
+                <textarea name="content" value={addForm.content} onChange={handleAddChange} placeholder="Full post content…" style={{ ...inputStyle, height: "120px", resize: "vertical" }} />
+              </Field>
 
               <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
                 <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "10px", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
@@ -614,61 +443,52 @@ export default function AdminBlogpost() {
             VIEW MODAL
         ═══════════════════════════════════ */}
         {showViewModal && activePost && (() => {
-          const allImgs = resolveAllImgs(activePost);
-          const catName = getCatName(activePost);
+          const imgSrc = resolveImg(activePost);
           return (
             <Overlay wide onClose={() => setShowViewModal(false)}>
               <ModalHeader
                 title="Post Details"
-                subtitle={activePost.blog_title}
+                subtitle={activePost.title}
                 onClose={() => setShowViewModal(false)}
               />
               <div style={{ padding: "24px" }}>
-                {/* Image gallery */}
-                {allImgs.length > 0 && (
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
-                    {allImgs.map((src, i) => (
-                      <img
-                        key={i}
-                        src={src}
-                        alt={`img-${i}`}
-                        style={{
-                          width: allImgs.length === 1 ? "100%" : "calc(50% - 4px)",
-                          maxHeight: "240px", objectFit: "cover",
-                          borderRadius: "10px", border: "1px solid #F1F5F9",
-                        }}
-                        onError={(e) => { e.target.style.display = "none"; }}
-                      />
-                    ))}
+                {/* Cover image */}
+                {imgSrc && (
+                  <div style={{ marginBottom: "20px", borderRadius: "12px", overflow: "hidden", maxHeight: "280px" }}>
+                    <img src={imgSrc} alt={activePost.title} style={{ width: "100%", objectFit: "cover", display: "block", maxHeight: "280px" }} />
                   </div>
                 )}
 
                 {/* Meta row */}
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
                   <span style={{ fontSize: "12px", padding: "4px 12px", background: "#EFF6FF", color: "#1D4ED8", borderRadius: "20px", fontWeight: 600, border: "1px solid #BFDBFE" }}>
-                    {catName}
+                    {activePost.category ?? activePost.category_name ?? "Uncategorized"}
                   </span>
-                  <span style={{ fontSize: "12px", padding: "4px 12px", background: "#F0FDF4", color: "#16A34A", borderRadius: "20px", fontWeight: 600, border: "1px solid #BBF7D0", textTransform: "capitalize" }}>
-                    {activePost.status ?? "published"}
-                  </span>
-                  {activePost.created_at && (
+                  {(activePost.date ?? activePost.published_at) && (
                     <span style={{ fontSize: "12px", padding: "4px 12px", background: "#F8FAFC", color: "#64748B", borderRadius: "20px", border: "1px solid #E2E8F0" }}>
-                      📅 {new Date(activePost.created_at).toLocaleDateString()}
+                      📅 {activePost.date ?? activePost.published_at}
                     </span>
                   )}
                 </div>
 
                 {/* Title */}
-                <h2 style={{ margin: "0 0 12px", fontSize: "20px", fontWeight: 700, color: "#0F172A", lineHeight: 1.3 }}>
-                  {activePost.blog_title}
+                <h2 style={{ margin: "0 0 10px", fontSize: "20px", fontWeight: 700, color: "#0F172A", lineHeight: 1.3 }}>
+                  {activePost.title}
                 </h2>
 
-                {/* Content */}
-                {activePost.blog_text && (
+                {/* Description */}
+                {(activePost.description ?? activePost.excerpt) && (
+                  <p style={{ margin: "0 0 16px", fontSize: "14px", color: "#475569", lineHeight: 1.6 }}>
+                    {activePost.description ?? activePost.excerpt}
+                  </p>
+                )}
+
+                {/* Divider */}
+                {(activePost.content ?? activePost.body) && (
                   <>
-                    <div style={{ height: "1px", background: "#F1F5F9", margin: "0 0 16px" }} />
+                    <div style={{ height: "1px", background: "#F1F5F9", margin: "16px 0" }} />
                     <div style={{ fontSize: "13px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                      {activePost.blog_text}
+                      {activePost.content ?? activePost.body}
                     </div>
                   </>
                 )}
@@ -700,59 +520,37 @@ export default function AdminBlogpost() {
           <Overlay onClose={() => setShowEditModal(false)}>
             <ModalHeader
               title="Edit Post"
-              subtitle={`Editing: ${activePost.blog_title}`}
+              subtitle={`Editing: ${activePost.title}`}
               onClose={() => setShowEditModal(false)}
             />
             <form onSubmit={handleEditSubmit} style={{ padding: "20px 24px 24px" }}>
-
-              <ImagePreviewStrip
+              <ImageUploadZone
                 id="editImg"
-                label="Images"
-                previews={editPreviews}
                 onChange={handleEditImageChange}
-                onRemove={removeEditPreview}
+                preview={editPreview}
+                onRemove={() => { setEditPreview(null); setEditFile(null); setRemoveImage(true); }}
               />
-              {editPreviews.length > 0 && (
-                <div style={{ marginTop: "-10px", marginBottom: "16px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#DC2626", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={removeImages}
-                      onChange={(e) => setRemoveImages(e.target.checked)}
-                      style={{ accentColor: "#DC2626" }}
-                    />
-                    Remove all existing images on save
-                  </label>
-                </div>
-              )}
 
               <Field label="Title">
-                <input name="blog_title" value={editForm.blog_title} onChange={handleEditChange} required style={inputStyle} />
+                <input name="title" value={editForm.title} onChange={handleEditChange} required style={inputStyle} />
               </Field>
 
-              <Field label="Content">
-                <textarea name="blog_text" value={editForm.blog_text} onChange={handleEditChange} placeholder="Full post content…" style={{ ...inputStyle, height: "120px", resize: "vertical" }} />
+              <Field label="Description / Excerpt">
+                <textarea name="description" value={editForm.description} onChange={handleEditChange} style={{ ...inputStyle, height: "72px", resize: "vertical" }} />
               </Field>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <Field label="Category">
-                  <CategorySelectById name="category_blog_id" value={editForm.category_blog_id} onChange={handleEditChange} />
+                  <CategorySelect name="category" value={editForm.category} onChange={handleEditChange} />
                 </Field>
-                <Field label="Status">
-                  <div style={{ position: "relative" }}>
-                    <select
-                      name="status"
-                      value={editForm.status}
-                      onChange={handleEditChange}
-                      style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none", paddingRight: "32px", cursor: "pointer" }}
-                    >
-                      <option value="published">Published</option>
-                      <option value="draft">Draft</option>
-                    </select>
-                    <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#94A3B8", fontSize: "11px" }}>▾</div>
-                  </div>
+                <Field label="Date">
+                  <input type="date" name="date" value={editForm.date} onChange={handleEditChange} style={inputStyle} />
                 </Field>
               </div>
+
+              <Field label="Content">
+                <textarea name="content" value={editForm.content} onChange={handleEditChange} placeholder="Full post content…" style={{ ...inputStyle, height: "120px", resize: "vertical" }} />
+              </Field>
 
               <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
                 <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: "10px", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
@@ -775,7 +573,7 @@ export default function AdminBlogpost() {
               <div style={{ fontSize: "48px", marginBottom: "12px" }}>🗑️</div>
               <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 700, color: "#0F172A" }}>Delete Post?</h3>
               <p style={{ margin: "0 0 6px", fontSize: "14px", color: "#64748B" }}>
-                "<strong>{activePost.blog_title}</strong>"
+                "<strong>{activePost.title}</strong>"
               </p>
               <p style={{ margin: "0 0 24px", fontSize: "13px", color: "#94A3B8" }}>This action cannot be undone.</p>
               <div style={{ display: "flex", gap: "10px" }}>
@@ -806,6 +604,7 @@ export default function AdminBlogpost() {
               <h1 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#0F172A" }}>Blog Post</h1>
             </div>
             <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              {/* Search */}
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "13px", color: "#94A3B8" }}>🔍</span>
                 <input
@@ -816,7 +615,7 @@ export default function AdminBlogpost() {
                 />
               </div>
               <button
-                onClick={() => { setAddForm(emptyForm); setAddPreviews([]); setAddFiles([]); setShowAddModal(true); }}
+                onClick={() => { setAddForm(emptyForm); setAddPreview(null); setAddFile(null); setShowAddModal(true); }}
                 style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 18px", border: "none", borderRadius: "8px", background: "#155DFC", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
               >
                 + New Post
@@ -851,9 +650,9 @@ export default function AdminBlogpost() {
                 style={{
                   padding: "6px 14px", borderRadius: "20px", border: "1px solid",
                   fontSize: "12px", fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
-                  background:  activeCategory === cat ? "#155DFC" : "#fff",
-                  color:       activeCategory === cat ? "#fff"    : "#64748B",
-                  borderColor: activeCategory === cat ? "#155DFC" : "#E2E8F0",
+                  background:    activeCategory === cat ? "#155DFC" : "#fff",
+                  color:         activeCategory === cat ? "#fff"    : "#64748B",
+                  borderColor:   activeCategory === cat ? "#155DFC" : "#E2E8F0",
                 }}
               >
                 {cat}
@@ -876,7 +675,7 @@ export default function AdminBlogpost() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
                   <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #F1F5F9" }}>
-                    {["IMAGE", "TITLE & CONTENT", "CATEGORY", "STATUS", "ACTION"].map((h) => (
+                    {["IMAGE", "TITLE & DESCRIPTION", "CATEGORY", "DATE", "ACTION"].map((h) => (
                       <th key={h} style={{ padding: "11px 16px", textAlign: "left", fontSize: "10px", fontWeight: 700, color: "#94A3B8", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
@@ -889,12 +688,9 @@ export default function AdminBlogpost() {
                       <tr key={i}>
                         {[80, 260, 120, 100, 140].map((w, j) => (
                           <td key={j} style={{ padding: "14px 16px" }}>
-                            <div style={{
-                              height: j === 1 ? "36px" : "16px", width: `${Math.min(w, 140)}px`,
-                              background: "#F1F5F9", borderRadius: "6px",
+                            <div style={{ height: j === 1 ? "36px" : "16px", width: `${Math.min(w, 140)}px`, background: "#F1F5F9", borderRadius: "6px",
                               backgroundImage: "linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%)",
-                              backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite",
-                            }} />
+                              backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }} />
                           </td>
                         ))}
                       </tr>
@@ -907,57 +703,47 @@ export default function AdminBlogpost() {
                     </tr>
                   ) : (
                     filtered.map((post) => {
-                      const imgSrc  = resolveImg(post);
-                      const catName = getCatName(post);
-                      const imgCount = (post.images ?? []).length;
+                      const imgSrc = resolveImg(post);
+                      const cat    = post.category ?? post.category_name ?? "—";
+                      const date   = post.date ?? post.published_at ?? "—";
                       return (
-                        <tr key={post.blog_id} className="abp-row">
+                        <tr key={post.id ?? post.post_id} className="abp-row">
                           <td style={{ padding: "12px 16px" }}>
                             {imgSrc ? (
-                              <div style={{ position: "relative" }}>
-                                <img
-                                  src={imgSrc}
-                                  alt={post.blog_title}
-                                  style={{ width: "64px", height: "48px", borderRadius: "8px", objectFit: "cover", display: "block", border: "1px solid #F1F5F9" }}
-                                  onError={(e) => { e.target.style.display = "none"; }}
-                                />
-                                {imgCount > 1 && (
-                                  <span style={{ position: "absolute", bottom: "2px", right: "2px", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: "9px", fontWeight: 700, padding: "1px 4px", borderRadius: "4px" }}>
-                                    +{imgCount - 1}
-                                  </span>
-                                )}
-                              </div>
+                              <img src={imgSrc} alt={post.title} style={{ width: "64px", height: "48px", borderRadius: "8px", objectFit: "cover", display: "block", border: "1px solid #F1F5F9" }} onError={(e) => { e.target.style.display = "none"; }} />
                             ) : (
                               <div style={{ width: "64px", height: "48px", borderRadius: "8px", background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", color: "#CBD5E1" }}>🖼</div>
                             )}
                           </td>
                           <td style={{ padding: "12px 16px", maxWidth: "300px" }}>
-                            <div style={{ fontWeight: 600, color: "#0F172A", marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{post.blog_title}</div>
+                            <div style={{ fontWeight: 600, color: "#0F172A", marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{post.title}</div>
                             <div style={{ fontSize: "12px", color: "#94A3B8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {post.blog_text ?? ""}
+                              {post.description ?? post.excerpt ?? ""}
                             </div>
                           </td>
                           <td style={{ padding: "12px 16px" }}>
                             <span style={{ fontSize: "11px", fontWeight: 600, padding: "4px 10px", borderRadius: "20px", background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", whiteSpace: "nowrap" }}>
-                              {catName}
+                              {cat}
                             </span>
                           </td>
-                          <td style={{ padding: "12px 16px" }}>
-                            <span style={{
-                              fontSize: "11px", fontWeight: 600, padding: "4px 10px", borderRadius: "20px", whiteSpace: "nowrap",
-                              background: post.status === "published" ? "#F0FDF4" : "#FEF9C3",
-                              color:      post.status === "published" ? "#16A34A" : "#B45309",
-                              border:     `1px solid ${post.status === "published" ? "#BBF7D0" : "#FDE68A"}`,
-                              textTransform: "capitalize",
-                            }}>
-                              {post.status ?? "published"}
-                            </span>
-                          </td>
+                          <td style={{ padding: "12px 16px", color: "#64748B", whiteSpace: "nowrap", fontSize: "12px" }}>{date}</td>
                           <td style={{ padding: "12px 16px" }}>
                             <div style={{ display: "flex", gap: "6px" }}>
-                              <button className="abp-act-btn" onClick={() => openView(post)} style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>View</button>
-                              <button className="abp-act-btn" onClick={() => openEdit(post)} style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Edit</button>
-                              <button className="abp-act-btn" onClick={() => openDelete(post)} style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Delete</button>
+                              <button
+                                className="abp-act-btn"
+                                onClick={() => openView(post)}
+                                style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                              >View</button>
+                              <button
+                                className="abp-act-btn"
+                                onClick={() => openEdit(post)}
+                                style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                              >Edit</button>
+                              <button
+                                className="abp-act-btn"
+                                onClick={() => openDelete(post)}
+                                style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                              >Delete</button>
                             </div>
                           </td>
                         </tr>
