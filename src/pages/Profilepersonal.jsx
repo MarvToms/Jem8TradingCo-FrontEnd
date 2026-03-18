@@ -229,6 +229,7 @@ function AddressModal({ onClose, onSave, editingAddress }) {
 
   const handleSubmit = () => {
     if (!form.street || !form.city) return;
+    console.log(form)
     onSave(form);
     onClose();
   };
