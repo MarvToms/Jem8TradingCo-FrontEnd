@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 
 // Keep the Logo import from your version
 import Logo from '../assets/Logo — Jem 8 Circle Trading Co (1).png';
+import axios from "axios";
 
 export function Header() {
   const location    = useLocation();
@@ -11,11 +12,27 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled]     = useState(false);
   const { totalItems }              = useCart();
+  const [isLog,setIsLog] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        const url = "http://127.0.0.1:8000/api/me";
+        const res = await axios.get(url, { withCredentials: true });
+
+        setIsLog(res.data); // adjust if your API returns data differently
+      } catch (err) {
+        setIsLog(false);
+      }
+    };
+
+    checkLogin();
   }, []);
 
   // Close mobile menu whenever route changes
@@ -26,6 +43,7 @@ export function Header() {
   const NAV_LINKS = [
     { to: "/",           label: "Home"       },
     { to: "/products",   label: "Products"   },
+    { to: "/categories", label: "Categories" },
     { to: "/blog",       label: "Blog"       },
     { to: "/about",      label: "About"      },
     { to: "/contact",    label: "Contact"    },
@@ -93,6 +111,7 @@ export function Header() {
               className="site-header__cart-btn"
               aria-label="View cart"
               style={{ position: "relative" }}
+              title="Add to Cart"
             >
               🛒
               {totalItems > 0 && (
@@ -108,55 +127,75 @@ export function Header() {
               )}
             </Link>
 
+            <Link
+              to="/adminDashboard"
+              className="site-header__cart-btn"
+              aria-label="View cart"
+              title="Admin"
+              style={{ position: "relative" }}
+            >
+              🛠️
+            </Link>
+
             {/* Contact button */}
             <Link to="/contact" className="site-header__login-btn">
               Contact Us
             </Link>
 
             {/* ── Profile Avatar Button ─────────────────────────────────── */}
-            <button
-              onClick={() => navigate("/Profilepersonal")}
-              aria-label="My Profile"
-              title="My Profile"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                backgroundColor: "#2e6b45",
-                border: "2px solid #2e6b4530",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 0,
-                flexShrink: 0,
-                boxShadow: "0 2px 8px #2e6b4530",
-                transition: "box-shadow 0.2s, transform 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 16px #2e6b4550";
-                e.currentTarget.style.transform = "scale(1.08)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 2px 8px #2e6b4530";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              {/*
-                Tip: swap the "J" with the first letter of the logged-in
-                user's name. e.g. user?.name?.charAt(0).toUpperCase()
-              */}
-              <span style={{
-                color: "#ffffff",
-                fontSize: 14,
-                fontWeight: 700,
-                fontFamily: "'Poppins', Helvetica, sans-serif",
-                userSelect: "none",
-                lineHeight: 1,
-              }}>
-                J
-              </span>
-            </button>
+            {!isLog ? (
+
+              <button
+                onClick={() => navigate("/login")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  backgroundColor: "#2e6b45",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: "600"
+                }}
+              >
+                Login
+              </button>
+
+              ) : (
+
+              <button
+                onClick={() => navigate("/Profilepersonal")}
+                aria-label="My Profile"
+                title="My Profile"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  backgroundColor: "#2e6b45",
+                  border: "2px solid #2e6b4530",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                  flexShrink: 0,
+                  boxShadow: "0 2px 8px #2e6b4530",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    fontFamily: "'Poppins', Helvetica, sans-serif",
+                    userSelect: "none",
+                    lineHeight: 1,
+                  }}
+                >
+                  J
+                </span>
+              </button>
+
+              )}
             {/* ─────────────────────────────────────────────────────────── */}
 
             {/* Hamburger */}

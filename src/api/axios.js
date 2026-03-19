@@ -6,7 +6,7 @@ const api = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, // if using Laravel Sanctum
+  withCredentials: true, 
 });
 
 export default api;
