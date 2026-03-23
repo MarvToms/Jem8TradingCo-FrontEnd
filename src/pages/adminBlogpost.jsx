@@ -1,33 +1,51 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AdminNav from "../components/AdminNav";
 import axios from "axios";
 
 const BASE = "http://127.0.0.1:8000";
 
+// Category names sent directly to the API as `category_name`
 const CATEGORIES = ["All", "Announcement", "Travel Blog", "Business Trips", "Product Updates"];
 
 const categoryMap = {
-  All:              "All Posts",
-  Announcement:     "Announcements",
-  "Travel Blog":    "Travel Blog",
+  All: "All Posts",
+  Announcement: "Announcements",
+  "Travel Blog": "Travel Blog",
   "Business Trips": "Business Trips",
-  "Product Updates":"Product Updates",
+  "Product Updates": "Product Updates",
 };
 
-// ── Shared input class ────────────────────────────────────────────────────────
-const inputCls = "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-900 bg-white outline-none box-border font-[inherit]";
-const labelCls = "block text-[11px] font-semibold text-gray-700 mb-1.5 uppercase tracking-wide";
+// ─────────────────────────────────────────────────────────────
+// Shared sub-components
+// ─────────────────────────────────────────────────────────────
+const labelStyle = {
+  display: "block", fontSize: "11px", fontWeight: 600, color: "#374151",
+  marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.05em",
+};
+const inputStyle = {
+  width: "100%", padding: "9px 11px", border: "1px solid #E2E8F0", borderRadius: "8px",
+  fontSize: "13px", color: "#0F172A", background: "#fff", outline: "none",
+  boxSizing: "border-box", fontFamily: "inherit",
+};
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+
 function Overlay({ children, onClose, wide }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 bg-slate-900/55 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+      style={{
+        position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)",
+        backdropFilter: "blur(4px)", display: "flex", alignItems: "center",
+        justifyContent: "center", zIndex: 1000, padding: "16px",
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`bg-white w-full ${wide ? "max-w-[820px]" : "max-w-[580px]"} rounded-2xl shadow-2xl max-h-[94vh] overflow-y-auto`}
+        style={{
+          background: "#fff", width: "100%", maxWidth: wide ? "820px" : "580px",
+          borderRadius: "16px", boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+          maxHeight: "94vh", overflowY: "auto",
+        }}
       >
         {children}
       </div>
@@ -37,14 +55,23 @@ function Overlay({ children, onClose, wide }) {
 
 function ModalHeader({ title, subtitle, onClose }) {
   return (
-    <div className="px-6 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
+    <div style={{
+      padding: "20px 24px 16px", borderBottom: "1px solid #F1F5F9",
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      position: "sticky", top: 0, background: "#fff", zIndex: 10,
+      borderRadius: "16px 16px 0 0",
+    }}>
       <div>
-        <h2 className="m-0 text-[17px] font-bold text-slate-900">{title}</h2>
-        {subtitle && <p className="mt-0.5 mb-0 text-xs text-slate-400">{subtitle}</p>}
+        <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: "#0F172A" }}>{title}</h2>
+        {subtitle && <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#94A3B8" }}>{subtitle}</p>}
       </div>
       <button
         onClick={onClose}
-        className="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 text-lg cursor-pointer flex items-center justify-center leading-none hover:bg-slate-100 transition-colors"
+        style={{
+          width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #E2E8F0",
+          background: "#F8FAFC", color: "#64748B", fontSize: "18px", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+        }}
       >×</button>
     </div>
   );
@@ -52,30 +79,42 @@ function ModalHeader({ title, subtitle, onClose }) {
 
 function ImageUploadZone({ id, onChange, preview, onRemove, label }) {
   return (
-    <div className="mb-5">
-      <label className={`${labelCls} mb-2`}>{label ?? "Cover Image"}</label>
+    <div style={{ marginBottom: "20px" }}>
+      <label style={{ ...labelStyle, marginBottom: "8px" }}>{label ?? "Cover Image"}</label>
       <label
         htmlFor={id}
-        className={`block border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer bg-slate-50 transition-colors hover:border-blue-600 ${preview ? "mb-2.5" : ""}`}
+        style={{
+          display: "block", border: "2px dashed #CBD5E1", borderRadius: "10px",
+          padding: "18px", textAlign: "center", cursor: "pointer",
+          background: "#F8FAFC", transition: "border-color 0.2s",
+          marginBottom: preview ? "10px" : "0",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#155DFC")}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#CBD5E1")}
       >
         {preview ? (
-          <div className="relative inline-block">
-            <img src={preview} alt="preview" className="max-h-40 max-w-full rounded-lg object-cover" />
-          </div>
+          <img
+            src={preview}
+            alt="preview"
+            style={{ maxHeight: "160px", maxWidth: "100%", borderRadius: "8px", objectFit: "cover" }}
+          />
         ) : (
           <>
-            <div className="text-[26px] mb-1">🖼️</div>
-            <div className="text-sm font-semibold text-gray-700">Click to upload image</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">PNG, JPG, WEBP</div>
+            <div style={{ fontSize: "26px", marginBottom: "4px" }} >🖼️</div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Click to upload image</div>
+            <div style={{ fontSize: "11px", color: "#94A3B8", marginTop: "2px" }}>PNG, JPG, WEBP</div>
           </>
         )}
-        <input id={id} type="file" accept="image/*" onChange={onChange} className="hidden" />
+        <input id={id} type="file" accept="image/*" multiple onChange={onChange} style={{ display: "none" }} />
       </label>
       {preview && (
         <button
           type="button"
           onClick={onRemove}
-          className="text-xs text-red-600 bg-transparent border-none cursor-pointer p-0 font-medium hover:underline"
+          style={{
+            fontSize: "12px", color: "#DC2626", background: "none", border: "none",
+            cursor: "pointer", padding: "0", fontWeight: 500,
+          }}
         >
           ✕ Remove image
         </button>
@@ -86,68 +125,146 @@ function ImageUploadZone({ id, onChange, preview, onRemove, label }) {
 
 function CategorySelect({ name, value, onChange }) {
   return (
-    <div className="relative">
+    <div style={{ position: "relative" }}>
       <select
         name={name}
         value={value}
         onChange={onChange}
         required
-        className={`${inputCls} appearance-none pr-8 cursor-pointer ${value ? "text-slate-900" : "text-gray-400"}`}
+        style={{
+          ...inputStyle, appearance: "none", WebkitAppearance: "none",
+          paddingRight: "32px", cursor: "pointer",
+          color: value ? "#0F172A" : "#9CA3AF",
+        }}
       >
         <option value="" disabled>Select a category</option>
         {CATEGORIES.filter((c) => c !== "All").map((c) => (
           <option key={c} value={c}>{c}</option>
         ))}
       </select>
-      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[11px]">▾</div>
+      <div style={{
+        position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)",
+        pointerEvents: "none", color: "#94A3B8", fontSize: "11px",
+      }}>▾</div>
+    </div>
+  );
+}
+
+// Used in the Edit modal — update endpoint validates category_blog_id (integer)
+const CATEGORY_ID_MAP = {
+  "Announcement":    1,
+  "Travel Blog":     2,
+  "Business Trips":  3,
+  "Product Updates": 4,
+};
+
+function CategorySelectById({ name, value, onChange }) {
+  return (
+    <div style={{ position: "relative" }}>
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        style={{
+          ...inputStyle, appearance: "none", WebkitAppearance: "none",
+          paddingRight: "32px", cursor: "pointer",
+          color: value ? "#0F172A" : "#9CA3AF",
+        }}
+      >
+        <option value="" disabled>Select a category</option>
+        {Object.entries(CATEGORY_ID_MAP).map(([label, id]) => (
+          <option key={id} value={id}>{label}</option>
+        ))}
+      </select>
+      <div style={{
+        position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)",
+        pointerEvents: "none", color: "#94A3B8", fontSize: "11px",
+      }}>▾</div>
     </div>
   );
 }
 
 function Field({ label, children }) {
   return (
-    <div className="mb-4">
-      <label className={labelCls}>{label}</label>
+    <div style={{ marginBottom: "16px" }}>
+      <label style={labelStyle}>{label}</label>
       {children}
     </div>
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────
 export default function AdminBlogpost() {
-  const [sidebarOpen, setSidebarOpen]       = useState(false);
-  const [posts, setPosts]                   = useState([]);
-  const [loading, setLoading]               = useState(false);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [posts, setPosts]               = useState([]);
+  const [loading, setLoading]           = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
-  const [search, setSearch]                 = useState("");
+  const [search, setSearch]             = useState("");
 
-  const [showAddModal, setShowAddModal]         = useState(false);
-  const [showViewModal, setShowViewModal]       = useState(false);
-  const [showEditModal, setShowEditModal]       = useState(false);
-  const [showDeleteModal, setShowDeleteModal]   = useState(false);
-  const [activePost, setActivePost]             = useState(null);
+  // ── Modal states ──
+  const [showAddModal, setShowAddModal]       = useState(false);
+  const [showViewModal, setShowViewModal]     = useState(false);
+  const [showEditModal, setShowEditModal]     = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [activePost, setActivePost]           = useState(null);
 
+  // ── Submitting flags ──
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
-  const [error, setError]           = useState(null);
 
-  const emptyForm = { title: "", description: "", category: "", date: "", content: "" };
+  // ── Error state ──
+  const [error, setError] = useState(null);
+
+  // ── Add form: store endpoint needs `category_name` string ──
+  const emptyForm = { blog_title: "", blog_text: "", category_name: "", status: "published" };
   const [addForm, setAddForm]       = useState(emptyForm);
-  const [addPreview, setAddPreview] = useState(null);
-  const [addFile, setAddFile]       = useState(null);
+  const [addPreviews, setAddPreviews] = useState([]);   // array of { url, file }
+  const [addFiles, setAddFiles]     = useState([]);
 
-  const [editForm, setEditForm]       = useState(emptyForm);
-  const [editPreview, setEditPreview] = useState(null);
-  const [editFile, setEditFile]       = useState(null);
-  const [removeImage, setRemoveImage] = useState(false);
+  // ── Edit form: update endpoint uses `category_blog_id` integer ──
+  const emptyEditForm = { blog_title: "", blog_text: "", category_blog_id: "", status: "published" };
+  const [editForm, setEditForm]         = useState(emptyEditForm);
+  const [editPreviews, setEditPreviews] = useState([]);
+  const [editFiles, setEditFiles]       = useState([]);
+  const [removeImages, setRemoveImages] = useState(false);
 
-  // ── API ───────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────
+  // Helpers: resolve image URLs
+  // ─────────────────────────────────
+  const resolveImg = (post) => {
+    if (!post) return null;
+    const imgs = post.images;
+    if (Array.isArray(imgs) && imgs.length > 0) {
+      const firstImg = imgs[0];
+      const path = firstImg.url; // <-- get the URL from the object
+      if (!path) return null;
+      return path.startsWith("http") ? path : `${BASE}/storage/${path}`;
+    }
+    return null;
+  };
+
+  const resolveAllImgs = (post) => {
+    if (!post) return [];
+    const imgs = post.images;
+    if (!Array.isArray(imgs)) return [];
+    return imgs.map((path) => path.startsWith("http") ? path : `${BASE}/storage/${path}`);
+  };
+
+  // ─────────────────────────────────
+  // API helpers
+  // ─────────────────────────────────
   const fetchPosts = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res  = await axios.get(`${BASE}/api/blogs`, { withCredentials: true, headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" } });
+      const res  = await axios.get(`${BASE}/api/blogs`, {
+        withCredentials: true,
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+      });
+      // Support both { data: [...] } and { posts: [...] } and plain array
       const data = res.data?.data ?? res.data?.posts ?? res.data;
       setPosts(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -160,165 +277,333 @@ export default function AdminBlogpost() {
 
   useEffect(() => { fetchPosts(); }, []);
 
-  // ── Derived ───────────────────────────────────────────────────────────────
+  // ─────────────────────────────────
+  // Derived data
+  // ─────────────────────────────────
+  // API returns blog with eager-loaded category: { category: { category_name: "..." } }
+  // Falls back to category_blog_id numeric lookup via the map if relation is missing
+  const getCatName = (post) => {
+    if (post.category?.category_name) return post.category.category_name;
+    return "Uncategorized";
+  };
+
   const filtered = posts.filter((p) => {
-    const matchCat    = activeCategory === "All" || (p.category ?? p.category_name) === activeCategory;
-    const matchSearch = (p.title ?? "").toLowerCase().includes(search.toLowerCase());
+    const catName     = getCatName(p);
+    const matchCat    = activeCategory === "All" || catName === activeCategory;
+    const matchSearch = (p.blog_title ?? "").toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
 
   const counts = CATEGORIES.reduce((acc, cat) => {
-    acc[cat] = cat === "All" ? posts.length : posts.filter((p) => (p.category ?? p.category_name) === cat).length;
+    acc[cat] = cat === "All"
+      ? posts.length
+      : posts.filter((p) => getCatName(p) === cat).length;
     return acc;
   }, {});
 
-  const resolveImg = (post) => {
-    if (!post) return null;
-    if (post.image_path) return `${BASE}/storage/${post.image_path}`;
-    if (post.image)      return post.image.startsWith("http") ? post.image : `${BASE}/storage/${post.image}`;
-    return null;
-  };
-
-  // ── Modal openers ─────────────────────────────────────────────────────────
+  // ─────────────────────────────────
+  // Open modal helpers
+  // ─────────────────────────────────
   const openView = (post) => { setActivePost(post); setShowViewModal(true); };
-
-  const toInputDate = (val) => {
-    if (!val) return "";
-    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-    const d = new Date(val);
-    return isNaN(d) ? "" : d.toISOString().slice(0, 10);
-  };
 
   const openEdit = (post) => {
     setActivePost(post);
     setEditForm({
-      title:       post.title       ?? "",
-      description: post.description ?? post.excerpt ?? "",
-      category:    post.category    ?? post.category_name ?? "",
-      date:        toInputDate(post.date ?? post.published_at ?? ""),
-      content:     post.content     ?? post.body          ?? "",
+      blog_title:       post.blog_title       ?? "",
+      blog_text:        post.blog_text        ?? "",
+      category_blog_id: post.category_blog_id ?? "",
+      status:           post.status           ?? "published",
     });
-    setEditPreview(resolveImg(post));
-    setEditFile(null);
-    setRemoveImage(false);
+    const existingImgs = resolveAllImgs(post);
+    setEditPreviews(existingImgs.map((url) => ({ url, file: null })));
+    setEditFiles([]);
+    setRemoveImages(false);
     setShowEditModal(true);
   };
 
   const openDelete = (post) => { setActivePost(post); setShowDeleteModal(true); };
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ─────────────────────────────────
+  // Form handlers
+  // ─────────────────────────────────
   const handleAddChange  = (e) => setAddForm((f)  => ({ ...f, [e.target.name]: e.target.value }));
   const handleEditChange = (e) => setEditForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleAddImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setAddFile(file);
-    setAddPreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setAddFiles((prev) => [...prev, ...files]);
+    setAddPreviews((prev) => [...prev, ...files.map((f) => ({ url: URL.createObjectURL(f), file: f }))]);
+  };
+
+  const removeAddPreview = (idx) => {
+    setAddPreviews((prev) => prev.filter((_, i) => i !== idx));
+    setAddFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleEditImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setEditFile(file);
-    setEditPreview(URL.createObjectURL(file));
-    setRemoveImage(false);
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setEditFiles((prev) => [...prev, ...files]);
+    setEditPreviews((prev) => [...prev, ...files.map((f) => ({ url: URL.createObjectURL(f), file: f }))]);
+    setRemoveImages(false);
   };
 
+  const removeEditPreview = (idx) => {
+    setEditPreviews((prev) => prev.filter((_, i) => i !== idx));
+    setEditFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // ─────────────────────────────────
+  // Submit: Add
+  // ─────────────────────────────────
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
       const fd = new FormData();
-      Object.entries(addForm).forEach(([k, v]) => fd.append(k, v));
-      if (addFile) fd.append("image", addFile);
-      await axios.post(`${BASE}/api/blogs`, fd, { withCredentials: true, headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", "Content-Type": "multipart/form-data" } });
+      fd.append("blog_title",    addForm.blog_title);
+      fd.append("blog_text",     addForm.blog_text);
+      fd.append("category_name", addForm.category_name);   // ← storeBlog validates this
+      fd.append("status",        addForm.status);
+
+      // Append each image under images[] — adjust key to what your API expects
+      addFiles.forEach((file) => fd.append("images[]", file));
+
+      await axios.post(`${BASE}/api/blogs`, fd, {
+        withCredentials: true,
+        headers: {
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       setShowAddModal(false);
-      setAddForm(emptyForm);
-      setAddPreview(null);
-      setAddFile(null);
+      setAddForm(emptyForm);   // { blog_title, blog_text, category_name, status }
+      setAddPreviews([]);
+      setAddFiles([]);
       fetchPosts();
     } catch (err) {
-      alert(err.response?.data?.message ?? "Failed to create post.");
+      console.error("Add failed:", err);
+      const errData = err.response?.data;
+      // Laravel validation errors come back as { message: { field: ["msg"] } }
+      const msg = typeof errData?.message === "object"
+        ? Object.values(errData.message).flat().join("\n")
+        : (errData?.message ?? "Failed to create post.");
+      alert(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ─────────────────────────────────
+  // Submit: Edit
+  // ─────────────────────────────────
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!activePost) return;
     setSaving(true);
     try {
       const fd = new FormData();
-      Object.entries(editForm).forEach(([k, v]) => fd.append(k, v));
-      if (editFile)    fd.append("image", editFile);
-      if (removeImage) fd.append("remove_image", "1");
-      fd.append("_method", "PUT");
-      const postId = activePost.id ?? activePost.post_id;
-      await axios.post(`${BASE}/api/blogs/${postId}`, fd, { withCredentials: true, headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", "Content-Type": "multipart/form-data" } });
+      fd.append("blog_title",       editForm.blog_title);
+      fd.append("blog_text",        editForm.blog_text);
+      fd.append("category_blog_id", editForm.category_blog_id);
+      fd.append("status",           editForm.status);
+      fd.append("_method",          "PUT"); // Laravel method spoofing
+
+      // Only append newly selected files
+      editFiles.forEach((file) => fd.append("images[]", file));
+      if (removeImages) fd.append("remove_images", "1");
+
+      const postId = activePost.blog_id;
+      await axios.post(`${BASE}/api/blogs/${postId}`, fd, {
+        withCredentials: true,
+        headers: {
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       setShowEditModal(false);
       fetchPosts();
     } catch (err) {
-      alert(err.response?.data?.message ?? "Failed to update post.");
+      console.error("Edit failed:", err);
+      const errData = err.response?.data;
+      const msg = typeof errData?.message === "object"
+        ? Object.values(errData.message).flat().join("\n")
+        : (errData?.message ?? "Failed to update post.");
+      alert(msg);
     } finally {
       setSaving(false);
     }
   };
 
+  // console.log(preview);
+
+  // ─────────────────────────────────
+  // Submit: Delete
+  // ─────────────────────────────────
   const handleDelete = async () => {
     if (!activePost) return;
     setDeleting(true);
     try {
-      const postId = activePost.id ?? activePost.post_id;
-      await axios.delete(`${BASE}/api/blogs${postId}`, { withCredentials: true, headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" } });
+      const postId = activePost.blog_id;
+      await axios.delete(`${BASE}/api/blogs/${postId}`, {  // ← fixed missing slash
+        withCredentials: true,
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+      });
       setShowDeleteModal(false);
       setActivePost(null);
       fetchPosts();
     } catch (err) {
+      console.error("Delete failed:", err);
       alert(err.response?.data?.message ?? "Failed to delete post.");
     } finally {
       setDeleting(false);
     }
   };
 
-  // ── Shared modal button classes ───────────────────────────────────────────
-  const btnCancel  = "flex-1 py-2.5 border border-slate-200 rounded-lg bg-white text-gray-700 text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-colors";
-  const btnPrimary = (disabled) => `flex-1 py-2.5 border-none rounded-lg text-white text-sm font-semibold transition-colors ${disabled ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 cursor-pointer"}`;
+  // ─────────────────────────────────
+  // Multi-image preview strip
+  // ─────────────────────────────────
+  function ImagePreviewStrip({ previews, onRemove, id, onChange, label }) {
+    return (
+      <div style={{ marginBottom: "20px" }}>
+        <label style={{ ...labelStyle, marginBottom: "8px" }}>{label ?? "Images"}</label>
 
+        {/* Existing / new previews */}
+        {previews.length > 0 && (
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+            {previews.map((p, i) => (
+              <div key={i} style={{ position: "relative" }}>
+                <img
+                  src={p.url}
+                  alt={`preview-${i}`}
+                  style={{ width: "80px", height: "60px", objectFit: "cover", borderRadius: "8px", border: "1px solid #E2E8F0" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => onRemove(i)}
+                  style={{
+                    position: "absolute", top: "-6px", right: "-6px",
+                    width: "18px", height: "18px", borderRadius: "50%",
+                    border: "none", background: "#DC2626", color: "#fff",
+                    fontSize: "10px", cursor: "pointer", display: "flex",
+                    alignItems: "center", justifyContent: "center", lineHeight: 1,
+                  }}
+                >×</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Upload zone */}
+        <label
+          htmlFor={id}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+            border: "2px dashed #CBD5E1", borderRadius: "10px", padding: "14px",
+            cursor: "pointer", background: "#F8FAFC",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#155DFC")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#CBD5E1")}
+        >
+          <span style={{ fontSize: "20px" }}>🖼️</span>
+          <div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Click to add images</div>
+            <div style={{ fontSize: "11px", color: "#94A3B8" }}>PNG, JPG, WEBP — multiple allowed</div>
+          </div>
+          <input id={id} type="file" accept="image/*" multiple onChange={onChange} style={{ display: "none" }} />
+        </label>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────
   return (
     <>
-      <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
+      <style>{`
+        @media (max-width: 767px) {
+          .abp-burger { display: inline !important; }
+          .abp-stats  { grid-template-columns: repeat(2,1fr) !important; }
+        }
+        @media (min-width: 768px) {
+          .abp-burger { display: none !important; }
+          .abp-stats  { grid-template-columns: repeat(5,1fr) !important; }
+        }
+        .abp-row:hover td { background: #F8FAFF !important; }
+        .abp-act-btn:hover { opacity: 0.75; }
+      `}</style>
 
-      <div className="flex min-h-screen bg-[#F0F7F2] font-sans">
+      <div style={{ display: "flex", minHeight: "100vh", background: "#F0F7F2", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
         <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-        {/* ── ADD MODAL ── */}
+        {/* ═══════════════════════════════════
+            ADD MODAL
+        ═══════════════════════════════════ */}
         {showAddModal && (
           <Overlay onClose={() => setShowAddModal(false)}>
             <ModalHeader title="New Blog Post" subtitle="Fill in the details to publish a new post" onClose={() => setShowAddModal(false)} />
-            <form onSubmit={handleAddSubmit} className="px-6 pt-5 pb-6">
-              <ImageUploadZone id="addImg" onChange={handleAddImageChange} preview={addPreview} onRemove={() => { setAddPreview(null); setAddFile(null); }} />
+            <form onSubmit={handleAddSubmit} style={{ padding: "20px 24px 24px" }}>
+
+              <ImagePreviewStrip
+                id="addImg"
+                label="Images"
+                previews={addPreviews}
+                onChange={handleAddImageChange}
+                onRemove={removeAddPreview}
+              />
+
               <Field label="Title">
-                <input name="title" value={addForm.title} onChange={handleAddChange} required placeholder="e.g. Jem 8 at MSME Expo 2025" className={inputCls} />
+                <input
+                  name="blog_title"
+                  value={addForm.blog_title}
+                  onChange={handleAddChange}
+                  required
+                  placeholder="e.g. Jem 8 at MSME Expo 2025"
+                  style={inputStyle}
+                />
               </Field>
-              <Field label="Description / Excerpt">
-                <textarea name="description" value={addForm.description} onChange={handleAddChange} placeholder="Short summary shown on cards…" className={`${inputCls} h-[72px] resize-y`} />
+
+              <Field label="Content">
+                <textarea
+                  name="blog_text"
+                  value={addForm.blog_text}
+                  onChange={handleAddChange}
+                  placeholder="Full post content…"
+                  style={{ ...inputStyle, height: "120px", resize: "vertical" }}
+                />
               </Field>
-              <div className="grid grid-cols-2 gap-3.5">
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <Field label="Category">
-                  <CategorySelect name="category" value={addForm.category} onChange={handleAddChange} />
+                  <CategorySelect name="category_name" value={addForm.category_name} onChange={handleAddChange} />
                 </Field>
-                <Field label="Date">
-                  <input type="date" name="date" value={addForm.date} onChange={handleAddChange} className={inputCls} />
+                <Field label="Status">
+                  <div style={{ position: "relative" }}>
+                    <select
+                      name="status"
+                      value={addForm.status}
+                      onChange={handleAddChange}
+                      style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none", paddingRight: "32px", cursor: "pointer" }}
+                    >
+                      <option value="published">Published</option>
+                      <option value="draft">Draft</option>
+                    </select>
+                    <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#94A3B8", fontSize: "11px" }}>▾</div>
+                  </div>
                 </Field>
               </div>
-              <Field label="Content (optional)">
-                <textarea name="content" value={addForm.content} onChange={handleAddChange} placeholder="Full post content…" className={`${inputCls} h-[120px] resize-y`} />
-              </Field>
-              <div className="flex gap-2.5 mt-2">
-                <button type="button" onClick={() => setShowAddModal(false)} className={btnCancel}>Cancel</button>
-                <button type="submit" disabled={submitting} className={btnPrimary(submitting)}>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "10px", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "8px", background: submitting ? "#93C5FD" : "#155DFC", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: submitting ? "not-allowed" : "pointer" }}>
                   {submitting ? "Publishing…" : "Publish Post"}
                 </button>
               </div>
@@ -326,49 +611,80 @@ export default function AdminBlogpost() {
           </Overlay>
         )}
 
-        {/* ── VIEW MODAL ── */}
+        {/* ═══════════════════════════════════
+            VIEW MODAL
+        ═══════════════════════════════════ */}
         {showViewModal && activePost && (() => {
-          const imgSrc = resolveImg(activePost);
+          const allImgs = resolveAllImgs(activePost);
+          const catName = getCatName(activePost);
           return (
             <Overlay wide onClose={() => setShowViewModal(false)}>
-              <ModalHeader title="Post Details" subtitle={activePost.title} onClose={() => setShowViewModal(false)} />
-              <div className="p-6">
-                {imgSrc && (
-                  <div className="mb-5 rounded-xl overflow-hidden max-h-[280px]">
-                    <img src={imgSrc} alt={activePost.title} className="w-full object-cover block max-h-[280px]" />
+              <ModalHeader
+                title="Post Details"
+                subtitle={activePost.blog_title}
+                onClose={() => setShowViewModal(false)}
+              />
+              <div style={{ padding: "24px" }}>
+                {/* Image gallery */}
+                {allImgs.length > 0 && (
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
+                    {allImgs.map((src, i) => (
+                      <img
+                        key={i}
+                        src={src}
+                        alt={`img-${i}`}
+                        style={{
+                          width: allImgs.length === 1 ? "100%" : "calc(50% - 4px)",
+                          maxHeight: "240px", objectFit: "cover",
+                          borderRadius: "10px", border: "1px solid #F1F5F9",
+                        }}
+                        onError={(e) => { e.target.style.display = "none"; }}
+                      />
+                    ))}
                   </div>
                 )}
-                <div className="flex gap-2.5 flex-wrap mb-4">
-                  <span className="text-xs px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold border border-blue-200">
-                    {activePost.category ?? activePost.category_name ?? "Uncategorized"}
+
+                {/* Meta row */}
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "12px", padding: "4px 12px", background: "#EFF6FF", color: "#1D4ED8", borderRadius: "20px", fontWeight: 600, border: "1px solid #BFDBFE" }}>
+                    {catName}
                   </span>
-                  {(activePost.date ?? activePost.published_at) && (
-                    <span className="text-xs px-3 py-1 bg-slate-50 text-slate-500 rounded-full border border-slate-200">
-                      📅 {activePost.date ?? activePost.published_at}
+                  <span style={{ fontSize: "12px", padding: "4px 12px", background: "#F0FDF4", color: "#16A34A", borderRadius: "20px", fontWeight: 600, border: "1px solid #BBF7D0", textTransform: "capitalize" }}>
+                    {activePost.status ?? "published"}
+                  </span>
+                  {activePost.created_at && (
+                    <span style={{ fontSize: "12px", padding: "4px 12px", background: "#F8FAFC", color: "#64748B", borderRadius: "20px", border: "1px solid #E2E8F0" }}>
+                      📅 {new Date(activePost.created_at).toLocaleDateString()}
                     </span>
                   )}
                 </div>
-                <h2 className="m-0 mb-2.5 text-xl font-bold text-slate-900 leading-snug">{activePost.title}</h2>
-                {(activePost.description ?? activePost.excerpt) && (
-                  <p className="m-0 mb-4 text-sm text-slate-500 leading-relaxed">
-                    {activePost.description ?? activePost.excerpt}
-                  </p>
-                )}
-                {(activePost.content ?? activePost.body) && (
+
+                {/* Title */}
+                <h2 style={{ margin: "0 0 12px", fontSize: "20px", fontWeight: 700, color: "#0F172A", lineHeight: 1.3 }}>
+                  {activePost.blog_title}
+                </h2>
+
+                {/* Content */}
+                {activePost.blog_text && (
                   <>
-                    <div className="h-px bg-slate-100 my-4" />
-                    <div className="text-xs text-gray-700 leading-7 whitespace-pre-wrap">
-                      {activePost.content ?? activePost.body}
+                    <div style={{ height: "1px", background: "#F1F5F9", margin: "0 0 16px" }} />
+                    <div style={{ fontSize: "13px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                      {activePost.blog_text}
                     </div>
                   </>
                 )}
-                <div className="flex gap-2.5 mt-6">
-                  <button onClick={() => { setShowViewModal(false); openEdit(activePost); }} className={btnPrimary(false)}>
+
+                {/* Actions */}
+                <div style={{ display: "flex", gap: "10px", marginTop: "24px" }}>
+                  <button
+                    onClick={() => { setShowViewModal(false); openEdit(activePost); }}
+                    style={{ flex: 1, padding: "10px", border: "none", borderRadius: "8px", background: "#155DFC", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+                  >
                     ✏️ Edit Post
                   </button>
                   <button
                     onClick={() => { setShowViewModal(false); openDelete(activePost); }}
-                    className="flex-1 py-2.5 border border-red-200 rounded-lg bg-red-50 text-red-600 text-sm font-semibold cursor-pointer hover:bg-red-100 transition-colors"
+                    style={{ flex: 1, padding: "10px", border: "1px solid #FECACA", borderRadius: "8px", background: "#FEF2F2", color: "#DC2626", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
                   >
                     🗑️ Delete Post
                   </button>
@@ -378,32 +694,72 @@ export default function AdminBlogpost() {
           );
         })()}
 
-        {/* ── EDIT MODAL ── */}
+        {/* ═══════════════════════════════════
+            EDIT MODAL
+        ═══════════════════════════════════ */}
         {showEditModal && activePost && (
           <Overlay onClose={() => setShowEditModal(false)}>
-            <ModalHeader title="Edit Post" subtitle={`Editing: ${activePost.title}`} onClose={() => setShowEditModal(false)} />
-            <form onSubmit={handleEditSubmit} className="px-6 pt-5 pb-6">
-              <ImageUploadZone id="editImg" onChange={handleEditImageChange} preview={editPreview} onRemove={() => { setEditPreview(null); setEditFile(null); setRemoveImage(true); }} />
+            <ModalHeader
+              title="Edit Post"
+              subtitle={`Editing: ${activePost.blog_title}`}
+              onClose={() => setShowEditModal(false)}
+            />
+            <form onSubmit={handleEditSubmit} style={{ padding: "20px 24px 24px" }}>
+
+              <ImagePreviewStrip
+                id="editImg"
+                label="Images"
+                previews={editPreviews}
+                onChange={handleEditImageChange}
+                onRemove={removeEditPreview}
+              />
+              {editPreviews.length > 0 && (
+                <div style={{ marginTop: "-10px", marginBottom: "16px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#DC2626", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={removeImages}
+                      onChange={(e) => setRemoveImages(e.target.checked)}
+                      style={{ accentColor: "#DC2626" }}
+                    />
+                    Remove all existing images on save
+                  </label>
+                </div>
+              )}
+
               <Field label="Title">
-                <input name="title" value={editForm.title} onChange={handleEditChange} required className={inputCls} />
+                <input name="blog_title" value={editForm.blog_title} onChange={handleEditChange} required style={inputStyle} />
               </Field>
-              <Field label="Description / Excerpt">
-                <textarea name="description" value={editForm.description} onChange={handleEditChange} className={`${inputCls} h-[72px] resize-y`} />
+
+              <Field label="Content">
+                <textarea name="blog_text" value={editForm.blog_text} onChange={handleEditChange} placeholder="Full post content…" style={{ ...inputStyle, height: "120px", resize: "vertical" }} />
               </Field>
-              <div className="grid grid-cols-2 gap-3.5">
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <Field label="Category">
-                  <CategorySelect name="category" value={editForm.category} onChange={handleEditChange} />
+                  <CategorySelectById name="category_blog_id" value={editForm.category_blog_id} onChange={handleEditChange} />
                 </Field>
-                <Field label="Date">
-                  <input type="date" name="date" value={editForm.date} onChange={handleEditChange} className={inputCls} />
+                <Field label="Status">
+                  <div style={{ position: "relative" }}>
+                    <select
+                      name="status"
+                      value={editForm.status}
+                      onChange={handleEditChange}
+                      style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none", paddingRight: "32px", cursor: "pointer" }}
+                    >
+                      <option value="published">Published</option>
+                      <option value="draft">Draft</option>
+                    </select>
+                    <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#94A3B8", fontSize: "11px" }}>▾</div>
+                  </div>
                 </Field>
               </div>
-              <Field label="Content">
-                <textarea name="content" value={editForm.content} onChange={handleEditChange} placeholder="Full post content…" className={`${inputCls} h-[120px] resize-y`} />
-              </Field>
-              <div className="flex gap-2.5 mt-2">
-                <button type="button" onClick={() => setShowEditModal(false)} className={btnCancel}>Cancel</button>
-                <button type="submit" disabled={saving} className={btnPrimary(saving)}>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: "10px", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={saving} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "8px", background: saving ? "#93C5FD" : "#155DFC", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
                   {saving ? "Saving…" : "Save Changes"}
                 </button>
               </div>
@@ -411,23 +767,23 @@ export default function AdminBlogpost() {
           </Overlay>
         )}
 
-        {/* ── DELETE MODAL ── */}
+        {/* ═══════════════════════════════════
+            DELETE CONFIRM MODAL
+        ═══════════════════════════════════ */}
         {showDeleteModal && activePost && (
           <Overlay onClose={() => setShowDeleteModal(false)}>
-            <div className="px-7 py-8 text-center">
-              <div className="text-5xl mb-3">🗑️</div>
-              <h3 className="m-0 mb-2 text-lg font-bold text-slate-900">Delete Post?</h3>
-              <p className="m-0 mb-1.5 text-sm text-slate-500">
-                "<strong>{activePost.title}</strong>"
+            <div style={{ padding: "32px 28px", textAlign: "center" }}>
+              <div style={{ fontSize: "48px", marginBottom: "12px" }}>🗑️</div>
+              <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 700, color: "#0F172A" }}>Delete Post?</h3>
+              <p style={{ margin: "0 0 6px", fontSize: "14px", color: "#64748B" }}>
+                "<strong>{activePost.blog_title}</strong>"
               </p>
-              <p className="m-0 mb-6 text-xs text-slate-400">This action cannot be undone.</p>
-              <div className="flex gap-2.5">
-                <button onClick={() => setShowDeleteModal(false)} className={btnCancel}>Cancel</button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className={`flex-1 py-2.5 border-none rounded-lg text-white text-sm font-semibold transition-colors ${deleting ? "bg-red-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 cursor-pointer"}`}
-                >
+              <p style={{ margin: "0 0 24px", fontSize: "13px", color: "#94A3B8" }}>This action cannot be undone.</p>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button onClick={() => setShowDeleteModal(false)} style={{ flex: 1, padding: "10px", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  Cancel
+                </button>
+                <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "8px", background: deleting ? "#FCA5A5" : "#DC2626", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: deleting ? "not-allowed" : "pointer" }}>
                   {deleting ? "Deleting…" : "Delete"}
                 </button>
               </div>
@@ -435,31 +791,34 @@ export default function AdminBlogpost() {
           </Overlay>
         )}
 
-        {/* ── MAIN CONTENT ── */}
-        <main className="flex-1 pb-10 overflow-x-hidden">
+        {/* ═══════════════════════════════════
+            MAIN CONTENT
+        ═══════════════════════════════════ */}
+        <main style={{ flex: 1, padding: "0 0 40px", overflowX: "hidden" }}>
 
           {/* Top Bar */}
-          <div className="flex items-center justify-between px-7 pt-5 gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 28px 0", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <button
-                className="lg:hidden bg-transparent border-none text-xl cursor-pointer text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
+                className="abp-burger"
                 onClick={() => setSidebarOpen(true)}
+                style={{ display: "none", background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#374151" }}
               >☰</button>
-              <h1 className="m-0 text-xl font-bold text-slate-900">Blog Post</h1>
+              <h1 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#0F172A" }}>Blog Post</h1>
             </div>
-            <div className="flex gap-2.5 items-center flex-wrap">
-              <div className="relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">🔍</span>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "13px", color: "#94A3B8" }}>🔍</span>
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search posts…"
-                  className={`${inputCls} pl-8 w-[220px]`}
+                  style={{ ...inputStyle, paddingLeft: "30px", width: "220px", background: "#fff" }}
                 />
               </div>
               <button
-                onClick={() => { setAddForm(emptyForm); setAddPreview(null); setAddFile(null); setShowAddModal(true); }}
-                className="flex items-center gap-1.5 px-4 py-2 border-none rounded-lg bg-blue-600 text-white text-sm font-semibold cursor-pointer hover:bg-blue-700 transition-colors"
+                onClick={() => { setAddForm(emptyForm); setAddPreviews([]); setAddFiles([]); setShowAddModal(true); }}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 18px", border: "none", borderRadius: "8px", background: "#155DFC", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
               >
                 + New Post
               </button>
@@ -467,58 +826,59 @@ export default function AdminBlogpost() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid gap-3.5 px-7 py-5 grid-cols-2 md:grid-cols-5">
+          <div
+            className="abp-stats"
+            style={{ display: "grid", gap: "14px", padding: "20px 28px", gridTemplateColumns: "repeat(5,1fr)" }}
+          >
             {CATEGORIES.map((cat) => (
-              <div key={cat} className="bg-white rounded-xl px-4 py-4 shadow-sm border border-slate-100">
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+              <div key={cat} style={{ background: "#fff", borderRadius: "12px", padding: "16px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>
                   {categoryMap[cat]}
                 </div>
-                <div className="text-[26px] font-extrabold text-slate-900 leading-none">
+                <div style={{ fontSize: "26px", fontWeight: 800, color: "#0F172A", lineHeight: 1 }}>
                   {loading ? "—" : counts[cat]}
                 </div>
-                {cat === "All" && (
-                  <div className="text-[10px] text-slate-400 mt-0.5 font-semibold tracking-wide">TOTAL</div>
-                )}
+                {cat === "All" && <div style={{ fontSize: "10px", color: "#94A3B8", marginTop: "3px", fontWeight: 600, letterSpacing: "0.05em" }}>TOTAL</div>}
               </div>
             ))}
           </div>
 
           {/* Filter Tabs */}
-          <div className="px-7 pb-4 flex gap-1.5 flex-wrap">
+          <div style={{ padding: "0 28px 16px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold cursor-pointer transition-all
-                  ${activeCategory === cat
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "bg-white border-slate-200 text-slate-500 hover:border-blue-400 hover:text-blue-600"
-                  }`}
+                style={{
+                  padding: "6px 14px", borderRadius: "20px", border: "1px solid",
+                  fontSize: "12px", fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
+                  background:  activeCategory === cat ? "#155DFC" : "#fff",
+                  color:       activeCategory === cat ? "#fff"    : "#64748B",
+                  borderColor: activeCategory === cat ? "#155DFC" : "#E2E8F0",
+                }}
               >
                 {cat}
-                <span className="ml-1 text-[11px] opacity-75">({counts[cat]})</span>
+                <span style={{ marginLeft: "5px", fontSize: "11px", opacity: 0.75 }}>({counts[cat]})</span>
               </button>
             ))}
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mx-7 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-center gap-2">
+            <div style={{ margin: "0 28px 16px", padding: "12px 16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "8px", color: "#DC2626", fontSize: "13px" }}>
               ⚠️ {error}
-              <button onClick={fetchPosts} className="ml-2 text-blue-600 bg-transparent border-none cursor-pointer underline text-xs">
-                Retry
-              </button>
+              <button onClick={fetchPosts} style={{ marginLeft: "10px", fontSize: "12px", color: "#155DFC", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>Retry</button>
             </div>
           )}
 
           {/* Table */}
-          <div className="mx-7 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
+          <div style={{ margin: "0 28px", background: "#fff", borderRadius: "14px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #F1F5F9", overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
-                    {["IMAGE", "TITLE & DESCRIPTION", "CATEGORY", "DATE", "ACTION"].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 tracking-wider whitespace-nowrap">
+                  <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #F1F5F9" }}>
+                    {["IMAGE", "TITLE & CONTENT", "CATEGORY", "STATUS", "ACTION"].map((h) => (
+                      <th key={h} style={{ padding: "11px 16px", textAlign: "left", fontSize: "10px", fontWeight: 700, color: "#94A3B8", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
                     ))}
@@ -529,63 +889,76 @@ export default function AdminBlogpost() {
                     Array.from({ length: 4 }).map((_, i) => (
                       <tr key={i}>
                         {[80, 260, 120, 100, 140].map((w, j) => (
-                          <td key={j} className="px-4 py-3.5">
-                            <div
-                              className="rounded-md"
-                              style={{
-                                height: j === 1 ? "36px" : "16px",
-                                width: `${Math.min(w, 140)}px`,
-                                background: "#F1F5F9",
-                                backgroundImage: "linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%)",
-                                backgroundSize: "200% 100%",
-                                animation: "shimmer 1.4s infinite",
-                              }}
-                            />
+                          <td key={j} style={{ padding: "14px 16px" }}>
+                            <div style={{
+                              height: j === 1 ? "36px" : "16px", width: `${Math.min(w, 140)}px`,
+                              background: "#F1F5F9", borderRadius: "6px",
+                              backgroundImage: "linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%)",
+                              backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite",
+                            }} />
                           </td>
                         ))}
                       </tr>
                     ))
                   ) : filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-400 text-sm">
+                      <td colSpan={5} style={{ padding: "48px", textAlign: "center", color: "#94A3B8", fontSize: "14px" }}>
                         {search ? `No posts matching "${search}"` : "No posts found."}
                       </td>
                     </tr>
                   ) : (
                     filtered.map((post) => {
-                      const imgSrc = resolveImg(post);
-                      const cat    = post.category ?? post.category_name ?? "—";
-                      const date   = post.date ?? post.published_at ?? "—";
+                      const imgSrc  = resolveImg(post);
+                      const catName = getCatName(post);
+                      const imgCount = (post.images ?? []).length;
                       return (
-                        <tr key={post.id ?? post.post_id} className="border-b border-slate-50 hover:bg-blue-50/30 transition-colors">
-                          <td className="px-4 py-3">
+                        <tr key={post.blog_id} className="abp-row">
+                          <td style={{ padding: "12px 16px" }}>
                             {imgSrc ? (
-                              <img src={imgSrc} alt={post.title} className="w-16 h-12 rounded-lg object-cover block border border-slate-100" onError={(e) => { e.target.style.display = "none"; }} />
+                              <div style={{ position: "relative" }}>
+                                <img
+                                  src={imgSrc}
+                                  alt={post.blog_title}
+                                  style={{ width: "64px", height: "48px", borderRadius: "8px", objectFit: "cover", display: "block", border: "1px solid #F1F5F9" }}
+                                  onError={(e) => { e.target.style.display = "none"; }}
+                                />
+                                {imgCount > 1 && (
+                                  <span style={{ position: "absolute", bottom: "2px", right: "2px", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: "9px", fontWeight: 700, padding: "1px 4px", borderRadius: "4px" }}>
+                                    +{imgCount - 1}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
-                              <div className="w-16 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-xl text-slate-300">🖼</div>
+                              <div style={{ width: "64px", height: "48px", borderRadius: "8px", background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", color: "#CBD5E1" }}>🖼</div>
                             )}
                           </td>
-                          <td className="px-4 py-3 max-w-[300px]">
-                            <div className="font-semibold text-slate-900 mb-0.5 truncate">{post.title}</div>
-                            <div className="text-xs text-slate-400 truncate">{post.description ?? post.excerpt ?? ""}</div>
+                          <td style={{ padding: "12px 16px", maxWidth: "300px" }}>
+                            <div style={{ fontWeight: 600, color: "#0F172A", marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{post.blog_title}</div>
+                            <div style={{ fontSize: "12px", color: "#94A3B8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {post.blog_text ?? ""}
+                            </div>
                           </td>
-                          <td className="px-4 py-3">
-                            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">
-                              {cat}
+                          <td style={{ padding: "12px 16px" }}>
+                            <span style={{ fontSize: "11px", fontWeight: 600, padding: "4px 10px", borderRadius: "20px", background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", whiteSpace: "nowrap" }}>
+                              {catName}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{date}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1.5">
-                              <button onClick={() => openView(post)} className="px-3 py-1 rounded-md border border-slate-200 bg-slate-50 text-gray-700 text-xs font-semibold cursor-pointer hover:opacity-75 transition-opacity">
-                                View
-                              </button>
-                              <button onClick={() => openEdit(post)} className="px-3 py-1 rounded-md border border-blue-200 bg-blue-50 text-blue-700 text-xs font-semibold cursor-pointer hover:opacity-75 transition-opacity">
-                                Edit
-                              </button>
-                              <button onClick={() => openDelete(post)} className="px-3 py-1 rounded-md border border-red-200 bg-red-50 text-red-600 text-xs font-semibold cursor-pointer hover:opacity-75 transition-opacity">
-                                Delete
-                              </button>
+                          <td style={{ padding: "12px 16px" }}>
+                            <span style={{
+                              fontSize: "11px", fontWeight: 600, padding: "4px 10px", borderRadius: "20px", whiteSpace: "nowrap",
+                              background: post.status === "published" ? "#F0FDF4" : "#FEF9C3",
+                              color:      post.status === "published" ? "#16A34A" : "#B45309",
+                              border:     `1px solid ${post.status === "published" ? "#BBF7D0" : "#FDE68A"}`,
+                              textTransform: "capitalize",
+                            }}>
+                              {post.status ?? "published"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 16px" }}>
+                            <div style={{ display: "flex", gap: "6px" }}>
+                              <button className="abp-act-btn" onClick={() => openView(post)} style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>View</button>
+                              <button className="abp-act-btn" onClick={() => openEdit(post)} style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Edit</button>
+                              <button className="abp-act-btn" onClick={() => openDelete(post)} style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -597,14 +970,18 @@ export default function AdminBlogpost() {
             </div>
           </div>
 
-          {/* Footer count */}
+          {/* Count footer */}
           {!loading && filtered.length > 0 && (
-            <div className="px-7 pt-2.5 text-xs text-slate-400">
+            <div style={{ padding: "10px 28px 0", fontSize: "12px", color: "#94A3B8" }}>
               Showing {filtered.length} of {posts.length} post{posts.length !== 1 ? "s" : ""}
             </div>
           )}
         </main>
       </div>
+
+      <style>{`
+        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      `}</style>
     </>
   );
 }
