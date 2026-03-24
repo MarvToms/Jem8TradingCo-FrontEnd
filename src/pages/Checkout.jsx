@@ -421,7 +421,7 @@ export default function Checkout() {
                       <input name="barangay" value={delivery.barangay} onChange={handleDeliveryChange} placeholder="Barangay name" className={inputCls} />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelCls}>City / Municipality *</label>
+                      <label className={labelCls}>City / Municipality *</label> 
                       <input name="city" value={delivery.city} onChange={handleDeliveryChange} placeholder="Makati City" className={inputCls} />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -707,7 +707,6 @@ export default function Checkout() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }
