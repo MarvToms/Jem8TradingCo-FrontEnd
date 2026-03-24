@@ -83,8 +83,8 @@ function StatusModal({ delivery, onClose, onUpdated }) {
   return (
     <div className="fixed inset-0 bg-black/35 flex items-center justify-center z-[999]">
       <div className="bg-white rounded-2xl p-7 w-[min(420px,90vw)] shadow-2xl">
-        <h2 className="text-base font-bold text-gray-900 mb-1">Update Delivery Status</h2>
-        <p className="text-xs text-gray-500 mb-5">Order #{delivery.checkout_id}</p>
+        <h2 className="mb-1 text-base font-bold text-gray-900">Update Delivery Status</h2>
+        <p className="mb-5 text-xs text-gray-500">Order #{delivery.checkout_id}</p>
 
         <div className="flex flex-col gap-2.5 mb-5">
           {Object.entries(STATUS_MAP).map(([key, cfg]) => (
@@ -239,10 +239,10 @@ export default function AdminOrders() {
       <div className="flex min-h-screen bg-[#F0F7F2] font-sans">
         <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-        <main className="flex-1 px-5 py-6 overflow-x-hidden min-w-0">
+        <main className="flex-1 min-w-0 px-5 py-6 overflow-x-hidden">
 
           {/* ── Top bar ── */}
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div className="flex items-center gap-3">
               <button
                 className="lg:hidden bg-transparent border-none text-[22px] cursor-pointer text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
@@ -251,7 +251,7 @@ export default function AdminOrders() {
                 ☰
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 m-0">Orders</h1>
+                <h1 className="m-0 text-xl font-bold text-gray-900">Orders</h1>
                 <p className="text-xs text-gray-500 mt-0.5 mb-0">
                   Manage deliveries and order statuses
                 </p>
@@ -266,7 +266,7 @@ export default function AdminOrders() {
           </div>
 
           {/* ── Summary Stats ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+          <div className="grid grid-cols-2 gap-3 mb-5 sm:grid-cols-3 lg:grid-cols-6">
             {summaryStats.map((s) => (
               <div
                 key={s.label}
@@ -286,24 +286,24 @@ export default function AdminOrders() {
           </div>
 
           {/* ── Table Card ── */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-hidden bg-white shadow-sm rounded-2xl">
 
             {/* Search & Filter */}
-            <div className="px-4 py-3 border-b border-gray-100 flex gap-2.5 flex-wrap items-center">
-              <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 flex-1 min-w-[160px] max-w-xs">
-                <span className="text-gray-400 text-sm">🔍</span>
+<div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 flex-nowrap">
+ <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 flex-1 min-w-0">
+                  <span className="text-sm text-gray-400">🔍</span>
                 <input
                   type="text"
                   placeholder="Search by name, order ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="border-none bg-transparent outline-none text-xs w-full text-gray-700 placeholder-gray-400"
+                  className="w-full text-xs text-gray-700 placeholder-gray-400 bg-transparent border-none outline-none"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 text-xs text-gray-700 cursor-pointer outline-none"
+className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
               >
                 <option value="All">All Status</option>
                 <option value="processing">Processing</option>
@@ -313,7 +313,7 @@ export default function AdminOrders() {
               </select>
               <button
                 onClick={() => { setSearchTerm(""); setStatusFilter("All"); }}
-                className="border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-xs text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
               >
                 ✕ Clear
               </button>
@@ -321,14 +321,14 @@ export default function AdminOrders() {
 
             {/* Loading */}
             {loading && (
-              <div className="py-12 text-center text-gray-400 text-sm">
+              <div className="py-12 text-sm text-center text-gray-400">
                 Loading orders…
               </div>
             )}
 
             {/* Error */}
             {error && !loading && (
-              <div className="m-4 bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-red-600 text-xs flex items-center gap-2">
+              <div className="flex items-center gap-2 px-4 py-3 m-4 text-xs text-red-600 border border-red-300 rounded-lg bg-red-50">
                 ⚠️ {error}
                 <button
                   onClick={fetchDeliveries}
@@ -342,9 +342,9 @@ export default function AdminOrders() {
             {/* Table */}
             {!loading && !error && (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs">
+                <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
+                    <tr className="border-b border-gray-200 bg-gray-50">
                       {["Order ID", "Client", "Contact", "Payment", "Shipping Fee", "Total Paid", "Status", "Date", "Action"].map((h) => (
                         <th
                           key={h}
@@ -417,7 +417,7 @@ export default function AdminOrders() {
 
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="py-10 text-center text-gray-400 text-xs">
+                        <td colSpan={9} className="py-10 text-xs text-center text-gray-400">
                           No orders found.
                         </td>
                       </tr>

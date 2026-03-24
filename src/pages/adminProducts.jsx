@@ -694,9 +694,10 @@ const AdminProducts = () => {
         <div className="overflow-hidden bg-white shadow-sm rounded-2xl">
 
           {/* Filters */}
-          <div className="px-[18px] py-3.5 border-b border-gray-100 flex gap-2.5 flex-wrap items-center">
-            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-[7px] bg-gray-50 flex-1 min-w-[160px] max-w-[280px]">
-              <span className="text-gray-400">🔍</span>
+<div className="px-[18px] py-3.5 border-b border-gray-100 flex gap-2 items-center w-full flex-nowrap">
+            
+<div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-[7px] bg-gray-50 flex-1 min-w-0">
+                  <span className="text-gray-400">🔍</span>
               <input
                 type="text"
                 placeholder="Search for Product"
@@ -708,8 +709,7 @@ const AdminProducts = () => {
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-[7px] bg-gray-50 text-xs text-gray-700 cursor-pointer outline-none"
-            >
+className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0">
               <option value="All">All Categories</option>
               {categories.map(cat => {
                 const label = cat.name ?? cat.category_name ?? cat.title ?? "";
@@ -719,14 +719,14 @@ const AdminProducts = () => {
             <select
               value={sortOrder}
               onChange={e => setSortOrder(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-[7px] bg-gray-50 text-xs text-gray-700 cursor-pointer outline-none"
+className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
             >
               <option value="A-Z">Sort By A-Z</option>
               <option value="Z-A">Sort By Z-A</option>
             </select>
             <button
               onClick={() => { setSearchTerm(""); setSelectedCategory("All"); setSortOrder("A-Z"); }}
-              className="flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-[7px] bg-white text-xs text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
             >
               ✕ Clear
             </button>

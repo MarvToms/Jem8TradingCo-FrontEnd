@@ -66,8 +66,8 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
     <div className="fixed inset-0 bg-black/35 flex items-center justify-center z-[1000]">
       <div className="bg-white rounded-2xl p-7 max-w-sm w-[90%] shadow-2xl">
         <div className="text-xl mb-2.5">🗑️</div>
-        <p className="text-sm text-gray-700 mb-5 leading-relaxed">{message}</p>
-        <div className="flex gap-2 justify-end">
+        <p className="mb-5 text-sm leading-relaxed text-gray-700">{message}</p>
+        <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
             className="px-4 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm cursor-pointer hover:bg-gray-50 transition-colors"
@@ -206,10 +206,10 @@ export default function AdminReviews() {
 
       <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <main className="flex-1 px-6 py-7 overflow-x-hidden min-w-0">
+      <main className="flex-1 min-w-0 px-6 overflow-x-hidden py-7">
 
         {/* Top bar */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
             <button
               className="lg:hidden bg-transparent border-none text-[22px] cursor-pointer text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
@@ -217,7 +217,7 @@ export default function AdminReviews() {
             >
               ☰
             </button>
-            <h1 className="text-xl font-bold text-gray-900 m-0">Reviews</h1>
+            <h1 className="m-0 text-xl font-bold text-gray-900">Reviews</h1>
           </div>
           <button
             onClick={fetchReviews}
@@ -230,7 +230,7 @@ export default function AdminReviews() {
         {/* Stat Cards */}
         <div className="grid gap-3.5 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
           {statCards.map((s) => (
-            <div key={s.label} className="bg-white rounded-xl px-4 py-4 flex items-center justify-between shadow-sm">
+            <div key={s.label} className="flex items-center justify-between px-4 py-4 bg-white shadow-sm rounded-xl">
               <div>
                 <div className="text-[11px] text-gray-400 mb-1">{s.label}</div>
                 <div className={`text-[22px] font-bold ${s.accent}`}>{s.value}</div>
@@ -244,19 +244,20 @@ export default function AdminReviews() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-5">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-lg border-none text-xs font-medium cursor-pointer transition-all
-                  ${isActive
-                    ? "bg-gray-900 text-white shadow-none"
-                    : "bg-white text-gray-700 shadow-sm hover:bg-gray-50"
-                  }`}
-              >
+ <div className="flex gap-2 mb-5 flex-nowrap">
+  {tabs.map((tab) => {
+    const isActive = activeTab === tab;
+    return (
+      <button
+        key={tab}
+        onClick={() => setActiveTab(tab)}
+        className={`px-5 py-2 rounded-lg border-none text-sm font-medium cursor-pointer transition-all whitespace-nowrap shrink-0
+          ${isActive
+            ? "bg-gray-900 text-white shadow-none"
+            : "bg-white text-gray-700 shadow-sm hover:bg-gray-50"
+          }`}
+      >
+        
                 {tab}
               </button>
             );
@@ -267,7 +268,7 @@ export default function AdminReviews() {
         {loading && (
           <div className="flex flex-col gap-4">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="bg-white rounded-xl p-5 h-28 animate-pulse shadow-sm opacity-60" />
+              <div key={n} className="p-5 bg-white shadow-sm rounded-xl h-28 animate-pulse opacity-60" />
             ))}
           </div>
         )}
@@ -289,16 +290,16 @@ export default function AdminReviews() {
               return (
                 <div
                   key={rid}
-                  className="bg-white/90 rounded-xl border border-gray-200 px-5 py-4 shadow-sm"
+                  className="px-5 py-4 border border-gray-200 shadow-sm bg-white/90 rounded-xl"
                 >
                   {/* Header row */}
                   <div className="flex items-start justify-between flex-wrap gap-2.5 mb-2.5">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full shrink-0 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                      <div className="flex items-center justify-center w-10 h-10 text-sm font-bold text-white rounded-full shrink-0 bg-gradient-to-br from-blue-500 to-purple-600">
                         {userName[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-semibold text-sm text-gray-900">{userName}</div>
+                        <div className="text-sm font-semibold text-gray-900">{userName}</div>
                         <div className="text-[11px] text-gray-400">
                           {userEmail}{userEmail && " · "}{formatDate(review.created_at ?? review.date)}
                         </div>
@@ -320,7 +321,7 @@ export default function AdminReviews() {
                   )}
 
                   {/* Review text */}
-                  <p className="text-xs text-gray-700 font-medium m-0 mb-3 leading-relaxed">
+                  <p className="m-0 mb-3 text-xs font-medium leading-relaxed text-gray-700">
                     {review.review_text ?? review.review}
                   </p>
 
@@ -333,7 +334,7 @@ export default function AdminReviews() {
                           <span className="text-[10px] text-gray-400">{formatDate(review.replied_at)}</span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-600 m-0 leading-relaxed">{review.admin_reply}</p>
+                      <p className="m-0 text-xs leading-relaxed text-gray-600">{review.admin_reply}</p>
                     </div>
                   )}
 
@@ -370,7 +371,7 @@ export default function AdminReviews() {
                   )}
 
                   {/* Action row */}
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-2">
                     {!isReplying && (
                       <button
                         onClick={() => openReply(review)}
@@ -396,7 +397,7 @@ export default function AdminReviews() {
                       Delete
                     </button>
 
-                    <span className="ml-auto text-xs text-gray-400 font-medium">
+                    <span className="ml-auto text-xs font-medium text-gray-400">
                       Rating:{" "}
                       <span className={`font-semibold ${Number(review.rating) >= 4 ? "text-amber-500" : "text-red-700"}`}>
                         {review.rating}/5
@@ -408,7 +409,7 @@ export default function AdminReviews() {
             })}
 
             {filtered.length === 0 && (
-              <div className="bg-white rounded-xl p-10 text-center text-gray-400 text-sm shadow-sm">
+              <div className="p-10 text-sm text-center text-gray-400 bg-white shadow-sm rounded-xl">
                 No reviews found.
               </div>
             )}
@@ -416,7 +417,7 @@ export default function AdminReviews() {
         )}
 
         {/* Pagination count */}
-        <div className="flex justify-between items-center mt-5 text-xs text-gray-400">
+        <div className="flex items-center justify-between mt-5 text-xs text-gray-400">
           <span>Showing {filtered.length} review{filtered.length !== 1 ? "s" : ""}</span>
           <div className="flex gap-1.5">
             {[1, 2, 3].map((p) => (

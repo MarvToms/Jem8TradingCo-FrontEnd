@@ -45,14 +45,14 @@ function Overlay({ children, onClose, wide }) {
 // ─── Modal Header ─────────────────────────────────────────────
 function ModalHeader({ title, subtitle, onClose }) {
   return (
-    <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 sticky top-0 bg-white z-10 rounded-t-2xl">
+    <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-white border-b border-slate-100 rounded-t-2xl">
       <div>
         <h2 className="m-0 text-[17px] font-bold text-slate-900">{title}</h2>
         {subtitle && <p className="m-0 mt-0.5 text-xs text-slate-400">{subtitle}</p>}
       </div>
       <button
         onClick={onClose}
-        className="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 text-lg cursor-pointer flex items-center justify-center hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+        className="flex items-center justify-center w-8 h-8 text-lg transition-colors border rounded-lg cursor-pointer border-slate-200 bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200"
       >×</button>
     </div>
   );
@@ -142,7 +142,7 @@ function ImagePreviewStrip({ previews, onRemove, id, onChange, label }) {
               <img
                 src={p.url}
                 alt={`preview-${i}`}
-                className="w-20 h-15 object-cover rounded-lg border border-slate-200"
+                className="object-cover w-20 border rounded-lg h-15 border-slate-200"
                 style={{ width: "80px", height: "60px" }}
               />
               <button
@@ -453,7 +453,7 @@ export default function AdminBlogpost() {
             <ModalHeader title="Post Details" subtitle={activePost.blog_title} onClose={() => setShowViewModal(false)} />
             <div className="p-6">
               {allImgs.length > 0 && (
-                <div className="flex gap-2 flex-wrap mb-5">
+                <div className="flex flex-wrap gap-2 mb-5">
                   {allImgs.map((src, i) => (
                     <img
                       key={i}
@@ -468,20 +468,20 @@ export default function AdminBlogpost() {
               )}
 
               <div className="flex gap-2.5 flex-wrap mb-4">
-                <span className="text-xs px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold border border-blue-200">{catName}</span>
-                <span className="text-xs px-3 py-1 bg-green-50 text-green-700 rounded-full font-semibold border border-green-200 capitalize">{activePost.status ?? "published"}</span>
+                <span className="px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-200 rounded-full bg-blue-50">{catName}</span>
+                <span className="px-3 py-1 text-xs font-semibold text-green-700 capitalize border border-green-200 rounded-full bg-green-50">{activePost.status ?? "published"}</span>
                 {activePost.created_at && (
-                  <span className="text-xs px-3 py-1 bg-slate-50 text-slate-500 rounded-full border border-slate-200">
+                  <span className="px-3 py-1 text-xs border rounded-full bg-slate-50 text-slate-500 border-slate-200">
                     📅 {new Date(activePost.created_at).toLocaleDateString()}
                   </span>
                 )}
               </div>
 
-              <h2 className="text-xl font-bold text-slate-900 mb-3 leading-snug m-0">{activePost.blog_title}</h2>
+              <h2 className="m-0 mb-3 text-xl font-bold leading-snug text-slate-900">{activePost.blog_title}</h2>
 
               {activePost.blog_text && (
                 <>
-                  <div className="h-px bg-slate-100 my-4" />
+                  <div className="h-px my-4 bg-slate-100" />
                   <div className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap">{activePost.blog_text}</div>
                 </>
               )}
@@ -558,8 +558,8 @@ export default function AdminBlogpost() {
       {/* ══ DELETE MODAL ═══════════════════════════════════════ */}
       {showDeleteModal && activePost && (
         <Overlay onClose={() => setShowDeleteModal(false)}>
-          <div className="px-7 py-8 text-center">
-            <div className="text-5xl mb-3">🗑️</div>
+          <div className="py-8 text-center px-7">
+            <div className="mb-3 text-5xl">🗑️</div>
             <h3 className="m-0 mb-2 text-[18px] font-bold text-slate-900">Delete Post?</h3>
             <p className="m-0 mb-1.5 text-sm text-slate-500">
               "<strong className="text-slate-700">{activePost.blog_title}</strong>"
@@ -578,14 +578,14 @@ export default function AdminBlogpost() {
       )}
 
       {/* ══ MAIN CONTENT ═══════════════════════════════════════ */}
-      <main className="flex-1 pb-10 overflow-x-hidden min-w-0">
+      <main className="flex-1 min-w-0 pb-10 overflow-x-hidden">
 
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-7 pt-5 pb-0 gap-3 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-5 pb-0 px-7">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden bg-transparent border-none text-xl cursor-pointer text-slate-700"
+              className="text-xl bg-transparent border-none cursor-pointer lg:hidden text-slate-700"
             >☰</button>
             <h1 className="m-0 text-xl font-bold text-slate-900">Blog Post</h1>
           </div>
@@ -611,7 +611,7 @@ export default function AdminBlogpost() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 px-7 py-5">
           {CATEGORIES.map((cat) => (
-            <div key={cat} className="bg-white rounded-xl px-4 py-4 shadow-sm border border-slate-100">
+            <div key={cat} className="px-4 py-4 bg-white border shadow-sm rounded-xl border-slate-100">
               <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{categoryMap[cat]}</div>
               <div className="text-[26px] font-extrabold text-slate-900 leading-none">{loading ? "—" : counts[cat]}</div>
               {cat === "All" && <div className="text-[10px] text-slate-400 mt-1 font-semibold tracking-wide">TOTAL</div>}
@@ -620,17 +620,17 @@ export default function AdminBlogpost() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-7 pb-4 flex gap-1.5 flex-wrap">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold cursor-pointer transition-all
-                ${activeCategory === cat
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-blue-400 hover:text-blue-600"
-                }`}
-            >
+<div className="flex gap-2 pb-4 overflow-x-auto px-7 flex-nowrap">
+  {CATEGORIES.map((cat) => (
+    <button
+      key={cat}
+      onClick={() => setActiveCategory(cat)}
+      className={`px-4 py-2 rounded-full border text-sm font-semibold cursor-pointer transition-all whitespace-nowrap shrink-0
+        ${activeCategory === cat
+          ? "bg-blue-600 text-white border-blue-600"
+          : "bg-white text-slate-500 border-slate-200 hover:border-blue-400 hover:text-blue-600"
+        }`}
+    >
               {cat}
               <span className="ml-1 opacity-75">({counts[cat]})</span>
             </button>
@@ -649,7 +649,7 @@ export default function AdminBlogpost() {
         <div className="mx-7 bg-white rounded-[14px] shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-[13px]">
-              <thead className="bg-slate-50 border-b border-slate-100">
+              <thead className="border-b bg-slate-50 border-slate-100">
                 <tr>
                   {["IMAGE", "TITLE & CONTENT", "CATEGORY", "STATUS", "ACTION"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 tracking-[0.06em] whitespace-nowrap">
@@ -663,7 +663,7 @@ export default function AdminBlogpost() {
                   <SkeletonRows />
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400 text-sm">
+                    <td colSpan={5} className="py-12 text-sm text-center text-slate-400">
                       {search ? `No posts matching "${search}"` : "No posts found."}
                     </td>
                   </tr>
@@ -680,7 +680,7 @@ export default function AdminBlogpost() {
                               <img
                                 src={imgSrc}
                                 alt={post.blog_title}
-                                className="w-16 h-12 rounded-lg object-cover border border-slate-100 block"
+                                className="block object-cover w-16 h-12 border rounded-lg border-slate-100"
                                 onError={(e) => { e.target.style.display = "none"; }}
                               />
                               {imgCount > 1 && (
@@ -690,12 +690,12 @@ export default function AdminBlogpost() {
                               )}
                             </div>
                           ) : (
-                            <div className="w-16 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-xl text-slate-300">🖼</div>
+                            <div className="flex items-center justify-center w-16 h-12 text-xl rounded-lg bg-slate-100 text-slate-300">🖼</div>
                           )}
                         </td>
                         <td className="px-4 py-3 max-w-[300px]">
                           <div className="font-semibold text-slate-900 mb-0.5 truncate">{post.blog_title}</div>
-                          <div className="text-xs text-slate-400 truncate">{post.blog_text ?? ""}</div>
+                          <div className="text-xs truncate text-slate-400">{post.blog_text ?? ""}</div>
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">
@@ -713,9 +713,9 @@ export default function AdminBlogpost() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1.5">
-                            <button onClick={() => openView(post)} className="px-3 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer hover:bg-slate-100 transition-colors">View</button>
-                            <button onClick={() => openEdit(post)} className="px-3 py-1 rounded-md border border-blue-200 bg-blue-50 text-blue-700 text-xs font-semibold cursor-pointer hover:bg-blue-100 transition-colors">Edit</button>
-                            <button onClick={() => openDelete(post)} className="px-3 py-1 rounded-md border border-red-200 bg-red-50 text-red-600 text-xs font-semibold cursor-pointer hover:bg-red-100 transition-colors">Delete</button>
+                            <button onClick={() => openView(post)} className="px-3 py-1 text-xs font-semibold transition-colors border rounded-md cursor-pointer border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">View</button>
+                            <button onClick={() => openEdit(post)} className="px-3 py-1 text-xs font-semibold text-blue-700 transition-colors border border-blue-200 rounded-md cursor-pointer bg-blue-50 hover:bg-blue-100">Edit</button>
+                            <button onClick={() => openDelete(post)} className="px-3 py-1 text-xs font-semibold text-red-600 transition-colors border border-red-200 rounded-md cursor-pointer bg-red-50 hover:bg-red-100">Delete</button>
                           </div>
                         </td>
                       </tr>
