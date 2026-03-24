@@ -66,10 +66,35 @@ function SkeletonCard() {
   );
 }
 
+/* ── Toast Notification ── */
+function ToastContainer({ toasts }) {
+  return (
+    <div className="fixed bottom-[24px] right-[24px] z-[9999] flex flex-col gap-[10px] pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className="flex items-center gap-[12px] bg-[#1e293b] text-white px-[16px] py-[13px] rounded-[14px] shadow-[0_8px_32px_rgba(0,0,0,0.28)] min-w-[260px] max-w-[340px]"
+          style={{ animation: "toast-slide 0.35s cubic-bezier(0.34,1.56,0.64,1)" }}
+        >
+          <div className="w-[36px] h-[36px] bg-[#4d7b65] rounded-[10px] flex items-center justify-center text-[18px] flex-shrink-0">
+            🛒
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[11px] text-white/50 font-medium uppercase tracking-[0.8px]">Added to cart</span>
+            <span className="text-[13px] font-semibold leading-[1.3] truncate">{t.name}</span>
+          </div>
+          <span className="ml-auto text-[#4d7b65] text-[20px] flex-shrink-0 font-bold">✓</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── Product Card ── */
-function ProductCard({ product }) {
+function ProductCard({ product, onToast }) {
   const [imgError, setImgError] = useState(false);
   const [added, setAdded]       = useState(false);
+  const [adding, setAdding]     = useState(false);
   const { addToCart }           = useCart();
 
   // Normalise fields from API response
@@ -91,90 +116,99 @@ function ProductCard({ product }) {
     ? ph(400, 300, name)
     : `${BASE}/storage/${rawImg}`;
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    addToCart(product, 1);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    e.stopPropagation();
+    if (stock === 0 || adding) return;
+
+    setAdding(true);
+    try {
+      await axios.post(
+        `${BASE}/api/cart/add`,
+        { product_id: productId, quantity: 1 },
+        { withCredentials: true }
+      );
+      addToCart(product, 1);
+      setAdded(true);
+      onToast(name); // fire toast with item name
+      setTimeout(() => setAdded(false), 1500);
+    } catch (err) {
+      console.error("Add to cart failed:", err.response ?? err);
+    } finally {
+      setAdding(false);
+    }
   };
 
   return (
-    <Link
-      to={`/products/${productId}`}
-      className="group bg-white rounded-[16px] overflow-hidden border border-[#e2e8f0] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col cursor-pointer no-underline text-inherit hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[5px] hover:border-[#b8d9c8]"
-      style={{ textDecoration: "none", color: "inherit", display: "flex" }}
-    >
-      {/* Image wrap */}
-      <div className="relative w-full aspect-[4/3] bg-[#f1f5f9] overflow-hidden">
-        <img
-          src={imgSrc}
-          alt={name}
-          className="w-full h-full object-cover transition-transform duration-[400ms] ease-in-out group-hover:scale-[1.07]"
-          onError={() => setImgError(true)}
-        />
-
-        {/* Badges */}
-        <div className="absolute top-[10px] left-[10px] flex flex-col gap-[5px]">
-          {isOnSale && (
-            <span className="inline-flex items-center justify-center px-[9px] py-[3px] rounded-[6px] text-[10px] font-semibold leading-[1.4] whitespace-nowrap bg-[#ffe2e2] text-[#9f0712] border border-[#ffc9c9]">
-              Sale
-            </span>
-          )}
-          {stock === 0 && (
-            <span className="inline-flex items-center justify-center px-[9px] py-[3px] rounded-[6px] text-[10px] font-semibold leading-[1.4] whitespace-nowrap bg-[#DC2626] text-white">
-              Out of Stock
-            </span>
-          )}
-          {stock > 0 && stock <= 10 && (
-            <span className="inline-flex items-center justify-center px-[9px] py-[3px] rounded-[6px] text-[10px] font-semibold leading-[1.4] whitespace-nowrap bg-[#D97706] text-white">
-              Low Stock
-            </span>
-          )}
-        </div>
-
-        {/* Wishlist */}
-        <button
-          className="absolute top-[10px] right-[10px] w-[32px] h-[32px] bg-white/90 rounded-full flex items-center justify-center text-[15px] opacity-0 scale-[0.8] transition-all duration-200 shadow-sm group-hover:opacity-100 group-hover:scale-100 hover:!bg-white hover:!scale-110"
-          aria-label="Add to wishlist"
-        >
-          🤍
-        </button>
-      </div>
-
-      {/* Card Body */}
-      <div className="px-[16px] pt-[14px] pb-[16px] flex-1 flex flex-col">
-        {catLabel && (
-          <div className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-[1.5px] mb-[5px]">
-            {catLabel}
+    <div className="group relative bg-white rounded-[16px] overflow-hidden border border-[#e2e8f0] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[5px] hover:border-[#b8d9c8]">
+      <Link
+        to={`/products/${productId}`}
+        className="flex flex-col flex-1 no-underline text-inherit"
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
+        {/* Image wrap */}
+        <div className="relative w-full aspect-[4/3] bg-[#f1f5f9] overflow-hidden">
+          <img
+            src={imgSrc}
+            alt={name}
+            className="w-full h-full object-cover transition-transform duration-[400ms] ease-in-out group-hover:scale-[1.07]"
+            onError={() => setImgError(true)}
+          />
+          <div className="absolute top-[10px] left-[10px] flex flex-col gap-[5px]">
+            {isOnSale && (
+              <span className="inline-flex items-center justify-center px-[9px] py-[3px] rounded-[6px] text-[10px] font-semibold leading-[1.4] whitespace-nowrap bg-[#ffe2e2] text-[#9f0712] border border-[#ffc9c9]">
+                Sale
+              </span>
+            )}
+            {stock === 0 && (
+              <span className="inline-flex items-center justify-center px-[9px] py-[3px] rounded-[6px] text-[10px] font-semibold leading-[1.4] whitespace-nowrap bg-[#DC2626] text-white">
+                Out of Stock
+              </span>
+            )}
+            {stock > 0 && stock <= 10 && (
+              <span className="inline-flex items-center justify-center px-[9px] py-[3px] rounded-[6px] text-[10px] font-semibold leading-[1.4] whitespace-nowrap bg-[#D97706] text-white">
+                Low Stock
+              </span>
+            )}
           </div>
-        )}
-        <div className="text-[13.5px] font-semibold text-[#1e293b] mb-[8px] leading-[1.45] flex-1">
-          {name}
+          <div className="absolute top-[10px] right-[10px] w-[32px] h-[32px] bg-white/90 rounded-full flex items-center justify-center text-[15px] opacity-0 scale-[0.8] transition-all duration-200 shadow-sm group-hover:opacity-100 group-hover:scale-100">
+            🤍
+          </div>
         </div>
 
-        <StarRating rating={rating} />
-
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-[8px] pt-[10px] border-t border-[#e2e8f0]">
-          <div className="flex items-baseline gap-[6px]">
+        {/* Card Body */}
+        <div className="px-[16px] pt-[14px] pb-[16px] flex-1 flex flex-col">
+          {catLabel && (
+            <div className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-[1.5px] mb-[5px]">
+              {catLabel}
+            </div>
+          )}
+          <div className="text-[13.5px] font-semibold text-[#1e293b] mb-[8px] leading-[1.45] flex-1">
+            {name}
+          </div>
+          <StarRating rating={rating} />
+          <div className="flex items-center justify-between gap-[8px] pt-[10px] border-t border-[#e2e8f0]">
             <span className="text-[16px] font-bold text-[#1e293b]">{price}</span>
+            <div className="w-[32px] h-[32px] flex-shrink-0" />
           </div>
-          <button
-            className={`w-[32px] h-[32px] rounded-[8px] flex items-center justify-center text-[18px] leading-[1] flex-shrink-0 transition-all duration-200 shadow-[0_2px_8px_rgba(77,123,101,0.35)] ${
-              added
-                ? "bg-[#4d7b65] text-white scale-[1.08]"
-                : "bg-[#4d7b65] text-white hover:bg-[#3a5e4e] hover:scale-[1.08]"
-            }`}
-            aria-label="Add to cart"
-            onClick={handleAdd}
-            disabled={stock === 0}
-            style={stock === 0 ? { opacity: 0.4, cursor: "not-allowed" } : {}}
-          >
-            {added ? "✓" : "+"}
-          </button>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {/* + button — outside Link so it's always clickable */}
+      <button
+        className={`absolute bottom-[16px] right-[16px] w-[32px] h-[32px] rounded-[8px] flex items-center justify-center text-[18px] leading-[1] flex-shrink-0 transition-all duration-200 shadow-[0_2px_8px_rgba(77,123,101,0.35)] z-10 ${
+          added   ? "bg-[#4d7b65] text-white scale-[1.08]" :
+          adding  ? "bg-[#7aaa93] text-white cursor-wait"  :
+                    "bg-[#4d7b65] text-white hover:bg-[#3a5e4e] hover:scale-[1.08]"
+        }`}
+        aria-label="Add to cart"
+        onClick={handleAdd}
+        disabled={stock === 0 || adding}
+        style={stock === 0 ? { opacity: 0.4, cursor: "not-allowed" } : {}}
+      >
+        {added ? "✓" : adding ? "…" : "+"}
+      </button>
+    </div>
   );
 }
 
@@ -187,6 +221,13 @@ export default function Products() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery]       = useState("");
   const [sortBy, setSortBy]                 = useState("default");
+  const [toasts, setToasts]                 = useState([]);
+
+  const showToast = (name) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, name }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+  };
 
   // ── Fetch products & categories ──
   useEffect(() => {
@@ -263,7 +304,13 @@ export default function Products() {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(1.4); }
         }
+        @keyframes toast-slide {
+          0%   { opacity: 0; transform: translateX(60px) scale(0.92); }
+          100% { opacity: 1; transform: translateX(0)    scale(1);    }
+        }
       `}</style>
+
+      <ToastContainer toasts={toasts} />
 
       {/* ── HERO ── */}
       <section
@@ -496,7 +543,7 @@ export default function Products() {
                 ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
                 : filtered.length > 0
                   ? filtered.map((p, i) => (
-                      <ProductCard key={(p.id ?? p.product_id) ?? i} product={p} />
+                      <ProductCard key={(p.id ?? p.product_id) ?? i} product={p} onToast={showToast} />
                     ))
                   : (
                     <div className="col-span-full text-center py-[80px] px-[24px]">

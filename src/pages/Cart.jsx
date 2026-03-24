@@ -26,22 +26,32 @@ export default function Cart() {
 
         const res = await axios.get(`${BASE}/cart?isCheckout=false`, { withCredentials: true });
         const cartItems = res.data.cartItems ?? [];
+const formatted = cartItems.map((c) => ({
+  id:        c.cart_id,
+  productId: c.product?.product_id,
+  name:      c.product?.product_name || "Unknown product",
+  image:     c.product?.primary_image_url
+    || (c.product?.images?.find((img) => img.is_primary)?.image_path
+      ? `http://127.0.0.1:8000/storage/${c.product.images.find((img) => img.is_primary).image_path}`
+      : "https://placehold.co/80x80"),
+  rawPrice:  Number(c.product?.price || 0),
+  price:     `₱${Number(c.product?.price || 0).toLocaleString()}`,
+  qty:       c.quantity,
+  cat:       c.product?.category_id || "Product",
+}));
 
-        const formatted = cartItems.map((c) => ({
-          id:        c.cart_id,
-          productId: c.product?.product_id,
-          name:      c.product?.product_name || "Unknown product",
-          image:     c.product?.primary_image_url
-            || (c.product?.images?.find((img) => img.is_primary)?.image_path
-              ? `http://127.0.0.1:8000/storage/${c.product.images.find((img) => img.is_primary).image_path}`
-              : "https://placehold.co/80x80"),
-          rawPrice:  Number(c.product?.price || 0),
-          price:     `₱${Number(c.product?.price || 0).toLocaleString()}`,
-          qty:       c.quantity,
-          cat:       c.product?.category_id || "Product",
-        }));
-
-        setItems(formatted);
+const merged = Object.values(
+  formatted.reduce((acc, item) => {
+    if (acc[item.productId]) {
+      acc[item.productId].qty += item.qty;
+      acc[item.productId].allIds.push(item.id);
+    } else {
+      acc[item.productId] = { ...item, allIds: [item.id] };
+    }
+    return acc;
+  }, {})
+);
+setItems(merged);
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load cart. Please try again.");
       } finally {
@@ -52,10 +62,13 @@ export default function Cart() {
     fetchCart();
   }, []);
 
-  // ── Remove item ─────────────────────────────────────────────────────────
-  const removeFromCart = async (id) => {
+// ── Remove item ─────────────────────────────────────────────────────────
+  const removeFromCart = async (id, allIds = null) => {
     try {
-      await axios.delete(`${BASE}/cart/${id}`, { withCredentials: true });
+      const idsToDelete = allIds ?? [id];
+      await Promise.all(
+        idsToDelete.map((rid) => axios.delete(`${BASE}/cart/${rid}`, { withCredentials: true }))
+      );
       setItems((prev) => prev.filter((i) => i.id !== id));
     } catch (err) {
       console.error(err);
@@ -64,10 +77,22 @@ export default function Cart() {
 
   // ── Update quantity ─────────────────────────────────────────────────────
   const updateQty = async (id, qty) => {
-    if (qty < 1) { removeFromCart(id); return; }
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+
+    if (qty < 1) { removeFromCart(id, item.allIds); return; }
+
     try {
+      // Delete all duplicate rows first, then patch the primary one with correct qty
+      const dupes = item.allIds?.filter((rid) => rid !== id) ?? [];
+      await Promise.all(
+        dupes.map((rid) => axios.delete(`${BASE}/cart/${rid}`, { withCredentials: true }))
+      );
       await axios.patch(`${BASE}/cart/${id}`, { quantity: qty }, { withCredentials: true });
-      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty } : i)));
+      // Update allIds to only the primary id now (duplicates are gone)
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, qty, allIds: [id] } : i))
+      );
     } catch (err) {
       console.error(err);
     }

@@ -35,9 +35,9 @@ const FeaturedMainEmpty = () => (
 const SidebarEmpty = () => (
   <div className="flex flex-col gap-4">
     {[1, 2, 3].map((i) => (
-      <div key={i} className="flex gap-3 items-start">
-        <div className="w-20 h-16 rounded-lg flex-shrink-0 animate-pulse bg-slate-200" />
-        <div className="flex-1 flex flex-col gap-2">
+      <div key={i} className="flex items-start gap-3">
+        <div className="flex-shrink-0 w-20 h-16 rounded-lg animate-pulse bg-slate-200" />
+        <div className="flex flex-col flex-1 gap-2">
           <Shimmer w="45%" h={9} />
           <Shimmer w="85%" h={12} />
           <Shimmer w="40%" h={8} />
@@ -49,18 +49,18 @@ const SidebarEmpty = () => (
 
 /* Latest announcement skeleton */
 const LatestEmpty = () => (
-  <div className="rounded-2xl bg-slate-900 text-white p-8 mb-6">
+  <div className="p-8 mb-6 text-white rounded-2xl bg-slate-900">
     <span className="inline-block px-3 py-1 rounded-full bg-[#4d7b65] text-white text-[11px] font-bold tracking-widest mb-4">LATEST</span>
     <Shimmer w="68%" h={24} style={{ marginBottom: 14, opacity: 0.18 }} />
     <Shimmer w="92%" h={11} style={{ marginBottom: 6, opacity: 0.12 }} />
     <Shimmer w="70%" h={11} style={{ marginBottom: 28, opacity: 0.12 }} />
-    <div className="h-9 w-24 rounded-lg animate-pulse bg-white/10" />
+    <div className="w-24 rounded-lg h-9 animate-pulse bg-white/10" />
   </div>
 );
 
 /* 2×2 announcement grid skeleton */
 const AnnouncementsEmpty = () => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
     {[1, 2, 3, 4].map((i) => (
       <div key={i} className="rounded-xl border border-slate-100 bg-white p-5 flex flex-col gap-2.5">
         <Shimmer w={70} h={9} />
@@ -75,7 +75,7 @@ const AnnouncementsEmpty = () => (
 
 /* Two tall hero cards skeleton */
 const HeroCardsEmpty = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+  <div className="grid grid-cols-1 gap-5 mb-6 md:grid-cols-2">
     {[1, 2].map((i) => (
       <div key={i} className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-700 to-slate-900 min-h-[260px] flex flex-col justify-end p-7">
         <Shimmer w={60} h={9} style={{ marginBottom: 10, opacity: 0.35 }} />
@@ -89,11 +89,11 @@ const HeroCardsEmpty = () => (
 
 /* 3-column post card grid skeleton */
 const PostCardsEmpty = () => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
     {[1, 2, 3].map((i) => (
-      <div key={i} className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+      <div key={i} className="overflow-hidden bg-white border rounded-xl border-slate-100">
         <div className="h-[140px] animate-pulse bg-slate-200" />
-        <div className="p-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2 p-4">
           <Shimmer w="65%" h={13} />
           <Shimmer w="100%" h={10} />
           <Shimmer w="80%" h={10} />
@@ -106,12 +106,12 @@ const PostCardsEmpty = () => (
 
 /* Product rows skeleton */
 const ProductRowsEmpty = () => (
-  <div className="relative rounded-xl border border-slate-100 bg-white overflow-hidden">
+  <div className="relative overflow-hidden bg-white border rounded-xl border-slate-100">
     {[1, 2, 3, 4].map((item, i, arr) => (
       <React.Fragment key={item}>
-        <div className="flex gap-4 items-center px-5 py-4">
-          <div className="w-16 h-16 rounded-lg flex-shrink-0 animate-pulse bg-slate-200" />
-          <div className="flex-1 flex flex-col gap-2">
+        <div className="flex items-center gap-4 px-5 py-4">
+          <div className="flex-shrink-0 w-16 h-16 rounded-lg animate-pulse bg-slate-200" />
+          <div className="flex flex-col flex-1 gap-2">
             <Shimmer w={100} h={9} />
             <Shimmer w="70%" h={13} />
             <Shimmer w="90%" h={10} />
@@ -121,13 +121,13 @@ const ProductRowsEmpty = () => (
             <Shimmer w={80} h={9} />
           </div>
         </div>
-        {i < arr.length - 1 && <div className="h-px bg-slate-100 mx-5" />}
+        {i < arr.length - 1 && <div className="h-px mx-5 bg-slate-100" />}
       </React.Fragment>
     ))}
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
-      <span className="text-4xl mb-3">📦</span>
-      <p className="text-sm font-bold text-slate-700 mb-1">No product updates yet</p>
-      <p className="text-xs text-slate-400 text-center px-6">Content will appear here once the admin adds posts.</p>
+      <span className="mb-3 text-4xl">📦</span>
+      <p className="mb-1 text-sm font-bold text-slate-700">No product updates yet</p>
+      <p className="px-6 text-xs text-center text-slate-400">Content will appear here once the admin adds posts.</p>
     </div>
   </div>
 );
@@ -222,10 +222,10 @@ const Blog = () => {
   const productUpdates = posts.filter((p) => getCategoryName(p) === 'Product Updates');
 
   return (
-    <div className="min-h-screen bg-[#f8faf9] font-sans">
-
-      {/* ── PAGE HEADER ── */}
-      <div className="container mx-auto px-4 pt-10 pb-6">
+// AFTER:
+<div className="min-h-screen bg-[#f8faf9] font-sans" style={{ paddingTop: 'calc(var(--header-h) + 30px)' }}>
+        {/* ── PAGE HEADER ── */}
+      <div className="container px-4 pt-10 pb-6 mx-auto">
         <h1 className="text-3xl font-extrabold text-[#1a2e22] mb-5 tracking-tight">Blogs</h1>
         <div className="flex flex-wrap gap-2">
           {filters.map((f) => (
@@ -245,9 +245,9 @@ const Blog = () => {
       </div>
 
       {/* ── BANNER ── */}
-      <div className="container mx-auto px-4 mb-8">
+      <div className="container px-4 mx-auto mb-8">
         <div className="rounded-2xl bg-gradient-to-r from-[#1a2e22] to-[#2d5a42] text-white px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-white/80 leading-relaxed max-w-2xl">
+          <p className="max-w-2xl text-sm leading-relaxed text-white/80">
             Your all-in-one supply partner in Metro Manila. Office supplies, pantry essentials,
             janitorial products, wellness, and more — all from one trusted source.
           </p>
@@ -261,7 +261,7 @@ const Blog = () => {
       </div>
 
       {/* ── FEATURED ── */}
-      <section className="container mx-auto px-4 mb-12">
+      <section className="container px-4 mx-auto mb-12">
         <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-4">Featured</p>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-5">
 
@@ -274,13 +274,13 @@ const Blog = () => {
                 <img
                   src={resolveImg(featuredPost)}
                   alt={featuredPost.blog_title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                  className="absolute inset-0 object-cover w-full h-full opacity-40"
                 />
               )}
               <div className="relative z-10 p-8">
                 <p className="text-[11px] text-white/60 mb-2 uppercase tracking-widest">{getCategoryName(featuredPost)}</p>
-                <h2 className="text-xl font-bold text-white mb-3 leading-snug">{featuredPost.blog_title}</h2>
-                <p className="text-sm text-white/70 mb-5 leading-relaxed">{excerpt(featuredPost.blog_text, 200)}</p>
+                <h2 className="mb-3 text-xl font-bold leading-snug text-white">{featuredPost.blog_title}</h2>
+                <p className="mb-5 text-sm leading-relaxed text-white/70">{excerpt(featuredPost.blog_text, 200)}</p>
                 <Link
                   to={`/blog/${featuredPost.blog_id}`}
                   className="inline-block px-5 py-2 rounded-lg bg-white text-[#1a2e22] text-sm font-bold no-underline hover:bg-[#f0faf5] transition-colors"
@@ -306,15 +306,15 @@ const Blog = () => {
                   to={`/blog/${p.blog_id}`}
                   className="flex gap-3 items-start bg-white rounded-xl p-3 border border-slate-100 no-underline hover:border-[#4d7b65] hover:shadow-sm transition-all group"
                 >
-                  <div className="w-20 h-16 rounded-lg flex-shrink-0 bg-slate-100 overflow-hidden">
+                  <div className="flex-shrink-0 w-20 h-16 overflow-hidden rounded-lg bg-slate-100">
                     {resolveImg(p) && (
-                      <img src={resolveImg(p)} alt={p.blog_title} className="w-full h-full object-cover" />
+                      <img src={resolveImg(p)} alt={p.blog_title} className="object-cover w-full h-full" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[11px] text-slate-400 mb-1">{getCategoryName(p)}</div>
                     <div className="text-sm font-bold text-[#1a2e22] leading-snug line-clamp-2 group-hover:text-[#4d7b65] transition-colors">{p.blog_title}</div>
-                    <div className="text-xs text-slate-500 mt-1 line-clamp-2">{excerpt(p.blog_text, 80)}</div>
+                    <div className="mt-1 text-xs text-slate-500 line-clamp-2">{excerpt(p.blog_text, 80)}</div>
                   </div>
                 </Link>
               ))}
@@ -324,9 +324,9 @@ const Blog = () => {
       </section>
 
       {/* ── ANNOUNCEMENTS ── */}
-      <section className="container mx-auto px-4 mb-12" ref={refs.announcement}>
+      <section className="container px-4 mx-auto mb-12" ref={refs.announcement}>
         <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-3">Announcements</p>
-        <hr className="border-slate-200 mb-6" />
+        <hr className="mb-6 border-slate-200" />
 
         {loading ? (
           <>
@@ -336,12 +336,12 @@ const Blog = () => {
         ) : (
           <>
             {/* Latest dark card */}
-            <div className="rounded-2xl bg-slate-900 text-white p-8 mb-6">
+            <div className="p-8 mb-6 text-white rounded-2xl bg-slate-900">
               <span className="inline-block px-3 py-1 rounded-full bg-[#4d7b65] text-white text-[11px] font-bold tracking-widest mb-4">LATEST</span>
               {announcements[0] ? (
                 <>
-                  <h3 className="text-xl font-bold text-white mb-3 leading-snug">{announcements[0].blog_title}</h3>
-                  <p className="text-sm text-white/60 mb-6 leading-relaxed">{excerpt(announcements[0].blog_text, 220)}</p>
+                  <h3 className="mb-3 text-xl font-bold leading-snug text-white">{announcements[0].blog_title}</h3>
+                  <p className="mb-6 text-sm leading-relaxed text-white/60">{excerpt(announcements[0].blog_text, 220)}</p>
                   <Link
                     to={`/blog/${announcements[0].blog_id}`}
                     className="inline-block px-5 py-2 rounded-lg bg-[#4d7b65] text-white text-sm font-bold no-underline hover:bg-[#3a6050] transition-colors"
@@ -350,18 +350,18 @@ const Blog = () => {
                   </Link>
                 </>
               ) : (
-                <p className="text-sm text-white/40 italic">No announcements yet.</p>
+                <p className="text-sm italic text-white/40">No announcements yet.</p>
               )}
             </div>
 
             {/* 2×2 grid */}
             {announcements.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 {announcements.slice(0, 4).map((p) => (
                   <div key={p.blog_id} className="rounded-xl border border-slate-100 bg-white p-5 hover:border-[#4d7b65] hover:shadow-sm transition-all">
                     <div className="text-[11px] text-slate-400 mb-2">{getCategoryName(p)}</div>
                     <div className="text-sm font-bold text-[#1a2e22] mb-2 leading-snug">{p.blog_title}</div>
-                    <div className="text-xs text-slate-500 mb-4 leading-relaxed">{excerpt(p.blog_text, 120)}</div>
+                    <div className="mb-4 text-xs leading-relaxed text-slate-500">{excerpt(p.blog_text, 120)}</div>
                     <Link
                       to={`/blog/${p.blog_id}`}
                       className="inline-block px-4 py-1.5 rounded-lg bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors"
@@ -379,9 +379,9 @@ const Blog = () => {
       </section>
 
       {/* ── TRAVEL BLOG ── */}
-      <section className="container mx-auto px-4 mb-12" ref={refs.travel}>
+      <section className="container px-4 mx-auto mb-12" ref={refs.travel}>
         <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-3">Travel Blog</p>
-        <hr className="border-slate-200 mb-6" />
+        <hr className="mb-6 border-slate-200" />
 
         {loading ? (
           <>
@@ -391,16 +391,16 @@ const Blog = () => {
         ) : (
           <>
             {/* Two tall hero cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            <div className="grid grid-cols-1 gap-5 mb-6 md:grid-cols-2">
               {travel.slice(0, 2).length > 0 ? travel.slice(0, 2).map((p) => (
                 <div key={p.blog_id} className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a2e22] to-[#4d7b65] min-h-[260px] flex flex-col justify-end">
                   {resolveImg(p) && (
-                    <img src={resolveImg(p)} alt={p.blog_title} className="absolute inset-0 w-full h-full object-cover opacity-40" />
+                    <img src={resolveImg(p)} alt={p.blog_title} className="absolute inset-0 object-cover w-full h-full opacity-40" />
                   )}
                   <div className="relative z-10 p-7">
                     <div className="text-[11px] text-white/60 mb-2 uppercase tracking-widest">{getCategoryName(p)}</div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">{p.blog_title}</h3>
-                    <p className="text-xs text-white/60 leading-relaxed">{excerpt(p.blog_text, 160)}</p>
+                    <h3 className="mb-2 text-lg font-bold leading-snug text-white">{p.blog_title}</h3>
+                    <p className="text-xs leading-relaxed text-white/60">{excerpt(p.blog_text, 160)}</p>
                   </div>
                   <Link
                     to={`/blog/${p.blog_id}`}
@@ -414,15 +414,15 @@ const Blog = () => {
 
             {/* 3-col cards */}
             {travel.slice(0, 3).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
                 {travel.slice(0, 3).map((p) => (
                   <div key={p.blog_id} className="rounded-xl border border-slate-100 bg-white overflow-hidden hover:border-[#4d7b65] hover:shadow-sm transition-all">
                     <div className="h-[140px] bg-slate-100 overflow-hidden">
-                      {resolveImg(p) && <img src={resolveImg(p)} alt={p.blog_title} className="w-full h-full object-cover" />}
+                      {resolveImg(p) && <img src={resolveImg(p)} alt={p.blog_title} className="object-cover w-full h-full" />}
                     </div>
                     <div className="p-4">
                       <div className="text-sm font-bold text-[#1a2e22] mb-2 leading-snug">{p.blog_title}</div>
-                      <div className="text-xs text-slate-500 mb-3 leading-relaxed">{excerpt(p.blog_text, 100)}</div>
+                      <div className="mb-3 text-xs leading-relaxed text-slate-500">{excerpt(p.blog_text, 100)}</div>
                       <Link
                         to={`/blog/${p.blog_id}`}
                         className="inline-block px-4 py-1.5 rounded-lg bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors"
@@ -441,9 +441,9 @@ const Blog = () => {
       </section>
 
       {/* ── BUSINESS TRIPS ── */}
-      <section className="container mx-auto px-4 mb-12" ref={refs.business}>
+      <section className="container px-4 mx-auto mb-12" ref={refs.business}>
         <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-3">Business Trips</p>
-        <hr className="border-slate-200 mb-6" />
+        <hr className="mb-6 border-slate-200" />
 
         {loading ? (
           <>
@@ -452,16 +452,16 @@ const Blog = () => {
           </>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            <div className="grid grid-cols-1 gap-5 mb-6 md:grid-cols-2">
               {business.slice(0, 2).length > 0 ? business.slice(0, 2).map((p) => (
                 <div key={p.blog_id} className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a2e22] to-[#4d7b65] min-h-[260px] flex flex-col justify-end">
                   {resolveImg(p) && (
-                    <img src={resolveImg(p)} alt={p.blog_title} className="absolute inset-0 w-full h-full object-cover opacity-40" />
+                    <img src={resolveImg(p)} alt={p.blog_title} className="absolute inset-0 object-cover w-full h-full opacity-40" />
                   )}
                   <div className="relative z-10 p-7">
                     <div className="text-[11px] text-white/60 mb-2 uppercase tracking-widest">{getCategoryName(p)}</div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">{p.blog_title}</h3>
-                    <p className="text-xs text-white/60 leading-relaxed">{excerpt(p.blog_text, 160)}</p>
+                    <h3 className="mb-2 text-lg font-bold leading-snug text-white">{p.blog_title}</h3>
+                    <p className="text-xs leading-relaxed text-white/60">{excerpt(p.blog_text, 160)}</p>
                   </div>
                   <Link
                     to={`/blog/${p.blog_id}`}
@@ -474,15 +474,15 @@ const Blog = () => {
             </div>
 
             {business.slice(0, 3).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
                 {business.slice(0, 3).map((p) => (
                   <div key={p.blog_id} className="rounded-xl border border-slate-100 bg-white overflow-hidden hover:border-[#4d7b65] hover:shadow-sm transition-all">
                     <div className="h-[140px] bg-slate-100 overflow-hidden">
-                      {resolveImg(p) && <img src={resolveImg(p)} alt={p.blog_title} className="w-full h-full object-cover" />}
+                      {resolveImg(p) && <img src={resolveImg(p)} alt={p.blog_title} className="object-cover w-full h-full" />}
                     </div>
                     <div className="p-4">
                       <div className="text-sm font-bold text-[#1a2e22] mb-2 leading-snug">{p.blog_title}</div>
-                      <div className="text-xs text-slate-500 mb-3 leading-relaxed">{excerpt(p.blog_text, 100)}</div>
+                      <div className="mb-3 text-xs leading-relaxed text-slate-500">{excerpt(p.blog_text, 100)}</div>
                       <Link
                         to={`/blog/${p.blog_id}`}
                         className="inline-block px-4 py-1.5 rounded-lg bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors"
@@ -501,28 +501,28 @@ const Blog = () => {
       </section>
 
       {/* ── PRODUCT UPDATES ── */}
-      <section className="container mx-auto px-4 mb-16" ref={refs.product}>
+      <section className="container px-4 mx-auto mb-16" ref={refs.product}>
         <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-3">Product Updates</p>
-        <hr className="border-slate-200 mb-6" />
+        <hr className="mb-6 border-slate-200" />
 
         {loading ? (
           <ProductRowsEmpty />
         ) : productUpdates.length === 0 ? (
           <ProductRowsEmpty />
         ) : (
-          <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+          <div className="overflow-hidden bg-white border rounded-xl border-slate-100">
             {productUpdates.map((p, i) => (
               <React.Fragment key={p.blog_id}>
                 <div className="flex gap-4 items-center px-5 py-4 hover:bg-[#f8faf9] transition-colors">
-                  <div className="w-16 h-16 rounded-lg flex-shrink-0 bg-slate-100 overflow-hidden">
+                  <div className="flex-shrink-0 w-16 h-16 overflow-hidden rounded-lg bg-slate-100">
                     {resolveImg(p) && (
-                      <img src={resolveImg(p)} alt={p.blog_title} className="w-full h-full object-cover" />
+                      <img src={resolveImg(p)} alt={p.blog_title} className="object-cover w-full h-full" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[11px] text-slate-400 mb-1">{getCategoryName(p)}</div>
                     <div className="text-sm font-bold text-[#1a2e22] leading-snug">{p.blog_title}</div>
-                    <div className="text-xs text-slate-500 mt-1 line-clamp-2">{excerpt(p.blog_text, 100)}</div>
+                    <div className="mt-1 text-xs text-slate-500 line-clamp-2">{excerpt(p.blog_text, 100)}</div>
                   </div>
                   <div className="flex-shrink-0">
                     <Link
@@ -533,7 +533,7 @@ const Blog = () => {
                     </Link>
                   </div>
                 </div>
-                {i < productUpdates.length - 1 && <div className="h-px bg-slate-100 mx-5" />}
+                {i < productUpdates.length - 1 && <div className="h-px mx-5 bg-slate-100" />}
               </React.Fragment>
             ))}
           </div>
