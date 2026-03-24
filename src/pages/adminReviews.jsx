@@ -1,79 +1,209 @@
-import { useState } from "react";
-import AdminNav from '../components/AdminNav';
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import AdminNav from "../components/AdminNav";
 
-const reviewsData = [
-  {
-    id: 1,
-    name: "Juan Dela Cruz",
-    email: "juan@gmail.com",
-    date: "February 20, 2026",
-    rating: 5,
-    review: "Sobrang ganda ng product na ito!",
-    status: "Published",
-    product: "Organic Barley",
-    adminReply: "Salamat po sa inyong feedback, juan! Natutuwa kaming maranasan ninyo ang benepisyo ng aming Organic Barley. Hanggang sa susunod!",
-  },
-  {
-    id: 2,
-    name: "Juan Dela Cruz",
-    email: "juan@gmail.com",
-    date: "February 20, 2026",
-    rating: 2,
-    review: "Disappointed with this order. Some items were missing from the bundle and the folder quality was not as pictured.",
-    status: "Pending",
-    product: "Office Bundle",
-    adminReply: null,
-  },
-  {
-    id: 3,
-    name: "Maria Santos",
-    email: "maria@gmail.com",
-    date: "February 18, 2026",
-    rating: 4,
-    review: "Maganda ang quality ng product. Mabilis din ang delivery. Highly recommended!",
-    status: "Published",
-    product: "A4 Bondpaper",
-    adminReply: "Maraming salamat po, Maria! Masaya kaming nagustuhan ninyo ang aming produkto.",
-  },
-];
+// ─── Axios instance ───────────────────────────────────────────────────────────
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api",
+  withCredentials: true,
+  headers: { "Content-Type": "application/json", Accept: "application/json" },
+});
 
-const statCards = [
-  { label: "Total Reviews",  value: 12,    color: "bg-blue-50",   accent: "text-blue-600",   icon: "⭐" },
-  { label: "Average Rating", value: "3.8", color: "bg-amber-50",  accent: "text-amber-600",  icon: "📊", sub: "out of 5" },
-  { label: "Published",      value: 1,     color: "bg-emerald-50",accent: "text-emerald-600",icon: "✅" },
-  { label: "Pending",        value: 1,     color: "bg-red-50",    accent: "text-red-600",    icon: "⏳" },
-];
-
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function StarRating({ rating, max = 5 }) {
   return (
     <div className="flex gap-0.5">
       {Array.from({ length: max }).map((_, i) => (
-        <span key={i} className={`text-sm ${i < rating ? "text-amber-400" : "text-gray-300"}`}>★</span>
+        <span key={i} className={`text-sm ${i < rating ? "text-amber-400" : "text-gray-300"}`}>
+          ★
+        </span>
       ))}
     </div>
   );
 }
 
 const statusConfig = {
-  Published: "bg-[#C6FFC9] border border-[#76CD8C] text-[#247132]",
-  Pending:   "bg-gray-200 border border-[#DFDFDF] text-gray-700",
+  published: { className: "bg-[#C6FFC9] border border-[#76CD8C] text-[#247132]", label: "Published" },
+  approved:  { className: "bg-[#C6FFC9] border border-[#76CD8C] text-[#247132]", label: "Published" },
+  pending:   { className: "bg-gray-200 border border-[#DFDFDF] text-gray-700",    label: "Pending"   },
+  rejected:  { className: "bg-red-100 border border-red-300 text-red-800",        label: "Rejected"  },
 };
 
+function getStatusCfg(status) {
+  return statusConfig[status?.toLowerCase()] ?? statusConfig.pending;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric", month: "long", day: "numeric",
+  });
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function Toast({ toasts }) {
+  return (
+    <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-[9999]">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`px-4 py-2.5 rounded-lg text-[13px] font-medium shadow-md border ${
+            t.type === "error"
+              ? "bg-red-50 border-red-300 text-red-800"
+              : "bg-emerald-50 border-emerald-300 text-emerald-800"
+          }`}
+        >
+          {t.type === "error" ? "✗ " : "✓ "}{t.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Confirm Modal ────────────────────────────────────────────────────────────
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 bg-black/35 flex items-center justify-center z-[1000]">
+      <div className="bg-white rounded-2xl p-7 max-w-sm w-[90%] shadow-2xl">
+        <div className="text-xl mb-2.5">🗑️</div>
+        <p className="text-sm text-gray-700 mb-5 leading-relaxed">{message}</p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm cursor-pointer hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-1.5 rounded-lg border-none bg-red-600 text-white text-sm cursor-pointer font-semibold hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminReviews() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab]     = useState("All");
+  const [reviews, setReviews]         = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [replyingTo, setReplyingTo]   = useState(null);
   const [replyText, setReplyText]     = useState("");
+  const [submitting, setSubmitting]   = useState(false);
+  const [deletingId, setDeletingId]   = useState(null);
+  const [toasts, setToasts]           = useState([]);
 
+  // ── toast helper ─────────────────────────────────────────────────────────────
+  const toast = useCallback((message, type = "success") => {
+    const id = Date.now();
+    setToasts((p) => [...p, { id, message, type }]);
+    setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3500);
+  }, []);
+
+  // ── fetch all reviews ─────────────────────────────────────────────────────────
+  const fetchReviews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get("/reviews");
+      setReviews(data.data ?? []);
+    } catch (err) {
+      toast(err.response?.data?.message ?? "Failed to load reviews.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  // ── derived stats ─────────────────────────────────────────────────────────────
+  const total     = reviews.length;
+  const published = reviews.filter((r) => ["published", "approved"].includes(r.status?.toLowerCase())).length;
+  const pending   = reviews.filter((r) => r.status?.toLowerCase() === "pending").length;
+  const avgRating = total
+    ? (reviews.reduce((s, r) => s + Number(r.rating), 0) / total).toFixed(1)
+    : "—";
+
+  const statCards = [
+    { label: "Total Reviews",  value: total,     sub: null,       color: "bg-blue-50",    accent: "text-blue-600",   icon: "⭐" },
+    { label: "Average Rating", value: avgRating, sub: "out of 5", color: "bg-amber-50",   accent: "text-amber-600",  icon: "📊" },
+    { label: "Published",      value: published, sub: null,       color: "bg-emerald-50", accent: "text-emerald-600",icon: "✅" },
+    { label: "Pending",        value: pending,   sub: null,       color: "bg-red-50",     accent: "text-red-600",    icon: "⏳" },
+  ];
+
+  // ── tab filtering ─────────────────────────────────────────────────────────────
   const tabs = ["All", "Pending", "Published"];
+  const filtered = activeTab === "All"
+    ? reviews
+    : reviews.filter((r) => {
+        const s = r.status?.toLowerCase();
+        if (activeTab === "Published") return s === "published" || s === "approved";
+        return s === activeTab.toLowerCase();
+      });
 
-  const filtered =
-    activeTab === "All"
-      ? reviewsData
-      : reviewsData.filter((r) => r.status === activeTab);
+  // ── open reply box ────────────────────────────────────────────────────────────
+  const openReply = (review) => {
+    setReplyingTo(review.review_id ?? review.id);
+    setReplyText(review.admin_reply ?? "");
+  };
 
+  // ── submit reply ──────────────────────────────────────────────────────────────
+  const submitReply = async (reviewId) => {
+    if (!replyText.trim()) { toast("Reply cannot be empty.", "error"); return; }
+    setSubmitting(true);
+    try {
+      await api.post(`/reviews/${reviewId}/reply`, { admin_reply: replyText });
+      toast("Reply submitted successfully.");
+      setReplyingTo(null);
+      setReplyText("");
+      fetchReviews();
+    } catch (err) {
+      toast(err.response?.data?.message ?? "Failed to submit reply.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── delete reply ──────────────────────────────────────────────────────────────
+  const deleteReply = async (reviewId) => {
+    try {
+      await api.delete(`/reviews/${reviewId}/reply`);
+      toast("Reply removed.");
+      fetchReviews();
+    } catch (err) {
+      toast(err.response?.data?.message ?? "Failed to delete reply.", "error");
+    }
+  };
+
+  // ── delete review ─────────────────────────────────────────────────────────────
+  const deleteReview = async (reviewId) => {
+    setDeletingId(null);
+    try {
+      await api.delete(`/reviews/${reviewId}`);
+      toast("Review deleted.");
+      setReviews((p) => p.filter((r) => (r.review_id ?? r.id) !== reviewId));
+    } catch (err) {
+      toast(err.response?.data?.message ?? "Failed to delete review.", "error");
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen bg-[#F0F7F2] font-sans">
+      <Toast toasts={toasts} />
+
+      {deletingId && (
+        <ConfirmModal
+          message="Are you sure you want to delete this review? This action cannot be undone."
+          onConfirm={() => deleteReview(deletingId)}
+          onCancel={() => setDeletingId(null)}
+        />
+      )}
+
       <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="flex-1 px-6 py-7 overflow-x-hidden min-w-0">
@@ -84,9 +214,17 @@ export default function AdminReviews() {
             <button
               className="lg:hidden bg-transparent border-none text-[22px] cursor-pointer text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
               onClick={() => setSidebarOpen(true)}
-            >☰</button>
+            >
+              ☰
+            </button>
             <h1 className="text-xl font-bold text-gray-900 m-0">Reviews</h1>
           </div>
+          <button
+            onClick={fetchReviews}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs font-medium cursor-pointer hover:bg-gray-50 transition-colors"
+          >
+            {loading ? "⟳ Loading…" : "⟳ Refresh"}
+          </button>
         </div>
 
         {/* Stat Cards */}
@@ -125,121 +263,159 @@ export default function AdminReviews() {
           })}
         </div>
 
-        {/* Date separator */}
-        <div className="flex items-center gap-3 mb-3.5">
-          <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">Friday, February 20, 2025</span>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
+        {/* Loading Skeleton */}
+        {loading && (
+          <div className="flex flex-col gap-4">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="bg-white rounded-xl p-5 h-28 animate-pulse shadow-sm opacity-60" />
+            ))}
+          </div>
+        )}
 
         {/* Review Cards */}
-        <div className="flex flex-col gap-4">
-          {filtered.map((review) => (
-            <div
-              key={review.id}
-              className="bg-white/90 rounded-xl border border-gray-200 px-5 py-4 shadow-sm"
-            >
-              {/* Header row */}
-              <div className="flex items-start justify-between flex-wrap gap-2.5 mb-2.5">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full shrink-0 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                    {review.name[0]}
+        {!loading && (
+          <div className="flex flex-col gap-4">
+            {filtered.map((review) => {
+              const rid       = review.review_id ?? review.id;
+              const cfg       = getStatusCfg(review.status);
+              const isReplying = replyingTo === rid;
+              const userName  = review.user?.name  ?? review.name  ?? "Unknown";
+              const userEmail = review.user?.email ?? review.email ?? "";
+              const productName =
+                typeof review.product === "object"
+                  ? (review.product?.product_name ?? review.product?.name ?? null)
+                  : review.product ?? null;
+
+              return (
+                <div
+                  key={rid}
+                  className="bg-white/90 rounded-xl border border-gray-200 px-5 py-4 shadow-sm"
+                >
+                  {/* Header row */}
+                  <div className="flex items-start justify-between flex-wrap gap-2.5 mb-2.5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full shrink-0 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                        {userName[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-sm text-gray-900">{userName}</div>
+                        <div className="text-[11px] text-gray-400">
+                          {userEmail}{userEmail && " · "}{formatDate(review.created_at ?? review.date)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <StarRating rating={Number(review.rating)} />
+                      <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold ${cfg.className}`}>
+                        {cfg.label}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-semibold text-sm text-gray-900">{review.name}</div>
-                    <div className="text-[11px] text-gray-400">{review.email} · {review.date}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <StarRating rating={review.rating} />
-                  <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold ${statusConfig[review.status]}`}>
-                    {review.status}
-                  </span>
-                </div>
-              </div>
 
-              {/* Product tag */}
-              <div className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-[rgba(77,123,101,0.12)] border border-[rgba(77,123,101,0.3)] text-gray-700 mb-2">
-                📦 {review.product}
-              </div>
+                  {/* Product tag */}
+                  {productName && (
+                    <div className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-[rgba(77,123,101,0.12)] border border-[rgba(77,123,101,0.3)] text-gray-700 mb-2">
+                      📦 {productName}
+                    </div>
+                  )}
 
-              {/* Review text */}
-              <p className="text-xs text-gray-700 font-medium m-0 mb-3 leading-relaxed">
-                {review.review}
-              </p>
+                  {/* Review text */}
+                  <p className="text-xs text-gray-700 font-medium m-0 mb-3 leading-relaxed">
+                    {review.review_text ?? review.review}
+                  </p>
 
-              {/* Admin reply */}
-              {review.adminReply && (
-                <div className="bg-gray-50 rounded-lg px-3.5 py-3 mb-3 border-l-[3px] border-blue-600">
-                  <div className="text-[11px] font-semibold text-blue-600 mb-1">Admin Reply</div>
-                  <p className="text-xs text-gray-600 m-0 leading-relaxed">{review.adminReply}</p>
-                </div>
-              )}
+                  {/* Admin reply */}
+                  {review.admin_reply && !isReplying && (
+                    <div className="bg-gray-50 rounded-lg px-3.5 py-3 mb-3 border-l-[3px] border-blue-600">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-semibold text-blue-600">Admin Reply</span>
+                        {review.replied_at && (
+                          <span className="text-[10px] text-gray-400">{formatDate(review.replied_at)}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600 m-0 leading-relaxed">{review.admin_reply}</p>
+                    </div>
+                  )}
 
-              {/* Reply input */}
-              {replyingTo === review.id && (
-                <div className="mb-3">
-                  <textarea
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Type your reply..."
-                    rows={3}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-xs text-gray-700 resize-y outline-none font-[inherit] focus:border-blue-400 transition-colors"
-                  />
-                  <div className="flex gap-2 mt-2">
+                  {/* Reply textarea */}
+                  {isReplying && (
+                    <div className="mb-3">
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Type your reply..."
+                        rows={3}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-xs text-gray-700 resize-y outline-none font-[inherit] focus:border-blue-400 transition-colors"
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => submitReply(rid)}
+                          disabled={submitting}
+                          className={`px-4 py-1.5 rounded-md border-none text-white text-xs font-medium transition-colors ${
+                            submitting
+                              ? "bg-blue-300 cursor-not-allowed"
+                              : "bg-blue-600 cursor-pointer hover:bg-blue-700"
+                          }`}
+                        >
+                          {submitting ? "Submitting…" : "Submit Reply"}
+                        </button>
+                        <button
+                          onClick={() => { setReplyingTo(null); setReplyText(""); }}
+                          className="px-4 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 text-xs cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action row */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {!isReplying && (
+                      <button
+                        onClick={() => openReply(review)}
+                        className="px-3.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 text-xs cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        {review.admin_reply ? "Edit Reply" : "Reply"}
+                      </button>
+                    )}
+
+                    {review.admin_reply && !isReplying && (
+                      <button
+                        onClick={() => deleteReply(rid)}
+                        className="px-3.5 py-1 rounded-md border border-red-300 bg-white text-red-700 text-xs cursor-pointer hover:bg-red-50 transition-colors"
+                      >
+                        Delete Reply
+                      </button>
+                    )}
+
                     <button
-                      onClick={() => { setReplyingTo(null); setReplyText(""); }}
-                      className="px-4 py-1.5 rounded-md border border-gray-300 bg-blue-600 text-white text-xs cursor-pointer font-medium hover:bg-blue-700 transition-colors"
+                      onClick={() => setDeletingId(rid)}
+                      className="px-3.5 py-1 rounded-md border border-[#C90000] bg-white text-[#9F0712] text-xs cursor-pointer hover:bg-red-50 transition-colors"
                     >
-                      Submit Reply
+                      Delete
                     </button>
-                    <button
-                      onClick={() => { setReplyingTo(null); setReplyText(""); }}
-                      className="px-4 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 text-xs cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
+
+                    <span className="ml-auto text-xs text-gray-400 font-medium">
+                      Rating:{" "}
+                      <span className={`font-semibold ${Number(review.rating) >= 4 ? "text-amber-500" : "text-red-700"}`}>
+                        {review.rating}/5
+                      </span>
+                    </span>
                   </div>
                 </div>
-              )}
+              );
+            })}
 
-              {/* Action row */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {review.adminReply ? (
-                  <button
-                    onClick={() => { setReplyingTo(review.id); setReplyText(review.adminReply); }}
-                    className="px-3.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 text-xs cursor-pointer hover:bg-gray-50 transition-colors"
-                  >
-                    Edit Reply
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setReplyingTo(review.id)}
-                    className="px-3.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 text-xs cursor-pointer hover:bg-gray-50 transition-colors"
-                  >
-                    Reply
-                  </button>
-                )}
-                <button className="px-3.5 py-1 rounded-md border border-[#C90000] bg-white text-[#9F0712] text-xs cursor-pointer hover:bg-red-50 transition-colors">
-                  Delete
-                </button>
-                <span className="ml-auto text-xs text-gray-400 font-medium">
-                  Rating:{" "}
-                  <span className={`font-semibold ${review.rating >= 4 ? "text-amber-500" : "text-red-700"}`}>
-                    {review.rating}/5
-                  </span>
-                </span>
+            {filtered.length === 0 && (
+              <div className="bg-white rounded-xl p-10 text-center text-gray-400 text-sm shadow-sm">
+                No reviews found.
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+        )}
 
-          {filtered.length === 0 && (
-            <div className="bg-white rounded-xl p-10 text-center text-gray-400 text-sm shadow-sm">
-              No reviews found.
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
+        {/* Pagination count */}
         <div className="flex justify-between items-center mt-5 text-xs text-gray-400">
           <span>Showing {filtered.length} review{filtered.length !== 1 ? "s" : ""}</span>
           <div className="flex gap-1.5">

@@ -197,7 +197,6 @@ function ReviewForm({ productId, user, onSubmitted }) {
       onSubmit={handleSubmit}
       className="mt-8 p-7 rounded-2xl bg-[#fafcfb] border border-[#e2ede8] shadow-[0_2px_12px_rgba(77,123,101,0.07)]"
     >
-      {/* Author row */}
       <div className="flex items-center gap-3 mb-5">
         <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#4d7b65] to-[#2d5a42] text-white flex items-center justify-center text-base font-bold flex-shrink-0 shadow-[0_2px_8px_rgba(77,123,101,0.25)]">
           {(user?.name ?? user?.first_name ?? "?")[0].toUpperCase()}
@@ -214,7 +213,6 @@ function ReviewForm({ productId, user, onSubmitted }) {
         </div>
       </div>
 
-      {/* Star picker */}
       <div className="mb-5">
         <label className="block text-xs font-semibold text-gray-700 mb-2">Your Rating *</label>
         <StarPicker value={rating} onChange={setRating} />
@@ -225,7 +223,6 @@ function ReviewForm({ productId, user, onSubmitted }) {
         )}
       </div>
 
-      {/* Comment */}
       <div className="mb-5">
         <label className="block text-xs font-semibold text-gray-700 mb-1.5">Your Review *</label>
         <textarea
@@ -238,7 +235,6 @@ function ReviewForm({ productId, user, onSubmitted }) {
         />
       </div>
 
-      {/* Error */}
       {error && (
         <div className="mb-4 px-3.5 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs font-medium flex items-center gap-2">
           ⚠️ {error}
@@ -250,9 +246,7 @@ function ReviewForm({ productId, user, onSubmitted }) {
         disabled={submitting || !comment.trim()}
         className="px-7 py-3 rounded-xl text-white text-sm font-bold flex items-center gap-2 transition-all border-none"
         style={{
-          background: submitting || !comment.trim()
-            ? "#9ca3af"
-            : "linear-gradient(135deg,#4d7b65,#2d5a42)",
+          background: submitting || !comment.trim() ? "#9ca3af" : "linear-gradient(135deg,#4d7b65,#2d5a42)",
           cursor: submitting || !comment.trim() ? "not-allowed" : "pointer",
           boxShadow: submitting || !comment.trim() ? "none" : "0 4px 12px rgba(77,123,101,0.3)",
         }}
@@ -272,22 +266,21 @@ export default function ProductView() {
   const navigate                  = useNavigate();
   const { addToCart, totalItems } = useCart();
 
-  const [product,  setProduct]  = useState(null);
-  const [related,  setRelated]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-  const [activeImg, setActiveImg] = useState(0);
-  const [qty,      setQty]      = useState(1);
-  const [added,    setAdded]    = useState(false);
-  const [cartLoading, setCartLoading] = useState(false);
-  const [cartError,   setCartError]   = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [reviewRefresh, setReviewRefresh] = useState(0);
-  const [currentUser,   setCurrentUser]   = useState(null);
-  const [reviewsList,   setReviewsList]   = useState([]);
+  const [product,        setProduct]        = useState(null);
+  const [related,        setRelated]        = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
+  const [activeImg,      setActiveImg]      = useState(0);
+  const [qty,            setQty]            = useState(1);
+  const [added,          setAdded]          = useState(false);
+  const [cartLoading,    setCartLoading]    = useState(false);
+  const [cartError,      setCartError]      = useState(null);
+  const [activeTab,      setActiveTab]      = useState("overview");
+  const [reviewRefresh,  setReviewRefresh]  = useState(0);
+  const [currentUser,    setCurrentUser]    = useState(null);
+  const [reviewsList,    setReviewsList]    = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
-  // ── Fetch current user ──
   useEffect(() => {
     axios.get(`${BASE}/api/me`, { withCredentials: true })
       .then(res => {
@@ -297,7 +290,6 @@ export default function ProductView() {
       .catch(() => setCurrentUser(false));
   }, []);
 
-  // ── Fetch reviews ──
   useEffect(() => {
     if (!id) return;
     setReviewsLoading(true);
@@ -321,7 +313,6 @@ export default function ProductView() {
       .finally(() => setReviewsLoading(false));
   }, [id, reviewRefresh]);
 
-  // ── Fetch product ──
   useEffect(() => {
     if (!id) return;
     const fetchProduct = async () => {
@@ -376,25 +367,22 @@ export default function ProductView() {
     );
   }
 
-  // ── Normalise fields ──
-  const name     = resolveName(product);
-  const price    = resolvePrice(product);
-  const catLabel = resolveCat(product);
-  const stock    = resolveStock(product);
-  const isOnSale = product.isSale == 1;
-  const desc     = product.description ?? "";
-  const images   = product.images ?? [];
-  const mainSrc  = images[activeImg]?.image_path
+  const name        = resolveName(product);
+  const price       = resolvePrice(product);
+  const catLabel    = resolveCat(product);
+  const stock       = resolveStock(product);
+  const isOnSale    = product.isSale == 1;
+  const desc        = product.description ?? "";
+  const images      = product.images ?? [];
+  const mainSrc     = images[activeImg]?.image_path
     ? `${BASE}/storage/${images[activeImg].image_path}`
     : ph(600, 600, name);
-
-  const reviews   = reviewsList.length;
-  const avgRating = reviews > 0
+  const reviews     = reviewsList.length;
+  const avgRating   = reviews > 0
     ? reviewsList.reduce((sum, r) => sum + Number(r.rating ?? r.stars ?? 0), 0) / reviews
     : 0;
-  const productId = product.product_id ?? product.id;
+  const productId   = product.product_id ?? product.id;
 
-  // ── Cart helpers ──
   const callAddToCart = async () =>
     axios.post(`${BASE}/api/cart/add`, { product_id: productId, quantity: qty }, { withCredentials: true });
 
@@ -494,7 +482,7 @@ export default function ProductView() {
                   <button
                     key={img.id ?? i}
                     onClick={() => setActiveImg(i)}
-                    className="w-15 h-15 rounded-lg overflow-hidden p-0 cursor-pointer transition-all"
+                    className="rounded-lg overflow-hidden p-0 cursor-pointer transition-all"
                     style={{
                       width: "60px", height: "60px",
                       border: i === activeImg ? "2px solid #4d7b65" : "2px solid #e2e8f0",
@@ -617,10 +605,7 @@ export default function ProductView() {
 
             <div className="flex flex-wrap gap-2 mt-1">
               {["🚚 Free delivery in Metro Manila","✅ Quality guaranteed","🔄 Easy returns"].map(t => (
-                <span
-                  key={t}
-                  className="text-xs px-3 py-1.5 bg-[#f0faf5] text-[#2d5a42] rounded-full border border-[#D1FAE5] font-medium"
-                >
+                <span key={t} className="text-xs px-3 py-1.5 bg-[#f0faf5] text-[#2d5a42] rounded-full border border-[#D1FAE5] font-medium">
                   {t}
                 </span>
               ))}
@@ -640,10 +625,7 @@ export default function ProductView() {
                   {cartError}
                 </span>
                 {cartError.includes("logged in") && (
-                  <Link
-                    to="/login"
-                    className="font-bold text-[#1D4ED8] whitespace-nowrap no-underline px-2.5 py-1 bg-[#DBEAFE] rounded-md"
-                  >
+                  <Link to="/login" className="font-bold text-[#1D4ED8] whitespace-nowrap no-underline px-2.5 py-1 bg-[#DBEAFE] rounded-md">
                     Log in →
                   </Link>
                 )}
@@ -656,7 +638,6 @@ export default function ProductView() {
       {/* ── TABS ── */}
       <section className="bg-[#f8faf9] border-t border-b border-[#e8f0eb] py-12">
         <div className="container mx-auto px-4">
-          {/* Tab buttons */}
           <div className="flex gap-1 border-b-2 border-[#e2e8f0] mb-8">
             {["overview","specifications","reviews"].map(tab => (
               <button
@@ -681,7 +662,7 @@ export default function ProductView() {
 
           <div className="bg-white rounded-xl p-7 min-h-[200px]">
 
-            {/* ── Overview Tab ── */}
+            {/* Overview */}
             {activeTab === "overview" && (
               <div className="max-w-2xl">
                 <h3 className="text-lg font-bold text-[#1a2e22] mb-4">Product Overview</h3>
@@ -701,7 +682,7 @@ export default function ProductView() {
               </div>
             )}
 
-            {/* ── Specifications Tab ── */}
+            {/* Specifications */}
             {activeTab === "specifications" && (
               <div className="max-w-2xl">
                 <h3 className="text-lg font-bold text-[#1a2e22] mb-4">Specifications</h3>
@@ -729,27 +710,21 @@ export default function ProductView() {
               </div>
             )}
 
-            {/* ── Reviews Tab ── */}
+            {/* Reviews */}
             {activeTab === "reviews" && (
-              <div className="max-w-2xl">
+              <div className="max-w-full">
                 <h3 className="text-lg font-bold text-[#1a2e22] mb-4">Customer Reviews</h3>
 
-                {/* Summary bar */}
                 {reviews > 0 && (
                   <div className="flex items-center gap-6 mb-6 p-5 bg-[#f8faf9] rounded-xl border border-[#e8f0eb]">
-                    <div className="text-[56px] font-bold text-[#4d7b65] leading-none">
-                      {avgRating.toFixed(1)}
-                    </div>
+                    <div className="text-[56px] font-bold text-[#4d7b65] leading-none">{avgRating.toFixed(1)}</div>
                     <div>
                       <StarRating rating={avgRating} />
-                      <div className="text-xs text-[#6b7c70] mt-1">
-                        Based on {reviews} review{reviews !== 1 ? "s" : ""}
-                      </div>
+                      <div className="text-xs text-[#6b7c70] mt-1">Based on {reviews} review{reviews !== 1 ? "s" : ""}</div>
                     </div>
                   </div>
                 )}
 
-                {/* Reviews list */}
                 {reviewsLoading ? (
                   <div className="py-8 text-center text-gray-400 text-sm">
                     <span style={{ display:"inline-block", width:"20px", height:"20px", border:"2.5px solid #d1d5db", borderTopColor:"#4d7b65", borderRadius:"50%", animation:"spin 0.7s linear infinite", marginRight:"10px", verticalAlign:"middle" }} />
@@ -762,14 +737,18 @@ export default function ProductView() {
                   </div>
                 ) : (
                   reviewsList.map((r, i) => {
-                    const reviewer   = (r.user ? [r.user.first_name, r.user.last_name].filter(Boolean).join(" ") : null) ?? r.user?.name ?? r.name ?? "Anonymous";
+                    const reviewer     = (r.user ? [r.user.first_name, r.user.last_name].filter(Boolean).join(" ") : null) ?? r.user?.name ?? r.name ?? "Anonymous";
                     const reviewRating = Number(r.rating ?? r.stars ?? 0);
                     const reviewText   = r.review_text ?? r.comment ?? r.body ?? "";
                     const reviewDate   = r.created_at
                       ? new Date(r.created_at).toLocaleDateString("en-PH", { year:"numeric", month:"short", day:"numeric" })
                       : "";
+                    const repliedDate  = r.replied_at
+                      ? new Date(r.replied_at).toLocaleDateString("en-PH", { year:"numeric", month:"short", day:"numeric" })
+                      : "";
                     return (
-                      <div key={r.id ?? i} className="p-5 bg-white rounded-xl border border-[#e8f0eb] mb-3">
+                      <div key={r.review_id ?? r.id ?? i} className="p-5 bg-white rounded-xl border border-[#e8f0eb] mb-3">
+                        {/* Reviewer header */}
                         <div className="flex items-center gap-3 mb-2.5">
                           <div className="w-10 h-10 rounded-full bg-[#3b5234] text-white flex items-center justify-center font-bold text-base flex-shrink-0">
                             {reviewer[0].toUpperCase()}
@@ -782,7 +761,26 @@ export default function ProductView() {
                             <div className="text-xs text-gray-400 whitespace-nowrap">{reviewDate}</div>
                           )}
                         </div>
-                        {reviewText && <p className="text-sm text-gray-600 leading-relaxed m-0">{reviewText}</p>}
+
+                        {/* Review text */}
+                        {reviewText && (
+                          <p className="text-sm text-gray-600 leading-relaxed m-0">{reviewText}</p>
+                        )}
+
+                        {/* ── Admin Reply ── */}
+                        {r.admin_reply && (
+                          <div className="mt-3 px-3.5 py-3 rounded-lg bg-[#F0F7FF] border-l-[3px] border-[#155DFC]">
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#155DFC] mb-1.5">
+                              <span>💬</span> Admin Reply
+                              {repliedDate && (
+                                <span className="font-normal text-gray-400 ml-1">· {repliedDate}</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-700 m-0 leading-relaxed italic">
+                              {r.admin_reply}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -830,7 +828,6 @@ export default function ProductView() {
         </section>
       )}
 
-    
     </div>
   );
 }
