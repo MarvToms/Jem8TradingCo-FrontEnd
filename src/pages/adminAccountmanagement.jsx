@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import AdminNav from "../components/AdminNav";
 
@@ -14,6 +14,7 @@ const api = axios.create({
 });
 
 const roles = ["User", "Admin"];
+const ITEMS_PER_PAGE = 20;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fullName = (u) =>
@@ -51,8 +52,8 @@ function ModalOverlay({ children, onClose, narrow }) {
 
 function ModalHeader({ title, onClose, disabled }) {
   return (
-    <div className="flex justify-between items-center mb-5 pb-4 border-b border-slate-100">
-      <h2 className="text-base font-bold text-slate-900 m-0 tracking-tight">{title}</h2>
+    <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+      <h2 className="m-0 text-base font-bold tracking-tight text-slate-900">{title}</h2>
       <button
         onClick={onClose}
         disabled={disabled}
@@ -99,7 +100,7 @@ function EditModal({ account, onClose, onSave, saving }) {
       <ModalHeader title="Edit Account" onClose={onClose} disabled={saving || fetching} />
 
       {fetchErr && (
-        <div className="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
+        <div className="px-3 py-2 mb-4 text-xs font-medium border rounded-lg bg-amber-50 border-amber-200 text-amber-700">
           Could not refresh data — showing last known values.
         </div>
       )}
@@ -108,13 +109,13 @@ function EditModal({ account, onClose, onSave, saving }) {
         <div className="flex flex-col gap-4">
           {fields.map((f) => (
             <div key={f.name}>
-              <div className="h-3 w-24 bg-slate-100 rounded animate-pulse mb-2" />
-              <div className="h-10 w-full bg-slate-100 rounded-lg animate-pulse" />
+              <div className="w-24 h-3 mb-2 rounded bg-slate-100 animate-pulse" />
+              <div className="w-full h-10 rounded-lg bg-slate-100 animate-pulse" />
             </div>
           ))}
           <div className="flex gap-2.5 justify-end pt-4 border-t border-slate-100 mt-2">
-            <div className="h-9 w-20 bg-slate-100 rounded-lg animate-pulse" />
-            <div className="h-9 w-28 bg-slate-100 rounded-lg animate-pulse" />
+            <div className="w-20 rounded-lg h-9 bg-slate-100 animate-pulse" />
+            <div className="rounded-lg h-9 w-28 bg-slate-100 animate-pulse" />
           </div>
         </div>
       ) : (
@@ -152,7 +153,7 @@ function RoleModal({ account, onClose, onSave, saving }) {
   return (
     <ModalOverlay onClose={!saving ? onClose : undefined} narrow>
       <ModalHeader title="Change Role" onClose={onClose} disabled={saving} />
-      <p className="text-sm text-slate-500 m-0 mb-4 leading-relaxed">
+      <p className="m-0 mb-4 text-sm leading-relaxed text-slate-500">
         Changing role for <strong className="text-slate-900">{fullName(account)}</strong>
       </p>
       <div className="flex flex-col gap-2.5 mb-1">
@@ -175,7 +176,7 @@ function RoleModal({ account, onClose, onSave, saving }) {
               </div>
             </div>
             {selectedRole === r && (
-              <span className="absolute right-4 text-sm font-bold text-blue-600">✓</span>
+              <span className="absolute text-sm font-bold text-blue-600 right-4">✓</span>
             )}
           </button>
         ))}
@@ -203,7 +204,7 @@ function DeleteModal({ account, onClose, onConfirm, saving }) {
       >
         <span className="text-[40px] block mb-3.5">🗑️</span>
         <h3 className="text-base font-bold text-slate-900 m-0 mb-2.5 tracking-tight">Delete Account?</h3>
-        <p className="text-sm text-slate-400 m-0 mb-6 leading-relaxed">
+        <p className="m-0 mb-6 text-sm leading-relaxed text-slate-400">
           Are you sure you want to delete{" "}
           <strong className="text-slate-700">{fullName(account)}</strong>?{" "}
           This action cannot be undone.
@@ -236,7 +237,7 @@ function Toast({ message, type, onDismiss }) {
     >
       <span>{type === "success" ? "✅" : "❌"}</span>
       {message}
-      <button className="ml-1 opacity-50 hover:opacity-100 transition-opacity" onClick={onDismiss}>✕</button>
+      <button className="ml-1 transition-opacity opacity-50 hover:opacity-100" onClick={onDismiss}>✕</button>
     </div>
   );
 }
@@ -247,16 +248,16 @@ function SkeletonRows() {
     <tr key={i} className="border-b border-slate-50">
       <td className="px-5 py-4">
         <div className="h-3.5 w-32 bg-slate-100 rounded animate-pulse mb-1.5" />
-        <div className="h-3 w-44 bg-slate-100 rounded animate-pulse" />
+        <div className="h-3 rounded w-44 bg-slate-100 animate-pulse" />
       </td>
       <td className="px-5 py-4"><div className="h-3.5 w-36 bg-slate-100 rounded animate-pulse" /></td>
-      <td className="px-5 py-4"><div className="h-6 w-16 bg-slate-100 rounded-full animate-pulse" /></td>
+      <td className="px-5 py-4"><div className="w-16 h-6 rounded-full bg-slate-100 animate-pulse" /></td>
       <td className="px-5 py-4"><div className="h-3.5 w-28 bg-slate-100 rounded animate-pulse" /></td>
       <td className="px-5 py-4">
         <div className="flex gap-2">
-          <div className="h-6 w-10 bg-slate-100 rounded animate-pulse" />
-          <div className="h-6 w-10 bg-slate-100 rounded animate-pulse" />
-          <div className="h-6 w-14 bg-slate-100 rounded animate-pulse" />
+          <div className="w-10 h-6 rounded bg-slate-100 animate-pulse" />
+          <div className="w-10 h-6 rounded bg-slate-100 animate-pulse" />
+          <div className="h-6 rounded w-14 bg-slate-100 animate-pulse" />
         </div>
       </td>
     </tr>
@@ -270,6 +271,9 @@ export default function AdminAccountManagement() {
   const [loading, setLoading]         = useState(true);
   const [fetchError, setFetchError]   = useState(false);
   const [search, setSearch]           = useState("");
+  const [roleFilter, setRoleFilter]   = useState("All");
+  const [sortBy, setSortBy]           = useState("newest");
+  const [currentPage, setCurrentPage] = useState(1);
   const [editModal,   setEditModal]   = useState(null);
   const [roleModal,   setRoleModal]   = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
@@ -279,7 +283,9 @@ export default function AdminAccountManagement() {
   const showToast = (message, type = "success") => setToast({ message, type });
   const hideToast = useCallback(() => setToast(null), []);
 
-  // ── GET /api/showAllUser ──────────────────────────────────────────────────────
+  // Reset page on filter/sort/search change
+  useEffect(() => { setCurrentPage(1); }, [search, roleFilter, sortBy]);
+
   const fetchAccounts = useCallback(() => {
     setLoading(true);
     setFetchError(false);
@@ -300,23 +306,48 @@ export default function AdminAccountManagement() {
   const totalAdmins   = accounts.filter((a) => a.role === "Admin").length;
   const totalUsers    = accounts.filter((a) => a.role === "User").length;
 
-  const filtered = accounts.filter((a) => {
-    const q = search.toLowerCase();
-    return (
-      (a.first_name   ?? "").toLowerCase().includes(q) ||
-      (a.last_name    ?? "").toLowerCase().includes(q) ||
-      (a.email        ?? "").toLowerCase().includes(q) ||
-      (a.phone_number ?? "").includes(search)
-    );
-  });
-
   const statCards = [
     { label: "All Accounts", value: loading ? "—" : totalAccounts, sub: "Registered Users" },
     { label: "Admins",       value: loading ? "—" : totalAdmins,   sub: "With full access" },
     { label: "Users",        value: loading ? "—" : totalUsers,    sub: "Standard access"  },
   ];
 
-  // ── PUT /api/accounts/{id} — full edit ────────────────────────────────────────
+  // ── Filter + Sort + Paginate ──────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    const searched = accounts.filter((a) => {
+      const q = search.toLowerCase();
+      const matchesSearch =
+        (a.first_name   ?? "").toLowerCase().includes(q) ||
+        (a.last_name    ?? "").toLowerCase().includes(q) ||
+        (a.email        ?? "").toLowerCase().includes(q) ||
+        (a.phone_number ?? "").includes(search);
+      const matchesRole = roleFilter === "All" || (a.role ?? "User") === roleFilter;
+      return matchesSearch && matchesRole;
+    });
+
+    return [...searched].sort((a, b) => {
+      if (sortBy === "newest") return new Date(b.created_at ?? 0) - new Date(a.created_at ?? 0);
+      if (sortBy === "oldest") return new Date(a.created_at ?? 0) - new Date(b.created_at ?? 0);
+      if (sortBy === "name_asc") {
+        return fullName(a).localeCompare(fullName(b));
+      }
+      if (sortBy === "name_desc") {
+        return fullName(b).localeCompare(fullName(a));
+      }
+      return 0;
+    });
+  }, [accounts, search, roleFilter, sortBy]);
+
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginated   = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+    return Array.from({ length: 5 }, (_, i) => start + i);
+  }, [totalPages, currentPage]);
+
+  // ── PUT — full edit ───────────────────────────────────────────────────────────
   const handleEditSave = (form) => {
     setSaving(true);
     api
@@ -338,7 +369,7 @@ export default function AdminAccountManagement() {
       .finally(() => setSaving(false));
   };
 
-  // ── PUT /api/accounts/{id} — role only ───────────────────────────────────────
+  // ── PUT — role only ───────────────────────────────────────────────────────────
   const handleRoleSave = (role) => {
     setSaving(true);
     api
@@ -355,7 +386,7 @@ export default function AdminAccountManagement() {
       .finally(() => setSaving(false));
   };
 
-  // ── DELETE /api/accounts/{id} ─────────────────────────────────────────────────
+  // ── DELETE ────────────────────────────────────────────────────────────────────
   const handleDelete = () => {
     setSaving(true);
     api
@@ -379,7 +410,7 @@ export default function AdminAccountManagement() {
       <div className="flex min-h-screen bg-[#F0F7F2] font-['DM_Sans',system-ui,sans-serif] text-slate-900">
         <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-        <main className="flex-1 min-w-0 px-7 py-7 pb-12 overflow-x-hidden max-md:px-4 max-md:py-5">
+        <main className="flex-1 min-w-0 pb-12 overflow-x-hidden px-7 py-7 max-md:px-4 max-md:py-5">
 
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-5 flex-wrap gap-3.5">
@@ -388,15 +419,6 @@ export default function AdminAccountManagement() {
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden bg-white border border-gray-200 text-base cursor-pointer text-slate-500 px-2.5 py-1.5 rounded-md shadow-sm hover:bg-gray-50 hover:text-slate-900 transition-all"
               >☰</button>
-            </div>
-            <div className="relative ml-auto">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">🔍</span>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Account..."
-                className="py-2 pl-8 pr-4 rounded-lg border border-gray-200 text-sm font-[inherit] text-slate-900 outline-none bg-white w-60 shadow-sm placeholder-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/8 transition-all max-md:w-44"
-              />
             </div>
           </div>
 
@@ -410,7 +432,7 @@ export default function AdminAccountManagement() {
             {statCards.map((s) => (
               <div
                 key={s.label}
-                className="bg-white rounded-2xl px-6 py-5 shadow-sm border border-slate-100 relative overflow-hidden transition-all hover:-translate-y-px hover:shadow-md group"
+                className="relative px-6 py-5 overflow-hidden transition-all bg-white border shadow-sm rounded-2xl border-slate-100 hover:-translate-y-px hover:shadow-md group"
               >
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2.5">{s.label}</div>
@@ -423,11 +445,56 @@ export default function AdminAccountManagement() {
           {/* Section Title */}
           <div className="text-[15px] font-bold text-slate-900 mb-3.5 tracking-tight">All Accounts</div>
 
-          {/* Table */}
+          {/* Table Card */}
           <div className="bg-white rounded-[18px] shadow-sm border border-slate-100 overflow-hidden">
+
+            {/* ── Filter / Search bar — same style as AdminOrders ── */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 flex-nowrap">
+              {/* Search */}
+              <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 flex-1 min-w-0">
+                <span className="text-sm text-gray-400">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by name, email, phone..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full text-xs text-gray-700 placeholder-gray-400 bg-transparent border-none outline-none"
+                />
+              </div>
+              {/* Role filter */}
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
+              >
+                <option value="All">All Roles</option>
+                <option value="Admin">Admin</option>
+                <option value="User">User</option>
+              </select>
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
+              >
+                <option value="newest">Joined: Newest</option>
+                <option value="oldest">Joined: Oldest</option>
+                <option value="name_asc">Name: A → Z</option>
+                <option value="name_desc">Name: Z → A</option>
+              </select>
+              {/* Clear */}
+              <button
+                onClick={() => { setSearch(""); setRoleFilter("All"); setSortBy("newest"); setCurrentPage(1); }}
+                className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
+              >
+                ✕ Clear
+              </button>
+            </div>
+
+            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="border-b border-gray-200 bg-gray-50">
                   <tr>
                     {["Account", "Phone", "Role", "Joined", "Action"].map((h) => (
                       <th key={h} className="px-5 py-3 text-left text-[10.5px] font-bold text-slate-400 tracking-[0.08em] uppercase whitespace-nowrap">
@@ -442,9 +509,9 @@ export default function AdminAccountManagement() {
 
                   {!loading && fetchError && (
                     <tr>
-                      <td colSpan={5} className="py-16 text-center text-slate-400 text-sm">
+                      <td colSpan={5} className="py-16 text-sm text-center text-slate-400">
                         Failed to load accounts.{" "}
-                        <button onClick={fetchAccounts} className="underline text-blue-500 hover:text-blue-700 transition-colors">
+                        <button onClick={fetchAccounts} className="text-blue-500 underline transition-colors hover:text-blue-700">
                           Retry
                         </button>
                       </td>
@@ -453,18 +520,18 @@ export default function AdminAccountManagement() {
 
                   {!loading && !fetchError && filtered.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-16 text-center text-slate-400 text-sm">No accounts found.</td>
+                      <td colSpan={5} className="py-16 text-sm text-center text-slate-400">No accounts found.</td>
                     </tr>
                   )}
 
-                  {!loading && !fetchError && filtered.map((account) => (
+                  {!loading && !fetchError && paginated.map((account) => (
                     <tr key={account.id} className="border-b border-slate-50 last:border-b-0 hover:[&_td]:bg-[#F8FBFF] transition-colors">
                       <td className="px-5 py-4 align-middle">
                         <div className="text-sm font-bold text-slate-900 mb-0.5">{fullName(account)}</div>
                         <div className="text-xs text-slate-400">{account.email}</div>
                       </td>
                       <td className="px-5 py-4 align-middle">
-                        <span className="text-sm text-slate-500 font-mono font-medium">
+                        <span className="font-mono text-sm font-medium text-slate-500">
                           {account.phone_number ?? "—"}
                         </span>
                       </td>
@@ -478,12 +545,12 @@ export default function AdminAccountManagement() {
                         </span>
                       </td>
                       <td className="px-5 py-4 align-middle">
-                        <span className="text-sm text-slate-500 font-mono font-medium whitespace-nowrap">
+                        <span className="font-mono text-sm font-medium text-slate-500 whitespace-nowrap">
                           {fmtDate(account.created_at)}
                         </span>
                       </td>
                       <td className="px-5 py-4 align-middle">
-                        <div className="flex gap-2 items-center flex-wrap">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => setEditModal(account)}
                             className="px-3.5 py-1 rounded-md border border-gray-200 bg-white text-xs font-semibold text-slate-500 cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all whitespace-nowrap"
@@ -504,6 +571,38 @@ export default function AdminAccountManagement() {
                 </tbody>
               </table>
             </div>
+
+            {/* ── Pagination Footer ── */}
+            {!loading && !fetchError && filtered.length > 0 && (
+              <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+                <span>
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} accounts
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="text-xs font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-md cursor-pointer w-7 h-7 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >‹</button>
+                  {pageNumbers.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
+                        p === currentPage
+                          ? "bg-blue-600 text-white border-none"
+                          : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >{p}</button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="text-xs font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-md cursor-pointer w-7 h-7 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >›</button>
+                </div>
+              </div>
+            )}
           </div>
 
         </main>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import AdminNav from "../components/AdminNav";
 
@@ -8,6 +8,8 @@ const api = axios.create({
   withCredentials: true,
   headers: { "Content-Type": "application/json", Accept: "application/json" },
 });
+
+const ITEMS_PER_PAGE = 20;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const STATUS_MAP = {
@@ -59,6 +61,16 @@ const fmtDate = (d) =>
         year: "numeric",
       })
     : "—";
+
+// ── Sort options ───────────────────────────────────────────────────────────────
+const SORT_OPTIONS = [
+  { value: "id_desc",     label: "ID: Newest First" },
+  { value: "id_asc",      label: "ID: Oldest First" },
+  { value: "name_asc",    label: "Name: A → Z" },
+  { value: "name_desc",   label: "Name: Z → A" },
+  { value: "amount_desc", label: "Amount: Highest" },
+  { value: "amount_asc",  label: "Amount: Lowest" },
+];
 
 // ── Status Update Modal ────────────────────────────────────────────────────────
 function StatusModal({ delivery, onClose, onUpdated }) {
@@ -135,13 +147,15 @@ function StatusModal({ delivery, onClose, onUpdated }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function AdminOrders() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [deliveries, setDeliveries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [deliveries, setDeliveries]     = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState("");
+  const [searchTerm, setSearchTerm]     = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [modalTarget, setModalTarget] = useState(null);
+  const [sortBy, setSortBy]             = useState("id_desc");
+  const [currentPage, setCurrentPage]   = useState(1);
+  const [modalTarget, setModalTarget]   = useState(null);
 
   const fetchDeliveries = useCallback(async () => {
     setLoading(true);
@@ -182,6 +196,7 @@ export default function AdminOrders() {
       });
 
       setDeliveries(enriched);
+      setCurrentPage(1);
     } catch (e) {
       setError(e.response?.data?.message || "Failed to load orders.");
     } finally {
@@ -192,6 +207,9 @@ export default function AdminOrders() {
   useEffect(() => {
     fetchDeliveries();
   }, [fetchDeliveries]);
+
+  // Reset to page 1 when search/sort changes
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, sortBy]);
 
   const handleUpdated = (updated) => {
     setDeliveries((prev) =>
@@ -216,15 +234,53 @@ export default function AdminOrders() {
     { label: "Revenue",    value: `₱${fmt(totalRevenue)}`, icon: "💰", bg: "bg-orange-50", accent: "text-orange-600" },
   ];
 
-  const filtered = deliveries.filter((d) => {
-    const user = d.checkout?.user;
-    const name = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.toLowerCase();
-    const checkoutId = String(d.checkout?.checkout_id ?? d.checkout_id ?? "").toLowerCase();
-    return (
-      name.includes(searchTerm.toLowerCase()) ||
-      checkoutId.includes(searchTerm.toLowerCase())
-    );
-  });
+  // ── Filter + Sort + Paginate ───────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    const searched = deliveries.filter((d) => {
+      const user = d.checkout?.user;
+      const name = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.toLowerCase();
+      const checkoutId = String(d.checkout?.checkout_id ?? d.checkout_id ?? "").toLowerCase();
+      return (
+        name.includes(searchTerm.toLowerCase()) ||
+        checkoutId.includes(searchTerm.toLowerCase())
+      );
+    });
+
+    return [...searched].sort((a, b) => {
+      switch (sortBy) {
+        case "id_desc":
+          return (b.checkout?.checkout_id ?? 0) - (a.checkout?.checkout_id ?? 0);
+        case "id_asc":
+          return (a.checkout?.checkout_id ?? 0) - (b.checkout?.checkout_id ?? 0);
+        case "name_asc": {
+          const na = `${a.checkout?.user?.first_name ?? ""} ${a.checkout?.user?.last_name ?? ""}`.toLowerCase();
+          const nb = `${b.checkout?.user?.first_name ?? ""} ${b.checkout?.user?.last_name ?? ""}`.toLowerCase();
+          return na.localeCompare(nb);
+        }
+        case "name_desc": {
+          const na = `${a.checkout?.user?.first_name ?? ""} ${a.checkout?.user?.last_name ?? ""}`.toLowerCase();
+          const nb = `${b.checkout?.user?.first_name ?? ""} ${b.checkout?.user?.last_name ?? ""}`.toLowerCase();
+          return nb.localeCompare(na);
+        }
+        case "amount_desc":
+          return Number(b.checkout?.paid_amount ?? 0) - Number(a.checkout?.paid_amount ?? 0);
+        case "amount_asc":
+          return Number(a.checkout?.paid_amount ?? 0) - Number(b.checkout?.paid_amount ?? 0);
+        default:
+          return 0;
+      }
+    });
+  }, [deliveries, searchTerm, sortBy]);
+
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginated   = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  // ── Pagination range (show max 5 page buttons) ─────────────────────────────
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+    return Array.from({ length: 5 }, (_, i) => start + i);
+  }, [totalPages, currentPage]);
 
   return (
     <>
@@ -276,9 +332,7 @@ export default function AdminOrders() {
                   <div className={`text-lg font-bold ${s.accent}`}>{s.value}</div>
                   <div className="text-[11px] text-gray-500 mt-0.5">{s.label}</div>
                 </div>
-                <div
-                  className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center text-base`}
-                >
+                <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center text-base`}>
                   {s.icon}
                 </div>
               </div>
@@ -289,9 +343,9 @@ export default function AdminOrders() {
           <div className="overflow-hidden bg-white shadow-sm rounded-2xl">
 
             {/* Search & Filter */}
-<div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 flex-nowrap">
- <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 flex-1 min-w-0">
-                  <span className="text-sm text-gray-400">🔍</span>
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 flex-nowrap">
+              <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 flex-1 min-w-0">
+                <span className="text-sm text-gray-400">🔍</span>
                 <input
                   type="text"
                   placeholder="Search by name, order ID..."
@@ -302,8 +356,8 @@ export default function AdminOrders() {
               </div>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
+                onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
               >
                 <option value="All">All Status</option>
                 <option value="processing">Processing</option>
@@ -311,9 +365,18 @@ className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text
                 <option value="on_the_way">On the way</option>
                 <option value="delivered">Delivered</option>
               </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
               <button
-                onClick={() => { setSearchTerm(""); setStatusFilter("All"); }}
-className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
+                onClick={() => { setSearchTerm(""); setStatusFilter("All"); setSortBy("id_desc"); setCurrentPage(1); }}
+                className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
               >
                 ✕ Clear
               </button>
@@ -356,53 +419,42 @@ className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-g
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((d, index) => {
-                      const user = d.checkout?.user;
+                    {paginated.map((d, index) => {
+                      const user     = d.checkout?.user;
                       const checkout = d.checkout;
-                      const cfg = getStatusCfg(d.status);
+                      const cfg      = getStatusCfg(d.status);
                       return (
                         <tr
                           key={d.delivery_id}
                           className={`border-b border-gray-100 ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
                         >
-                          {/* Order ID */}
                           <td className="px-3.5 py-3.5 text-blue-600 font-semibold whitespace-nowrap">
                             #{checkout?.checkout_id ?? "—"}
                           </td>
-                          {/* Client */}
                           <td className="px-3.5 py-3.5 text-gray-900 whitespace-nowrap">
                             {user ? `${user.first_name} ${user.last_name}` : "—"}
                           </td>
-                          {/* Contact */}
                           <td className="px-3.5 py-3.5 text-gray-500 leading-relaxed">
                             <div>{user?.email ?? "—"}</div>
                             <div>{user?.phone_number ?? ""}</div>
                           </td>
-                          {/* Payment */}
                           <td className="px-3.5 py-3.5 text-gray-700 whitespace-nowrap capitalize">
                             {checkout?.payment_method ?? "—"}
                           </td>
-                          {/* Shipping fee */}
                           <td className="px-3.5 py-3.5 text-gray-700 whitespace-nowrap">
                             ₱{fmt(checkout?.shipping_fee)}
                           </td>
-                          {/* Total paid */}
                           <td className="px-3.5 py-3.5 text-gray-900 font-semibold whitespace-nowrap">
                             ₱{fmt(checkout?.paid_amount)}
                           </td>
-                          {/* Status */}
                           <td className="px-3.5 py-3.5">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold inline-block whitespace-nowrap ${cfg.badge}`}
-                            >
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold inline-block whitespace-nowrap ${cfg.badge}`}>
                               {cfg.label}
                             </span>
                           </td>
-                          {/* Date */}
                           <td className="px-3.5 py-3.5 text-gray-500 whitespace-nowrap">
                             {fmtDate(checkout?.created_at)}
                           </td>
-                          {/* Action */}
                           <td className="px-3.5 py-3.5">
                             <button
                               onClick={() => setModalTarget(d)}
@@ -415,7 +467,7 @@ className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-g
                       );
                     })}
 
-                    {filtered.length === 0 && (
+                    {paginated.length === 0 && (
                       <tr>
                         <td colSpan={9} className="py-10 text-xs text-center text-gray-400">
                           No orders found.
@@ -427,18 +479,29 @@ className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-g
               </div>
             )}
 
-            {/* Footer */}
+            {/* ── Pagination Footer ── */}
             {!loading && !error && (
               <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
                 <span>
-                  Showing {filtered.length} of {deliveries.length} orders
+                  Showing {paginated.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} orders
                 </span>
-                <div className="flex gap-1.5">
-                  {[1, 2, 3].map((p) => (
+                <div className="flex items-center gap-1.5">
+                  {/* Prev */}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="text-xs font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-md cursor-pointer w-7 h-7 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    ‹
+                  </button>
+
+                  {/* Page numbers */}
+                  {pageNumbers.map((p) => (
                     <button
                       key={p}
+                      onClick={() => setCurrentPage(p)}
                       className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
-                        p === 1
+                        p === currentPage
                           ? "bg-blue-600 text-white border-none"
                           : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
                       }`}
@@ -446,6 +509,15 @@ className="border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-g
                       {p}
                     </button>
                   ))}
+
+                  {/* Next */}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="text-xs font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-md cursor-pointer w-7 h-7 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    ›
+                  </button>
                 </div>
               </div>
             )}

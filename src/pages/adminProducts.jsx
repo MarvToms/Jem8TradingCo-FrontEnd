@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import AdminNav from '../components/AdminNav';
 import axios from "axios";
 
 const BASE = "http://127.0.0.1:8000";
+const ITEMS_PER_PAGE = 20;
 
 // ── Reusable components defined OUTSIDE AdminProducts ──
 const Overlay = ({ children, onClose, wide }) => (
@@ -125,6 +126,7 @@ const AdminProducts = () => {
   const [sortOrder, setSortOrder]                 = useState("A-Z");
   const [selectedProducts, setSelectedProducts]   = useState([]);
   const [sidebarOpen, setSidebarOpen]             = useState(false);
+  const [currentPage, setCurrentPage]             = useState(1);
 
   // ── Modal states ──
   const [showAddModal, setShowAddModal]           = useState(false);
@@ -199,11 +201,14 @@ const AdminProducts = () => {
     fetchProducts();
   }, []);
 
+  // Reset to page 1 whenever filter/sort/search changes
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, selectedCategory, sortOrder]);
+
   // ────────────────────────────────────────────
   // Helpers
   // ────────────────────────────────────────────
   const toggleSelect    = (id) => setSelectedProducts(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
-  const toggleSelectAll = () => setSelectedProducts(selectedProducts.length === products.length ? [] : products.map(p => p.id));
+  const toggleSelectAll = () => setSelectedProducts(selectedProducts.length === products.length ? [] : products.map(p => p.product_id ?? p.id));
 
   const deriveStatus = (stock) => {
     const s = Number(stock ?? 0);
@@ -223,7 +228,8 @@ const AdminProducts = () => {
       ? (raw.name ?? raw.category_name ?? fallback ?? "—")
       : (raw ?? fallback ?? "—");
 
-  const filteredProducts = products
+  // ── Filter + Sort ──────────────────────────────────────────
+  const filteredProducts = useMemo(() => products
     .filter(p => {
       const name = p.product_name ?? p.name ?? "";
       const cat  = resolveCat(p.category, p.category_name);
@@ -236,7 +242,17 @@ const AdminProducts = () => {
       const na = (a.product_name ?? a.name ?? "").toLowerCase();
       const nb = (b.product_name ?? b.name ?? "").toLowerCase();
       return sortOrder === "A-Z" ? na.localeCompare(nb) : nb.localeCompare(na);
-    });
+    }), [products, searchTerm, selectedCategory, sortOrder]);
+
+  // ── Pagination ─────────────────────────────────────────────
+  const totalPages  = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
+  const paginated   = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+    return Array.from({ length: 5 }, (_, i) => start + i);
+  }, [totalPages, currentPage]);
 
   // ────────────────────────────────────────────
   // Open modals
@@ -382,7 +398,6 @@ const AdminProducts = () => {
     ? `${BASE}/storage/${viewImages[activeImgIdx].image_path}`
     : null;
 
-  // Shared input class
   const inputCls = "w-full px-[11px] py-[9px] border border-slate-200 rounded-lg text-[13px] text-slate-900 bg-white outline-none box-border font-[inherit] focus:border-blue-400 transition-colors";
   const labelCls = "block text-[11px] font-semibold text-gray-700 mb-1.5 uppercase tracking-wide";
 
@@ -447,7 +462,6 @@ const AdminProducts = () => {
             onClose={() => setShowViewModal(false)}
           />
           <div className="grid grid-cols-2 gap-5 px-6 pt-5 pb-6">
-            {/* Left — image gallery */}
             <div>
               <div className="rounded-xl overflow-hidden bg-slate-50 border border-slate-200 aspect-square flex items-center justify-center mb-2.5 relative">
                 {viewMainSrc
@@ -484,7 +498,6 @@ const AdminProducts = () => {
               )}
             </div>
 
-            {/* Right — details */}
             <div className="flex flex-col gap-3.5">
               <div className="p-4 bg-slate-50 rounded-xl">
                 <div className="text-[28px] font-extrabold text-blue-600 mb-2">
@@ -494,7 +507,6 @@ const AdminProducts = () => {
                   {activeProduct.description || <em className="text-slate-300">No description.</em>}
                 </p>
               </div>
-
               <div className="grid grid-cols-2 gap-2.5">
                 {[
                   { label: "Stock",    value: activeProduct.product_stocks ?? activeProduct.stock ?? 0, icon: "📦" },
@@ -511,7 +523,6 @@ const AdminProducts = () => {
                   </div>
                 ))}
               </div>
-
               <div className="bg-white border border-slate-200 rounded-xl px-4 py-3.5">
                 {[
                   ["Product ID",   `#${activeProduct.product_id}`],
@@ -524,7 +535,6 @@ const AdminProducts = () => {
                   </div>
                 ))}
               </div>
-
               <div className="flex gap-2.5 mt-auto">
                 <button
                   onClick={() => { setShowViewModal(false); openEdit(activeProduct); }}
@@ -551,7 +561,6 @@ const AdminProducts = () => {
         <Overlay onClose={() => setShowEditModal(false)}>
           <ModalHeader title="Edit Product" subtitle={`Editing: ${activeProduct.product_name ?? activeProduct.name}`} onClose={() => setShowEditModal(false)} />
           <form onSubmit={submitEdit} className="px-6 pt-5 pb-6">
-
             {(activeProduct.images ?? []).length > 0 && (
               <div className="mb-4">
                 <label className={labelCls}>Current Images</label>
@@ -559,11 +568,11 @@ const AdminProducts = () => {
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2">
                   {(activeProduct.images ?? []).map((img, i) => {
                     const src     = `${BASE}/storage/${img.image_path}`;
-                    const removed = removedImageIds.includes(img.id);
+const removed = removedImageIds.includes(img.image_id);
                     return (
                       <div
                         key={img.id ?? i}
-                        onClick={() => toggleRemoveExisting(img.id)}
+onClick={() => toggleRemoveExisting(img.image_id)}
                         className={`relative rounded-lg overflow-hidden aspect-square cursor-pointer ${removed ? "border-2 border-red-500" : i === 0 ? "border-2 border-blue-600" : "border border-slate-200"}`}
                       >
                         <img src={src} alt="" className={`w-full h-full object-cover block transition-opacity duration-200 ${removed ? "opacity-30" : "opacity-100"}`} />
@@ -582,9 +591,7 @@ const AdminProducts = () => {
                 )}
               </div>
             )}
-
             <ImageUploadZone id="editImgUpload" onchange={handleNewImages} previews={newPreviews} onRemove={removeNewImage} label="Add More Images" />
-
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <label className={labelCls}>Product Name</label>
@@ -694,10 +701,9 @@ const AdminProducts = () => {
         <div className="overflow-hidden bg-white shadow-sm rounded-2xl">
 
           {/* Filters */}
-<div className="px-[18px] py-3.5 border-b border-gray-100 flex gap-2 items-center w-full flex-nowrap">
-            
-<div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-[7px] bg-gray-50 flex-1 min-w-0">
-                  <span className="text-gray-400">🔍</span>
+          <div className="px-[18px] py-3.5 border-b border-gray-100 flex gap-2 items-center w-full flex-nowrap">
+            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-[7px] bg-gray-50 flex-1 min-w-0">
+              <span className="text-gray-400">🔍</span>
               <input
                 type="text"
                 placeholder="Search for Product"
@@ -709,7 +715,8 @@ const AdminProducts = () => {
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0">
+              className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
+            >
               <option value="All">All Categories</option>
               {categories.map(cat => {
                 const label = cat.name ?? cat.category_name ?? cat.title ?? "";
@@ -719,14 +726,14 @@ className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text
             <select
               value={sortOrder}
               onChange={e => setSortOrder(e.target.value)}
-className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
+              className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
             >
               <option value="A-Z">Sort By A-Z</option>
               <option value="Z-A">Sort By Z-A</option>
             </select>
             <button
               onClick={() => { setSearchTerm(""); setSelectedCategory("All"); setSortOrder("A-Z"); }}
-className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
+              className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3.5 py-2 bg-white text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
             >
               ✕ Clear
             </button>
@@ -765,7 +772,7 @@ className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3.5 py
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((product, index) => {
+                  {paginated.map((product, index) => {
                     const name     = product.product_name ?? product.name ?? "—";
                     const category = resolveCat(product.category, product.category_name);
                     const size     = product.size ?? product.variant ?? "—";
@@ -841,20 +848,46 @@ className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3.5 py
             )}
           </div>
 
-          {/* Pagination footer */}
-          <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-            <span>Showing {filteredProducts.length} of {products.length} products</span>
-            <div className="flex gap-1.5">
-              {[1, 2, 3].map(p => (
+          {/* ── Pagination footer ── */}
+          {!productsLoading && filteredProducts.length > 0 && (
+            <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+              <span>
+                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
+              </span>
+              <div className="flex items-center gap-1.5">
+                {/* Prev */}
                 <button
-                  key={p}
-                  className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${p === 1 ? "border-none bg-blue-600 text-white" : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="text-xs font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-md cursor-pointer w-7 h-7 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {p}
+                  ‹
                 </button>
-              ))}
+                {/* Page numbers */}
+                {pageNumbers.map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
+                      p === currentPage
+                        ? "border-none bg-blue-600 text-white"
+                        : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                {/* Next */}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="text-xs font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-md cursor-pointer w-7 h-7 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ›
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
