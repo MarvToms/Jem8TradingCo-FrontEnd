@@ -225,10 +225,10 @@ const Blog = () => {
 // AFTER:
 <div className="min-h-screen bg-[#f8faf9] font-sans" style={{ paddingTop: 'calc(var(--header-h) + 30px)' }}>
         {/* ── PAGE HEADER ── */}
-      <div className="container px-4 pt-10 pb-6 mx-auto">
-        <h1 className="text-3xl font-extrabold text-[#1a2e22] mb-5 tracking-tight">Blogs</h1>
-        <div className="flex flex-wrap gap-2">
-          {filters.map((f) => (
+<div className="container px-4 pt-10 pb-10 mx-auto">
+          <h1 className="text-3xl font-extrabold text-[#1a2e22] mb-5 tracking-tight">Blogs</h1>
+<div className="flex flex-wrap gap-2 mb-6">
+            {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => handleFilter(f.key)}
@@ -245,8 +245,8 @@ const Blog = () => {
       </div>
 
       {/* ── BANNER ── */}
-      <div className="container px-4 mx-auto mb-8">
-        <div className="rounded-2xl bg-gradient-to-r from-[#1a2e22] to-[#2d5a42] text-white px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+<div className="container px-4 mx-auto mb-10">
+          <div className="rounded-2xl bg-gradient-to-r from-[#1a2e22] to-[#2d5a42] text-white px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-white/80">
             Your all-in-one supply partner in Metro Manila. Office supplies, pantry essentials,
             janitorial products, wellness, and more — all from one trusted source.
@@ -261,9 +261,9 @@ const Blog = () => {
       </div>
 
       {/* ── FEATURED ── */}
-      <section className="container px-4 mx-auto mb-12">
-        <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-4">Featured</p>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-5">
+<section className="container px-4 mx-auto mt-8 mb-12">
+  <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-4">Featured</p>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-5">
 
           {/* Main featured */}
           {loading ? (

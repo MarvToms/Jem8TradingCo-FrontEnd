@@ -13,7 +13,8 @@ const api = axios.create({
   },
 });
 
-const roles = ["User", "Admin"];
+// ── lowercase to match DB enum: 'admin' | 'user' ──────────────────────────────
+const roles = ["user", "admin"];
 const ITEMS_PER_PAGE = 20;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -26,6 +27,10 @@ const fmtDate = (iso) => {
     month: "short", day: "numeric", year: "numeric",
   });
 };
+
+// ── Capitalize for display only (DB stores lowercase) ─────────────────────────
+const displayRole = (r) =>
+  r ? r.charAt(0).toUpperCase() + r.slice(1) : "User";
 
 // ─── Shared classes ───────────────────────────────────────────────────────────
 const inputCls  = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-slate-900 bg-white outline-none box-border font-[inherit] placeholder-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/8 transition-all disabled:opacity-50 disabled:cursor-not-allowed";
@@ -148,7 +153,8 @@ function EditModal({ account, onClose, onSave, saving }) {
 
 // ─── Role Modal ───────────────────────────────────────────────────────────────
 function RoleModal({ account, onClose, onSave, saving }) {
-  const [selectedRole, setSelectedRole] = useState(account.role ?? "User");
+  // ── use lowercase default to match DB ────────────────────────────────────────
+  const [selectedRole, setSelectedRole] = useState(account.role ?? "user");
 
   return (
     <ModalOverlay onClose={!saving ? onClose : undefined} narrow>
@@ -168,11 +174,12 @@ function RoleModal({ account, onClose, onSave, saving }) {
                 : "border-gray-200 hover:border-blue-600 hover:bg-blue-50"
               }`}
           >
-            <span className="text-2xl shrink-0">{r === "Admin" ? "🛡️" : "👤"}</span>
+            <span className="text-2xl shrink-0">{r === "admin" ? "🛡️" : "👤"}</span>
             <div>
-              <div className="text-sm font-bold text-slate-900 mb-0.5">{r}</div>
+              {/* displayRole() capitalizes for UI only */}
+              <div className="text-sm font-bold text-slate-900 mb-0.5">{displayRole(r)}</div>
               <div className="text-xs text-slate-400">
-                {r === "Admin" ? "Full access to admin panel" : "Standard registered access"}
+                {r === "admin" ? "Full access to admin panel" : "Standard registered access"}
               </div>
             </div>
             {selectedRole === r && (
@@ -183,6 +190,7 @@ function RoleModal({ account, onClose, onSave, saving }) {
       </div>
       <div className="flex gap-2.5 justify-end mt-6 pt-4 border-t border-slate-100">
         <button className={btnCancel} onClick={onClose} disabled={saving}>Cancel</button>
+        {/* selectedRole is already lowercase — sent as-is to API */}
         <button className={btnSave} onClick={() => onSave(selectedRole)} disabled={saving}>
           {saving ? "Saving…" : "Save Role"}
         </button>
@@ -301,10 +309,10 @@ export default function AdminAccountManagement() {
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
 
-  // ── Derived stats ─────────────────────────────────────────────────────────────
+  // ── Derived stats — compare lowercase to match DB ─────────────────────────
   const totalAccounts = accounts.length;
-  const totalAdmins   = accounts.filter((a) => a.role === "Admin").length;
-  const totalUsers    = accounts.filter((a) => a.role === "User").length;
+  const totalAdmins   = accounts.filter((a) => a.role === "admin").length;
+  const totalUsers    = accounts.filter((a) => a.role === "user").length;
 
   const statCards = [
     { label: "All Accounts", value: loading ? "—" : totalAccounts, sub: "Registered Users" },
@@ -321,19 +329,16 @@ export default function AdminAccountManagement() {
         (a.last_name    ?? "").toLowerCase().includes(q) ||
         (a.email        ?? "").toLowerCase().includes(q) ||
         (a.phone_number ?? "").includes(search);
-      const matchesRole = roleFilter === "All" || (a.role ?? "User") === roleFilter;
+      // ── compare lowercase to match DB ─────────────────────────────────────
+      const matchesRole = roleFilter === "All" || (a.role ?? "user") === roleFilter;
       return matchesSearch && matchesRole;
     });
 
     return [...searched].sort((a, b) => {
       if (sortBy === "newest") return new Date(b.created_at ?? 0) - new Date(a.created_at ?? 0);
       if (sortBy === "oldest") return new Date(a.created_at ?? 0) - new Date(b.created_at ?? 0);
-      if (sortBy === "name_asc") {
-        return fullName(a).localeCompare(fullName(b));
-      }
-      if (sortBy === "name_desc") {
-        return fullName(b).localeCompare(fullName(a));
-      }
+      if (sortBy === "name_asc")  return fullName(a).localeCompare(fullName(b));
+      if (sortBy === "name_desc") return fullName(b).localeCompare(fullName(a));
       return 0;
     });
   }, [accounts, search, roleFilter, sortBy]);
@@ -369,7 +374,7 @@ export default function AdminAccountManagement() {
       .finally(() => setSaving(false));
   };
 
-  // ── PUT — role only ───────────────────────────────────────────────────────────
+  // ── PUT — role only (sends lowercase value matching DB enum) ──────────────────
   const handleRoleSave = (role) => {
     setSaving(true);
     api
@@ -448,7 +453,7 @@ export default function AdminAccountManagement() {
           {/* Table Card */}
           <div className="bg-white rounded-[18px] shadow-sm border border-slate-100 overflow-hidden">
 
-            {/* ── Filter / Search bar — same style as AdminOrders ── */}
+            {/* Filter / Search bar */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 flex-nowrap">
               {/* Search */}
               <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 flex-1 min-w-0">
@@ -461,15 +466,15 @@ export default function AdminAccountManagement() {
                   className="w-full text-xs text-gray-700 placeholder-gray-400 bg-transparent border-none outline-none"
                 />
               </div>
-              {/* Role filter */}
+              {/* Role filter — values are lowercase to match DB */}
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3.5 py-2 bg-gray-50 text-sm text-gray-700 cursor-pointer outline-none shrink-0"
               >
                 <option value="All">All Roles</option>
-                <option value="Admin">Admin</option>
-                <option value="User">User</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
               </select>
               {/* Sort */}
               <select
@@ -536,12 +541,13 @@ export default function AdminAccountManagement() {
                         </span>
                       </td>
                       <td className="px-5 py-4 align-middle">
+                        {/* compare lowercase, display capitalized via displayRole() */}
                         <span className={`inline-flex items-center px-3.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap
-                          ${account.role === "Admin"
+                          ${account.role === "admin"
                             ? "bg-slate-800 text-slate-100 border border-slate-700"
                             : "bg-slate-100 text-slate-500 border border-slate-300"
                           }`}>
-                          {account.role ?? "User"}
+                          {displayRole(account.role)}
                         </span>
                       </td>
                       <td className="px-5 py-4 align-middle">
@@ -572,7 +578,7 @@ export default function AdminAccountManagement() {
               </table>
             </div>
 
-            {/* ── Pagination Footer ── */}
+            {/* Pagination Footer */}
             {!loading && !fetchError && filtered.length > 0 && (
               <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
                 <span>

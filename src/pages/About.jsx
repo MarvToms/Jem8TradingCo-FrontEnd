@@ -72,8 +72,8 @@ const About = () => {
   ];
 
   return (
-    <div className="bg-white" style={{ paddingTop: 'var(--header-h)' }}>
-
+<div className="bg-white">
+  
       {/* ===== HERO ===== */}
       <section
         className="relative overflow-hidden text-center"
@@ -84,7 +84,7 @@ const About = () => {
       >
         {/* Decorative blob */}
         <div
-          className="pointer-events-none absolute rounded-full"
+          className="absolute rounded-full pointer-events-none"
           style={{
             top: '-120px', right: '-120px',
             width: '480px', height: '480px',
@@ -127,7 +127,7 @@ const About = () => {
           </div>
 
           <p
-            className="text-center text-base leading-relaxed md:text-lg"
+            className="text-base leading-relaxed text-center md:text-lg"
             style={{
               fontFamily: 'var(--font-sub)',
               color: 'var(--gray)',
@@ -216,7 +216,7 @@ const About = () => {
             >
               {/* decorative circle */}
               <div
-                className="pointer-events-none absolute rounded-full"
+                className="absolute rounded-full pointer-events-none"
                 style={{
                   top: '-40px', right: '-40px',
                   width: 200, height: 200,
@@ -225,7 +225,7 @@ const About = () => {
               />
               {/* badge */}
               <div
-                className="mb-4 inline-block rounded-full font-bold uppercase"
+                className="inline-block mb-4 font-bold uppercase rounded-full"
                 style={{
                   fontFamily: 'var(--font-sub)',
                   background: 'rgba(255,255,255,0.1)',
@@ -297,7 +297,7 @@ const About = () => {
               onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
             >
               <div
-                className="pointer-events-none absolute rounded-full"
+                className="absolute rounded-full pointer-events-none"
                 style={{
                   top: '-40px', right: '-40px',
                   width: 200, height: 200,
@@ -305,7 +305,7 @@ const About = () => {
                 }}
               />
               <div
-                className="mb-4 inline-block rounded-full font-bold uppercase"
+                className="inline-block mb-4 font-bold uppercase rounded-full"
                 style={{
                   fontFamily: 'var(--font-sub)',
                   background: 'rgba(77,123,101,0.15)',
@@ -370,7 +370,7 @@ const About = () => {
               Our Team
             </div>
             <h2
-              className="mt-2 block font-bold"
+              className="block mt-2 font-bold"
               style={{
                 fontFamily: 'var(--font-heading)',
                 fontSize: 'clamp(26px, 3vw, 38px)',
@@ -396,7 +396,7 @@ const About = () => {
             {leaders.map((leader) => (
               <div
                 key={leader.id}
-                className="overflow-hidden bg-white text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                className="overflow-hidden text-center transition-all duration-300 bg-white hover:-translate-y-1 hover:shadow-lg"
                 style={{
                   borderRadius: 'var(--r-lg)',
                   border: '1px solid var(--border)',
@@ -413,12 +413,12 @@ const About = () => {
                   <img
                     src={leader.image}
                     alt={leader.name}
-                    className="h-full w-full object-cover object-top"
+                    className="object-cover object-top w-full h-full"
                     onError={handleImageError}
                   />
                   {/* fallback initials */}
                   <div
-                    className="absolute inset-0 hidden items-center justify-center font-bold"
+                    className="absolute inset-0 items-center justify-center hidden font-bold"
                     style={{
                       fontFamily: 'var(--font-heading)',
                       fontSize: 36,
@@ -468,7 +468,7 @@ const About = () => {
         }}
       >
         <div
-          className="pointer-events-none absolute rounded-full"
+          className="absolute rounded-full pointer-events-none"
           style={{
             top: '-80px', left: '50%', transform: 'translateX(-50%)',
             width: 600, height: 600,
@@ -584,12 +584,12 @@ const About = () => {
         }}
       >
         <div className="container">
-          <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-16">
+          <div className="grid items-center grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
 
             {/* Left text */}
             <div>
               <div
-                className="mb-4 inline-block rounded-full font-bold uppercase"
+                className="inline-block mb-4 font-bold uppercase rounded-full"
                 style={{
                   fontFamily: 'var(--font-sub)',
                   background: 'var(--green-light)',
@@ -625,7 +625,7 @@ const About = () => {
                 wellness products tailored to your business needs. Delivering quality at the best price —
                 directly to your office.
               </p>
-              <div className="mb-9 flex flex-col gap-3">
+              <div className="flex flex-col gap-3 mb-9">
                 {['Reliable Supply', 'Consistent Quality', 'Timely Delivery'].map((f) => (
                   <div
                     key={f}
@@ -637,7 +637,7 @@ const About = () => {
                     }}
                   >
                     <span
-                      className="flex shrink-0 items-center justify-content-center rounded-full font-bold text-white"
+                      className="flex items-center font-bold text-white rounded-full shrink-0 justify-content-center"
                       style={{
                         width: 24, height: 24,
                         background: 'var(--green)',
@@ -673,7 +673,7 @@ const About = () => {
                   <img
                     src={src}
                     alt={`Product ${i + 1}`}
-                    className="h-full w-full object-cover"
+                    className="object-cover w-full h-full"
                   />
                 </div>
               ))}
@@ -693,7 +693,7 @@ const About = () => {
       >
         {/* decorative circle */}
         <div
-          className="pointer-events-none absolute rounded-full"
+          className="absolute rounded-full pointer-events-none"
           style={{
             top: '-60px', right: '-60px',
             width: 300, height: 300,
