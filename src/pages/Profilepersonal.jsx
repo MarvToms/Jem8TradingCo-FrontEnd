@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { logout, me, updateProfile } from "../api/auth";
@@ -11,6 +11,14 @@ import PasswordSecurity from './PasswordSecurity';
 import Notification from './Notification';
 import { toast } from "react-toastify";
 import { getUserAddresses, addAddress as apiAddAddress, updateAddress as apiUpdateAddress, deleteAddress as apiDeleteAddress } from "../api/address";
+import axios from "axios";
+
+// ─── Axios instance ───────────────────────────────────────────────────────────
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api",
+  withCredentials: true,
+  headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+});
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const UserIcon = () => (
@@ -114,6 +122,13 @@ const PersonIcon2 = () => (
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
+// ── Camera icon for photo upload ───────────────────────────────────────────────
+const CameraIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
 
 // ─── Modal Styles ─────────────────────────────────────────────────────────────
 const MODAL_STYLES = `
@@ -211,6 +226,76 @@ const MODAL_STYLES = `
   .addr-btn-primary:hover { background: #333; }
   .addr-btn-primary:active { transform: scale(0.98); }
   .addr-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ── Profile photo styles ── */
+  .profile-photo-wrap {
+    position: relative;
+    width: 80px; height: 80px;
+    flex-shrink: 0;
+  }
+  .profile-photo-img {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2.5px solid #e8e8e8;
+    display: block;
+  }
+  .profile-photo-placeholder {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    border: 2.5px solid #e8e8e8;
+    display: flex; align-items: center; justify-content: center;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -1px;
+    user-select: none;
+  }
+  .profile-photo-btn {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 26px; height: 26px;
+    background: #1a1a1a;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    transition: background 0.15s, transform 0.15s;
+    z-index: 2;
+  }
+  .profile-photo-btn:hover { background: #333; transform: scale(1.08); }
+  .profile-photo-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .profile-photo-uploading {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 600;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .profile-photo-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* sidebar avatar upgrade */
+  .profile-sidebar__avatar-img {
+    width: 52px; height: 52px;
+    border-radius: 50%; object-fit: cover;
+    border: 2px solid #e8e8e8;
+  }
+  .profile-sidebar__avatar-placeholder {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    color: #888; font-size: 20px; font-weight: 600;
+  }
 `;
 
 // ─── Address Modal ────────────────────────────────────────────────────────────
@@ -229,7 +314,6 @@ function AddressModal({ onClose, onSave, editingAddress }) {
 
   const handleSubmit = () => {
     if (!form.street || !form.city) return;
-    console.log(form)
     onSave(form);
     onClose();
   };
@@ -239,8 +323,6 @@ function AddressModal({ onClose, onSave, editingAddress }) {
       <style>{MODAL_STYLES}</style>
       <div className="addr-modal-overlay" onClick={onClose}>
         <div className="addr-modal-box" onClick={(e) => e.stopPropagation()}>
-
-          {/* Header */}
           <div className="addr-modal-header">
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div className="addr-modal-icon-wrap"><MapPinSmIcon /></div>
@@ -251,8 +333,6 @@ function AddressModal({ onClose, onSave, editingAddress }) {
             </div>
             <button className="addr-modal-close" onClick={onClose}><XIcon /></button>
           </div>
-
-          {/* Type Toggle */}
           <div className="addr-type-toggle">
             <button className={`addr-type-btn${form.type === "personal" ? " active" : ""}`} onClick={() => setType("personal")}>
               <PersonIcon2 /> Personal
@@ -261,8 +341,6 @@ function AddressModal({ onClose, onSave, editingAddress }) {
               <BuildingIcon /> Company
             </button>
           </div>
-
-          {/* Body */}
           <div className="addr-modal-body">
             {form.type === "company" && (
               <>
@@ -288,7 +366,6 @@ function AddressModal({ onClose, onSave, editingAddress }) {
                 <div className="addr-divider" />
               </>
             )}
-
             <div className="addr-section-label">Location</div>
             <div className="addr-field">
               <label className="addr-label">Street Address <span style={{ color: "#e05" }}>*</span></label>
@@ -319,15 +396,9 @@ function AddressModal({ onClose, onSave, editingAddress }) {
               <input className="addr-input" name="country" value={form.country} onChange={handleChange} />
             </div>
           </div>
-
-          {/* Footer */}
           <div className="addr-modal-footer">
             <button className="addr-btn-ghost" onClick={onClose}>Cancel</button>
-            <button
-              className="addr-btn-primary"
-              onClick={handleSubmit}
-              disabled={!form.street || !form.city}
-            >
+            <button className="addr-btn-primary" onClick={handleSubmit} disabled={!form.street || !form.city}>
               <CheckIcon />
               {editingAddress ? "Save Changes" : "Add Address"}
             </button>
@@ -335,6 +406,92 @@ function AddressModal({ onClose, onSave, editingAddress }) {
         </div>
       </div>
     </>
+  );
+}
+
+// ─── Profile Photo Component ──────────────────────────────────────────────────
+function ProfilePhoto({ user, onUploadSuccess }) {
+  const fileInputRef  = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Build initials fallback
+  const initials = [user?.first_name?.[0], user?.last_name?.[0]]
+    .filter(Boolean).join("").toUpperCase() || "?";
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side guard: max 2 MB, jpg/png only
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2 MB.");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+      toast.error("Only JPG and PNG images are allowed.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("profile_image", file);
+
+    setUploading(true);
+    try {
+      const res = await api.post("/profile/update-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const newUrl = res.data?.profile_image_url ?? res.data?.data?.profile_image ?? null;
+      toast.success("Profile photo updated!");
+      if (onUploadSuccess) onUploadSuccess(newUrl);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload photo. Please try again.");
+    } finally {
+      setUploading(false);
+      // Reset so same file can be re-selected
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="profile-photo-wrap">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpg,image/jpeg,image/png"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
+      {/* Avatar */}
+      {user?.profile_image ? (
+        <img
+          src={user.profile_image}
+          alt="Profile"
+          className="profile-photo-img"
+        />
+      ) : (
+        <div className="profile-photo-placeholder">{initials}</div>
+      )}
+
+      {/* Upload overlay while uploading */}
+      {uploading && (
+        <div className="profile-photo-uploading">
+          <div className="profile-photo-spinner" />
+        </div>
+      )}
+
+      {/* Camera button */}
+      <button
+        className="profile-photo-btn"
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        disabled={uploading}
+        title="Change profile photo"
+      >
+        <CameraIcon />
+      </button>
+    </div>
   );
 }
 
@@ -357,10 +514,8 @@ function EditableField({ label, value, name, isEditing, onChange }) {
 // ─── Address Card ─────────────────────────────────────────────────────────────
 function AddressCard({ addr, onEdit, onDelete }) {
   const isCompany = addr.type === "company";
-
   return (
     <div style={addressStyles.card}>
-      {/* Card Header */}
       <div style={addressStyles.cardHeader}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{
@@ -373,37 +528,17 @@ function AddressCard({ addr, onEdit, onDelete }) {
           </span>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button style={addressStyles.actionBtn} onClick={onEdit} title="Edit">
-            <EditSmallIcon />
-          </button>
-          <button style={{ ...addressStyles.actionBtn, color: "#e57373" }} onClick={onDelete} title="Delete">
-            <TrashIcon />
-          </button>
+          <button style={addressStyles.actionBtn} onClick={onEdit} title="Edit"><EditSmallIcon /></button>
+          <button style={{ ...addressStyles.actionBtn, color: "#e57373" }} onClick={onDelete} title="Delete"><TrashIcon /></button>
         </div>
       </div>
-
-      {/* Company Info */}
-      {isCompany && addr.company_name && (
-        <div style={addressStyles.companyName}>{addr.company_name}</div>
-      )}
-
-      {/* Address Lines */}
+      {isCompany && addr.company_name && <div style={addressStyles.companyName}>{addr.company_name}</div>}
       <div style={addressStyles.addressBlock}>
         {addr.street && <div style={addressStyles.line}>{addr.street}</div>}
-        {(addr.barangay || addr.city) && (
-          <div style={addressStyles.line}>
-            {[addr.barangay, addr.city].filter(Boolean).join(", ")}
-          </div>
-        )}
-        {(addr.province || addr.postal_code) && (
-          <div style={addressStyles.line}>
-            {[addr.province, addr.postal_code].filter(Boolean).join(" ")}
-          </div>
-        )}
+        {(addr.barangay || addr.city) && <div style={addressStyles.line}>{[addr.barangay, addr.city].filter(Boolean).join(", ")}</div>}
+        {(addr.province || addr.postal_code) && <div style={addressStyles.line}>{[addr.province, addr.postal_code].filter(Boolean).join(" ")}</div>}
         {addr.country && <div style={{ ...addressStyles.line, color: "#999" }}>{addr.country}</div>}
       </div>
-
-      {/* Company Contact */}
       {isCompany && (addr.company_number || addr.company_email) && (
         <div style={addressStyles.contactBlock}>
           {addr.company_number && <span style={addressStyles.contact}>📞 {addr.company_number}</span>}
@@ -415,8 +550,7 @@ function AddressCard({ addr, onEdit, onDelete }) {
 }
 
 // ─── Personal Information Tab ─────────────────────────────────────────────────
-// NOW receives addresses + setAddresses as props (lifted up from ProfilePersonal)
-function PersonalInformation({ user, onUserUpdate, addresses, setAddresses }) {
+function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, setAddresses }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     first_name:    user?.first_name    || "",
@@ -476,32 +610,22 @@ function PersonalInformation({ user, onUserUpdate, addresses, setAddresses }) {
     }
   };
 
-  const handleEditAddress = (idx) => {
-    setEditingAddress(addresses[idx]);
-    setEditingIndex(idx);
-    setShowModal(true);
-  };
-
+  const handleEditAddress   = (idx) => { setEditingAddress(addresses[idx]); setEditingIndex(idx); setShowModal(true); };
   const handleDeleteAddress = async (idx) => {
     try {
-      const addrId = addresses[idx].id;
-      await apiDeleteAddress(addrId);
+      await apiDeleteAddress(addresses[idx].id);
       setAddresses(addresses.filter((_, i) => i !== idx));
       toast.success("Address removed");
-    } catch (error) {
-      console.error("Delete failed:", error);
+    } catch {
       toast.error("Failed to delete address");
     }
   };
-
-  const openAddModal = () => {
-    setEditingAddress(null);
-    setEditingIndex(null);
-    setShowModal(true);
-  };
+  const openAddModal = () => { setEditingAddress(null); setEditingIndex(null); setShowModal(true); };
 
   return (
     <div className="profile-main">
+      <style>{MODAL_STYLES}</style>
+
       {showModal && (
         <AddressModal
           onClose={() => { setShowModal(false); setEditingAddress(null); setEditingIndex(null); }}
@@ -543,12 +667,18 @@ function PersonalInformation({ user, onUserUpdate, addresses, setAddresses }) {
           </div>
         </div>
 
+        {/* ── User strip with profile photo ── */}
         <div className="profile-card__user-strip">
-          <div className="profile-card__user-avatar"><UserIcon /></div>
-          <div>
+          {/* Profile photo with upload */}
+          <ProfilePhoto user={user} onUploadSuccess={onPhotoUpdate} />
+
+          <div style={{ marginLeft: 14 }}>
             <div className="profile-card__user-name">{user?.first_name} {user?.last_name}</div>
             <div className="profile-card__user-meta">{user?.email}</div>
             <div className="profile-card__user-meta">{user?.phone_number || "No phone number"}</div>
+            <div style={{ fontSize: 11, color: "#bbb", marginTop: 4 }}>
+              Click the camera icon to change your photo
+            </div>
           </div>
         </div>
 
@@ -579,7 +709,6 @@ function PersonalInformation({ user, onUserUpdate, addresses, setAddresses }) {
             <PlusIcon /> Add New
           </button>
         </div>
-
         <div className="profile-addresses__grid">
           {addresses.length === 0 ? (
             <>
@@ -604,7 +733,6 @@ function PersonalInformation({ user, onUserUpdate, addresses, setAddresses }) {
                   onDelete={() => handleDeleteAddress(idx)}
                 />
               ))}
-              {/* Always show an "add more" slot */}
               <div className="profile-address-empty">
                 <div className="profile-address-empty__icon"><PlusIcon /></div>
                 <span>Add another address</span>
@@ -636,25 +764,16 @@ const addressStyles = {
     border: "1.5px solid #e8e8e8", borderRadius: 12, padding: "14px 16px",
     background: "#fafafa", display: "flex", flexDirection: "column", gap: 6,
   },
-  cardHeader: {
-    display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4,
-  },
+  cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
   typeBadge: {
     display: "inline-flex", alignItems: "center", gap: 5,
     fontSize: 11, fontWeight: 700, padding: "3px 8px",
     borderRadius: 20, letterSpacing: "0.03em",
   },
-  companyName: {
-    fontSize: 13, fontWeight: 600, color: "#1a1a1a",
-  },
-  addressBlock: {
-    display: "flex", flexDirection: "column", gap: 1,
-  },
+  companyName: { fontSize: 13, fontWeight: 600, color: "#1a1a1a" },
+  addressBlock: { display: "flex", flexDirection: "column", gap: 1 },
   line: { fontSize: 13, color: "#444", lineHeight: 1.7 },
-  contactBlock: {
-    display: "flex", flexDirection: "column", gap: 2,
-    paddingTop: 6, borderTop: "1px solid #f0f0f0", marginTop: 4,
-  },
+  contactBlock: { display: "flex", flexDirection: "column", gap: 2, paddingTop: 6, borderTop: "1px solid #f0f0f0", marginTop: 4 },
   contact: { fontSize: 12, color: "#888" },
   actionBtn: {
     background: "#f0f0f0", border: "none", borderRadius: 6,
@@ -676,10 +795,7 @@ export default function ProfilePersonal() {
   const [activeMenu, setActiveMenu] = useState("personal");
   const [user, setUser]             = useState(null);
   const [loading, setLoading]       = useState(true);
-
-  // ✅ addresses state lives HERE so the fetch can populate it correctly
   const [addresses, setAddresses]   = useState([]);
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -688,12 +804,9 @@ export default function ProfilePersonal() {
         const response = await me();
         if (response.status === 200 && response.data.status === "success") {
           setUser(response.data.data);
-
-          // ✅ Fetch addresses and store in state
           try {
             const addrRes = await getUserAddresses();
             if (addrRes.status === 200) {
-              // Handle both { data: [...] } and plain array responses
               const addrData = addrRes.data?.data ?? addrRes.data ?? [];
               setAddresses(Array.isArray(addrData) ? addrData : []);
             }
@@ -711,18 +824,26 @@ export default function ProfilePersonal() {
   }, []);
 
   const handleUserUpdate = async (updatedFields) => {
-    const updatedUser = { ...user, ...updatedFields };
-    setUser(updatedUser);
+    setUser((prev) => ({ ...prev, ...updatedFields }));
     try {
-      const res = await updateProfile(updatedUser);
+      const res = await updateProfile(updatedFields);
       if (res.user) setUser(res.user);
     } catch (error) {
       console.error("Update failed:", error);
     }
   };
 
+  // ── Called after a successful photo upload — updates the URL in state ──────
+  const handlePhotoUpdate = (newUrl) => {
+    setUser((prev) => ({ ...prev, profile_image: newUrl }));
+  };
+
   if (loading) return <p>Loading...</p>;
   if (!user)   return <p>User not found or unauthenticated.</p>;
+
+  // Initials for sidebar fallback
+  const initials = [user?.first_name?.[0], user?.last_name?.[0]]
+    .filter(Boolean).join("").toUpperCase() || "?";
 
   const renderContent = () => {
     switch (activeMenu) {
@@ -734,8 +855,9 @@ export default function ProfilePersonal() {
           <PersonalInformation
             user={user}
             onUserUpdate={handleUserUpdate}
-            addresses={addresses}       // ✅ pass down
-            setAddresses={setAddresses} // ✅ pass down
+            onPhotoUpdate={handlePhotoUpdate}
+            addresses={addresses}
+            setAddresses={setAddresses}
           />
         );
     }
@@ -748,12 +870,18 @@ export default function ProfilePersonal() {
 
   return (
     <div className="profile-page">
+      <style>{MODAL_STYLES}</style>
       <div className="profile-page__inner">
 
         {/* Sidebar */}
         <aside className="profile-sidebar">
           <div className="profile-sidebar__avatar-wrap">
-            <div className="profile-sidebar__avatar"><UserIcon /></div>
+            {/* ── Sidebar shows the real photo too ── */}
+            {user.profile_image ? (
+              <img src={user.profile_image} alt="Profile" className="profile-sidebar__avatar-img" />
+            ) : (
+              <div className="profile-sidebar__avatar-placeholder">{initials}</div>
+            )}
             <span className="profile-sidebar__name">{user.first_name} {user.last_name}</span>
             <span className="profile-sidebar__email">{user.email}</span>
             <span className="profile-sidebar__phone">{user.phone_number || "—"}</span>

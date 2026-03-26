@@ -57,7 +57,7 @@ function SkeletonCard() {
         <div className="h-[14px] w-[85%] bg-[#e5ede9] rounded-[6px]" />
         <div className="h-[14px] w-[60%] bg-[#e5ede9] rounded-[6px]" />
         <div className="h-[10px] w-[40%] bg-[#e5ede9] rounded-[6px]" />
-        <div className="flex justify-between items-center mt-1">
+        <div className="flex items-center justify-between mt-1">
           <div className="h-[18px] w-[30%] bg-[#e5ede9] rounded-[6px]" />
           <div className="w-[32px] h-[32px] rounded-full bg-[#e5ede9]" />
         </div>
@@ -292,8 +292,8 @@ export default function Products() {
   const activeCatLabel = categoryTabs.find(c => c.id === activeCategory)?.label ?? "All Products";
 
   return (
-    <div className="pt-[var(--header-h)] bg-white">
-      <Header />
+<div className="bg-white">     
+   <Header />
 
       <style>{`
         @keyframes shimmer {
@@ -314,7 +314,7 @@ export default function Products() {
 
       {/* ── HERO ── */}
       <section
-        className="relative overflow-hidden px-0"
+        className="relative px-0 overflow-hidden"
         style={{
           background: "linear-gradient(135deg, #edf4f0 0%, #fff 55%, #f9fdf9 100%)",
           paddingTop: "clamp(64px, 9vw, 120px)",
@@ -639,7 +639,7 @@ export default function Products() {
         }}
       >
         <div
-          className="absolute pointer-events-none rounded-full"
+          className="absolute rounded-full pointer-events-none"
           style={{
             top: "-60px", right: "-60px",
             width: "280px", height: "280px",

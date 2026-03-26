@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-
-// Keep the Logo import from your version
 import Logo from '../assets/Logo — Jem 8 Circle Trading Co (1).png';
 import axios from "axios";
 
+/* ══════════════════════════════════
+   HEADER
+══════════════════════════════════ */
 export function Header() {
-  const location    = useLocation();
-  const navigate    = useNavigate();
+  const location   = useLocation();
+  const navigate   = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled]     = useState(false);
   const { totalItems }              = useCart();
-  const [isLog,setIsLog] = useState(false);
+  const [isLog, setIsLog]           = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -23,63 +24,319 @@ export function Header() {
   useEffect(() => {
     const checkLogin = async () => {
       try {
-        const url = "http://127.0.0.1:8000/api/me";
-        const res = await axios.get(url, { withCredentials: true });
-
-        setIsLog(res.data); // adjust if your API returns data differently
-      } catch (err) {
+        const res = await axios.get("http://127.0.0.1:8000/api/me", { withCredentials: true });
+        setIsLog(res.data);
+      } catch {
         setIsLog(false);
       }
     };
-
     checkLogin();
   }, []);
 
-  // Close mobile menu whenever route changes
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const isActive = (path) => location.pathname === path;
 
   const NAV_LINKS = [
-    { to: "/",           label: "Home"       },
-    { to: "/products",   label: "Products"   },
-    { to: "/blog",       label: "Blog"       },
-    { to: "/about",      label: "About"      },
-    { to: "/contact",    label: "Contact"    },
-    { to: "/orders",     label: "My Orders"  },
+    { to: "/",         label: "Home"      },
+    { to: "/products", label: "Products"  },
+    { to: "/blog",     label: "Blog"      },
+    { to: "/about",    label: "About"     },
+    { to: "/contact",  label: "Contact"   },
+    { to: "/orders",   label: "My Orders" },
   ];
+
+  /* ── inline styles (no external CSS dependency for critical parts) ── */
+  const S = {
+    header: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1000,
+      background: "#fff",
+      borderBottom: "1px solid #e8ede9",
+      transition: "box-shadow .25s",
+      boxShadow: scrolled ? "0 2px 24px rgba(0,0,0,0.10)" : "none",
+    },
+    inner: {
+      maxWidth: 1280,
+      margin: "0 auto",
+      padding: "0 20px",
+      height: 68,
+      display: "flex",
+      alignItems: "center",
+      gap: 20,
+    },
+    logoWrap: {
+      display: "flex",
+      alignItems: "center",
+      flexShrink: 0,
+      textDecoration: "none",
+    },
+    logoImg: {
+      height: 52,
+      width: "auto",
+      objectFit: "contain",
+    },
+    logoText: {
+      fontWeight: 700,
+      fontSize: 18,
+      color: "#2e6b45",
+    },
+    desktopNav: {
+      display: "flex",
+      alignItems: "center",
+      gap: 4,
+      marginLeft: "auto",
+    },
+    navLink: (active) => ({
+      padding: "6px 12px",
+      borderRadius: 8,
+      textDecoration: "none",
+      fontSize: 14,
+      fontWeight: active ? 700 : 500,
+      color: active ? "#2e6b45" : "#374151",
+      background: active ? "#e8f5ed" : "transparent",
+      transition: "background .18s, color .18s",
+    }),
+    actions: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flexShrink: 0,
+    },
+    searchWrap: {
+      display: "flex",
+      alignItems: "center",
+      background: "#f3f4f6",
+      borderRadius: 24,
+      padding: "0 12px",
+      gap: 6,
+      height: 36,
+    },
+    searchInput: {
+      border: "none",
+      background: "transparent",
+      outline: "none",
+      fontSize: 13,
+      width: 140,
+      color: "#374151",
+    },
+    iconBtn: {
+      position: "relative",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      fontSize: 20,
+      padding: "6px",
+      borderRadius: 8,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      textDecoration: "none",
+      color: "inherit",
+    },
+    badge: {
+      position: "absolute",
+      top: -4,
+      right: -4,
+      background: "#ef4444",
+      color: "#fff",
+      borderRadius: "50%",
+      width: 18,
+      height: 18,
+      fontSize: 10,
+      fontWeight: 700,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      lineHeight: 1,
+    },
+    contactBtn: {
+      padding: "7px 16px",
+      border: "1.5px solid #2e6b45",
+      borderRadius: 24,
+      color: "#2e6b45",
+      fontWeight: 600,
+      fontSize: 13,
+      textDecoration: "none",
+      whiteSpace: "nowrap",
+    },
+    loginBtn: {
+      padding: "7px 16px",
+      borderRadius: 24,
+      background: "#2e6b45",
+      color: "#fff",
+      border: "none",
+      cursor: "pointer",
+      fontWeight: 600,
+      fontSize: 13,
+      whiteSpace: "nowrap",
+    },
+    avatarBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: "50%",
+      background: "#2e6b45",
+      border: "2px solid #2e6b4530",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 0,
+      flexShrink: 0,
+      boxShadow: "0 2px 8px #2e6b4530",
+      color: "#fff",
+      fontWeight: 700,
+      fontSize: 14,
+    },
+    // ── Hamburger ──────────────────────────────────────────────────────
+    hamburger: {
+      display: "none",          // shown via media query in <style> tag below
+      flexDirection: "column",
+      justifyContent: "center",
+      gap: 5,
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      padding: "8px",
+      borderRadius: 8,
+      zIndex: 1100,
+      flexShrink: 0,
+    },
+    hamburgerBar: {
+      display: "block",
+      width: 24,
+      height: 2.5,
+      background: "#2e6b45",
+      borderRadius: 2,
+      transition: "transform .25s, opacity .25s",
+    },
+    // ── Mobile overlay ─────────────────────────────────────────────────
+    overlay: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 9998,
+      background: "rgba(0,0,0,0.45)",
+      opacity: mobileOpen ? 1 : 0,
+      pointerEvents: mobileOpen ? "auto" : "none",
+      transition: "opacity .25s",
+    },
+    panel: {
+      position: "fixed",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: "78%",
+      maxWidth: 320,
+      background: "#fff",
+      zIndex: 9999,
+      overflowY: "auto",
+      display: "flex",
+      flexDirection: "column",
+      padding: "24px 20px 32px",
+      transform: mobileOpen ? "translateX(0)" : "translateX(100%)",
+      transition: "transform .28s cubic-bezier(.4,0,.2,1)",
+      boxShadow: "-4px 0 32px rgba(0,0,0,.12)",
+    },
+    panelClose: {
+      alignSelf: "flex-end",
+      background: "none",
+      border: "none",
+      fontSize: 22,
+      cursor: "pointer",
+      color: "#6b7280",
+      padding: 4,
+      lineHeight: 1,
+      marginBottom: 12,
+    },
+    panelLogo: {
+      fontWeight: 800,
+      fontSize: 20,
+      color: "#2e6b45",
+      marginBottom: 24,
+      paddingBottom: 16,
+      borderBottom: "1px solid #e8ede9",
+    },
+    panelLink: (active) => ({
+      display: "block",
+      padding: "12px 16px",
+      borderRadius: 10,
+      textDecoration: "none",
+      fontSize: 15,
+      fontWeight: active ? 700 : 500,
+      color: active ? "#2e6b45" : "#374151",
+      background: active ? "#e8f5ed" : "transparent",
+      marginBottom: 2,
+      transition: "background .15s",
+    }),
+    panelCta: {
+      marginTop: "auto",
+      paddingTop: 24,
+    },
+    ctaLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "12px 20px",
+      background: "#2e6b45",
+      color: "#fff",
+      borderRadius: 12,
+      fontWeight: 700,
+      fontSize: 15,
+      textDecoration: "none",
+    },
+  };
 
   return (
     <>
-      <header
-        className="site-header"
-        style={scrolled ? { boxShadow: "0 2px 24px rgba(0,0,0,0.10)" } : undefined}
-      >
-        <div className="container site-header__inner">
+      {/* Inject media-query CSS so hamburger shows on mobile */}
+      <style>{`
+        @media (max-width: 768px) {
+          .jem-hamburger   { display: flex !important; }
+          .jem-desktop-nav { display: none !important; }
+          .jem-search-wrap { display: none !important; }
+          .jem-contact-btn { display: none !important; }
+        }
+        .jem-nav-link:hover {
+          background: #e8f5ed !important;
+          color: #2e6b45 !important;
+        }
+        .jem-icon-btn:hover { background: #f3f4f6 !important; }
+      `}</style>
+
+      <header style={S.header}>
+        <div style={S.inner}>
 
           {/* Logo */}
-          <Link to="/" className="site-header__logo-wrap">
+          <Link to="/" style={S.logoWrap}>
             <img
               src={Logo}
               alt="JEM 8 Circle Trading Co."
-              className="site-header__logo-img"
+              style={S.logoImg}
               onError={(e) => {
                 e.target.style.display = "none";
                 if (e.target.nextSibling) e.target.nextSibling.style.display = "block";
               }}
             />
-            <span className="site-header__logo-text" style={{ display: "none" }}>
-              JEM 8 Circle
-            </span>
+            <span style={{ ...S.logoText, display: "none" }}>JEM 8 Circle</span>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="site-header__nav">
+          <nav className="jem-desktop-nav" style={S.desktopNav}>
             {NAV_LINKS.map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
-                className={`site-header__nav-link${isActive(to) ? " active" : ""}`}
+                className="jem-nav-link"
+                style={S.navLink(isActive(to))}
               >
                 {label}
               </Link>
@@ -87,171 +344,99 @@ export function Header() {
           </nav>
 
           {/* Actions */}
-          <div className="site-header__actions">
+          <div style={{ ...S.actions, marginLeft: "auto" }}>
 
-            {/* Search */}
-            <div className="site-header__search-wrap">
-              <span className="site-header__search-icon">🔍</span>
+            {/* Search (desktop only) */}
+            <div className="jem-search-wrap" style={S.searchWrap}>
+              <span style={{ fontSize: 14 }}>🔍</span>
               <input
                 type="text"
-                className="site-header__search-input"
+                style={S.searchInput}
                 placeholder="Search products..."
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && e.target.value.trim()) {
-                    window.location.href = `/products`;
+                    window.location.href = "/products";
                   }
                 }}
               />
             </div>
 
-            {/* Cart icon → cart page */}
-            <Link
-              to="/cart"
-              className="site-header__cart-btn"
-              aria-label="View cart"
-              style={{ position: "relative" }}
-              title="Add to Cart"
-            >
+            {/* Cart */}
+            <Link to="/cart" style={S.iconBtn} className="jem-icon-btn" aria-label="View cart">
               🛒
               {totalItems > 0 && (
-                <span style={{
-                  position: "absolute", top: "-6px", right: "-6px",
-                  background: "#ef4444", color: "#fff", borderRadius: "50%",
-                  width: "18px", height: "18px", fontSize: "10px", fontWeight: "700",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "var(--font-body)", lineHeight: 1,
-                }}>
-                  {totalItems > 9 ? "9+" : totalItems}
-                </span>
+                <span style={S.badge}>{totalItems > 9 ? "9+" : totalItems}</span>
               )}
             </Link>
 
-            <Link
-              to="/adminDashboard"
-              className="site-header__cart-btn"
-              aria-label="View cart"
-              title="Admin"
-              style={{ position: "relative" }}
-            >
+            {/* Admin */}
+            <Link to="/adminDashboard" style={S.iconBtn} className="jem-icon-btn" aria-label="Admin" title="Admin">
               🛠️
             </Link>
 
-            {/* Contact button */}
-            <Link to="/contact" className="site-header__login-btn">
+            {/* Contact (desktop only) */}
+            <Link to="/contact" className="jem-contact-btn" style={S.contactBtn}>
               Contact Us
             </Link>
 
-            {/* ── Profile Avatar Button ─────────────────────────────────── */}
+            {/* Login / Avatar */}
             {!isLog ? (
-
-              <button
-                onClick={() => navigate("/login")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "20px",
-                  backgroundColor: "#2e6b45",
-                  color: "#fff",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: "600"
-                }}
-              >
+              <button style={S.loginBtn} onClick={() => navigate("/login")}>
                 Login
               </button>
-
-              ) : (
-
+            ) : (
               <button
+                style={S.avatarBtn}
                 onClick={() => navigate("/Profilepersonal")}
                 aria-label="My Profile"
                 title="My Profile"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  backgroundColor: "#2e6b45",
-                  border: "2px solid #2e6b4530",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                  flexShrink: 0,
-                  boxShadow: "0 2px 8px #2e6b4530",
-                }}
               >
-                <span
-                  style={{
-                    color: "#ffffff",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    fontFamily: "'Poppins', Helvetica, sans-serif",
-                    userSelect: "none",
-                    lineHeight: 1,
-                  }}
-                >
-                  J
-                </span>
+                J
               </button>
+            )}
 
-              )}
-            {/* ─────────────────────────────────────────────────────────── */}
-
-            {/* Hamburger */}
+            {/* ── Hamburger (mobile only, shown via CSS) ── */}
             <button
-              className="site-header__hamburger"
+              className="jem-hamburger"
+              style={S.hamburger}
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
-              <span /><span /><span />
+              <span style={S.hamburgerBar} />
+              <span style={S.hamburgerBar} />
+              <span style={S.hamburgerBar} />
             </button>
           </div>
         </div>
       </header>
 
+
       {/* ── MOBILE MENU ── */}
-      <div
-        className={`mobile-menu${mobileOpen ? " open" : ""}`}
-        onClick={(e) => { if (e.target === e.currentTarget) setMobileOpen(false); }}
-      >
-        <div className="mobile-menu__panel">
-          <button
-            className="mobile-menu__close"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Close menu"
-          >
-            ✕
-          </button>
+      {/* Overlay backdrop */}
+      <div style={S.overlay} onClick={() => setMobileOpen(false)} aria-hidden="true" />
 
-          <div className="mobile-menu__logo">JEM 8 Circle</div>
+      {/* Slide-in panel */}
+      <div style={S.panel} role="dialog" aria-modal="true" aria-label="Navigation menu">
+        <button style={S.panelClose} onClick={() => setMobileOpen(false)} aria-label="Close menu">
+          ✕
+        </button>
 
-          {NAV_LINKS.map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className={`mobile-menu__link${isActive(to) ? " active" : ""}`}
-            >
-              {label}
-            </Link>
-          ))}
+        <div style={S.panelLogo}>JEM 8 Circle</div>
 
-          {/* Profile link in mobile menu */}
-          <Link
-            to="/profile"
-            className={`mobile-menu__link${isActive("/profile") ? " active" : ""}`}
-          >
-            👤 My Profile
+        {NAV_LINKS.map(({ to, label }) => (
+          <Link key={to} to={to} style={S.panelLink(isActive(to))}>
+            {label}
           </Link>
+        ))}
 
-          <div className="mobile-menu__cta">
-            <Link
-              to="/contact"
-              className="btn-primary"
-              style={{ width: "100%", justifyContent: "center" }}
-            >
-              Get a Quote →
-            </Link>
-          </div>
+        <Link to="/Profilepersonal" style={S.panelLink(isActive("/Profilepersonal"))}>
+          👤 My Profile
+        </Link>
+
+        <div style={S.panelCta}>
+          <Link to="/contact" style={S.ctaLink}>
+            Get a Quote →
+          </Link>
         </div>
       </div>
     </>
