@@ -557,7 +557,7 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
     last_name:     user?.last_name     || "",
     email:         user?.email         || "",
     phone_number:  user?.phone_number  || "",
-    company:       user?.company       || "",
+    company_name:  user?.company_name  || "",
     position:      user?.position      || "",
     business_type: user?.business_type || "",
   });
@@ -579,7 +579,7 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
       last_name:     user?.last_name     || "",
       email:         user?.email         || "",
       phone_number:  user?.phone_number  || "",
-      company:       user?.company       || "",
+      company_name:  user?.company_name  || "",
       position:      user?.position      || "",
       business_type: user?.business_type || "",
     });
@@ -687,7 +687,7 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
           <EditableField label="Last Name"                   name="last_name"     value={form.last_name}     isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Email Address"               name="email"         value={form.email}         isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Phone / Mobile Number"       name="phone_number"  value={form.phone_number}  isEditing={isEditing} onChange={handleChange} />
-          <EditableField label="Company Name (Optional)"     name="company"       value={form.company}       isEditing={isEditing} onChange={handleChange} />
+          <EditableField label="Company Name (Optional)"     name="company_name"  value={form.company_name}  isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Position / Title (Optional)" name="position"      value={form.position}      isEditing={isEditing} onChange={handleChange} />
           <div className="profile-field--full">
             <EditableField label="Business Type (Optional)"  name="business_type" value={form.business_type} isEditing={isEditing} onChange={handleChange} />
