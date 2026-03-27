@@ -51,22 +51,63 @@ function DonutChart({ data }) {
   );
 }
 
+// ── FIX: BarChart — overflow hidden on wrapper, bars capped within container ──
 function BarChart({ data }) {
   const max = Math.max(...data.map(d => d.value), 1);
   return (
-    <div className="flex items-end gap-1.5 px-1" style={{ height: 110 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-end",
+        gap: 6,
+        padding: "0 4px",
+        height: 110,
+        overflow: "hidden",       // prevent bars from spilling out
+        boxSizing: "border-box",
+      }}
+    >
       {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full">
-          <div className="flex-1 w-full flex items-end">
-            <div className="w-full rounded-t-md transition-all duration-700"
-              style={{
-                height: `${(d.value / max) * 100}%`,
-                background: d.color,
-                minHeight: 4,
-                opacity: 0.85,
-              }} />
-          </div>
-          <span style={{ fontSize: 9, color: "#94A3B8", whiteSpace: "nowrap" }}>{d.label}</span>
+        <div
+          key={i}
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+            height: "100%",
+            minWidth: 0,
+          }}
+        >
+          {/* spacer pushes bar to bottom */}
+          <div style={{ flex: 1 }} />
+          <div
+            style={{
+              width: "100%",
+              borderRadius: "4px 4px 0 0",
+              background: d.color,
+              opacity: 0.85,
+              transition: "height 0.7s ease",
+              // use percentage of the inner area (110px - 18px label = 92px usable)
+              height: `${Math.max(4, (d.value / max) * 92)}px`,
+              flexShrink: 0,
+            }}
+          />
+          <span
+            style={{
+              fontSize: 9,
+              color: "#94A3B8",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: "100%",
+              height: 14,
+              lineHeight: "14px",
+              flexShrink: 0,
+            }}
+          >
+            {d.label}
+          </span>
         </div>
       ))}
     </div>
@@ -182,6 +223,7 @@ const Card = ({ children, style = {}, className = "" }) => (
       padding: "20px 22px",
       boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.04)",
       border: "1px solid rgba(226,232,240,0.8)",
+      overflow: "hidden",   // FIX: prevent chart content from leaking outside card
       ...style,
     }}
   >
@@ -233,11 +275,6 @@ const StatCard = ({ label, value, sub, icon, gradient, loading }) => (
   </div>
 );
 
-// ── Section divider ────────────────────────────────────────────────────────────
-const Divider = () => (
-  <div style={{ height: 1, background: "#F1F5F9", margin: "12px 0" }} />
-);
-
 // ── Avatar ─────────────────────────────────────────────────────────────────────
 const Avatar = ({ name, index, size = 32 }) => {
   const colors = ["#3B82F6","#10B981","#8B5CF6","#F59E0B","#EC4899","#06B6D4","#EF4444"];
@@ -254,14 +291,6 @@ const Avatar = ({ name, index, size = 32 }) => {
     </div>
   );
 };
-
-// ── Metric row ─────────────────────────────────────────────────────────────────
-const MetricRow = ({ label, value, color = "#0F172A" }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-    <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 500 }}>{label}</span>
-    <span style={{ fontSize: 20, fontWeight: 700, color, letterSpacing: "-0.3px" }}>{value}</span>
-  </div>
-);
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
@@ -325,7 +354,8 @@ export default function AdminDashboard() {
   const marketingWithPct = marketingData.map(d => ({ ...d, pct: parseFloat(((d.pct / marketingTotal) * 100).toFixed(1)) }));
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#F8FAFC", fontFamily: "'DM Sans', 'Nunito', system-ui, sans-serif" }}>
+    // FIX: background changed from #F8FAFC to #F0F7F2 to match AdminProducts
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F0F7F2", fontFamily: "'DM Sans', 'Nunito', system-ui, sans-serif" }}>
       <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main style={{ flex: 1, minWidth: 0, padding: "24px 28px", overflowX: "hidden" }}>
@@ -527,24 +557,32 @@ export default function AdminDashboard() {
                 }
               </Card>
 
-              {/* Sales bar chart */}
+              {/* Sales bar chart — FIX: explicit height container */}
               <Card>
                 <CardTitle>📊 Sales This Year</CardTitle>
                 {loading
                   ? <Skeleton style={{ height: 110, width: "100%" }} />
                   : salesChartData.length > 0
-                    ? <BarChart data={salesChartData} />
+                    ? (
+                      <div style={{ height: 110, overflow: "hidden" }}>
+                        <BarChart data={salesChartData} />
+                      </div>
+                    )
                     : <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>No sales data yet.</p>
                 }
               </Card>
 
-              {/* Traffic bar chart */}
+              {/* Traffic bar chart — FIX: explicit height container */}
               <Card>
                 <CardTitle>📍 Traffic by Address</CardTitle>
                 {loading
                   ? <Skeleton style={{ height: 110, width: "100%" }} />
                   : trafficChartData.length > 0
-                    ? <BarChart data={trafficChartData} />
+                    ? (
+                      <div style={{ height: 110, overflow: "hidden" }}>
+                        <BarChart data={trafficChartData} />
+                      </div>
+                    )
                     : <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>No traffic data yet.</p>
                 }
               </Card>
