@@ -51,61 +51,49 @@ function DonutChart({ data }) {
   );
 }
 
-// ── FIX: BarChart — overflow hidden on wrapper, bars capped within container ──
 function BarChart({ data }) {
   const max = Math.max(...data.map(d => d.value), 1);
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-end",
-        gap: 6,
-        padding: "0 4px",
-        height: 110,
-        overflow: "hidden",       // prevent bars from spilling out
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={{
+      display: "flex",
+      alignItems: "flex-end",
+      gap: 6,
+      padding: "0 4px",
+      height: 110,
+      overflow: "hidden",
+      boxSizing: "border-box",
+    }}>
       {data.map((d, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4,
-            height: "100%",
-            minWidth: 0,
-          }}
-        >
-          {/* spacer pushes bar to bottom */}
+        <div key={i} style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+          height: "100%",
+          minWidth: 0,
+        }}>
           <div style={{ flex: 1 }} />
-          <div
-            style={{
-              width: "100%",
-              borderRadius: "4px 4px 0 0",
-              background: d.color,
-              opacity: 0.85,
-              transition: "height 0.7s ease",
-              // use percentage of the inner area (110px - 18px label = 92px usable)
-              height: `${Math.max(4, (d.value / max) * 92)}px`,
-              flexShrink: 0,
-            }}
-          />
-          <span
-            style={{
-              fontSize: 9,
-              color: "#94A3B8",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxWidth: "100%",
-              height: 14,
-              lineHeight: "14px",
-              flexShrink: 0,
-            }}
-          >
+          <div style={{
+            width: "100%",
+            borderRadius: "4px 4px 0 0",
+            background: d.color,
+            opacity: 0.85,
+            transition: "height 0.7s ease",
+            height: `${Math.max(4, (d.value / max) * 92)}px`,
+            flexShrink: 0,
+          }} />
+          <span style={{
+            fontSize: 9,
+            color: "#94A3B8",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            maxWidth: "100%",
+            height: 14,
+            lineHeight: "14px",
+            flexShrink: 0,
+          }}>
             {d.label}
           </span>
         </div>
@@ -114,18 +102,24 @@ function BarChart({ data }) {
   );
 }
 
+// ── FIXED LineChart — full months visible, properly contained ─────────────────
 function LineChart({ thisYear = {}, lastYear = {} }) {
   const months = [1,2,3,4,5,6,7,8,9,10,11,12];
   const labels  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const thisVals = months.map(m => Number(thisYear[m] ?? 0));
   const lastVals = months.map(m => Number(lastYear[m] ?? 0));
   const max = Math.max(...thisVals, ...lastVals, 1);
-  const w = 300, h = 80;
+
+  // viewBox: wide enough for 12 labels, tall enough for chart + labels
+  const vw = 500, vh = 120;
+  const padL = 10, padR = 10, padT = 10, padB = 22;
+  const chartW = vw - padL - padR;
+  const chartH = vh - padT - padB;
 
   const coords = (vals) =>
     vals.map((v, i) => ({
-      x: (i / (vals.length - 1)) * (w - 20) + 10,
-      y: h - (v / max) * (h - 10) - 5,
+      x: padL + (i / (vals.length - 1)) * chartW,
+      y: padT + chartH - (v / max) * chartH,
     }));
 
   const smoothPath = (pts) => {
@@ -145,28 +139,68 @@ function LineChart({ thisYear = {}, lastYear = {} }) {
   const lastPts = coords(lastVals);
   const d1 = smoothPath(thisPts);
   const d2 = smoothPath(lastPts);
+  const areaBottom = padT + chartH;
 
   return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h + 22}`} style={{ overflow: "visible" }}>
+    <svg
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${vw} ${vh}`}
+      style={{ display: "block" }}
+      preserveAspectRatio="xMidYMid meet"
+    >
       <defs>
-        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.18" />
+        <linearGradient id="areaGrad2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.15" />
           <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
         </linearGradient>
+        <clipPath id="chartClip2">
+          <rect x={padL} y={padT} width={chartW} height={chartH} />
+        </clipPath>
       </defs>
-      <path d={`${d1} L ${thisPts[thisPts.length-1].x} ${h} L ${thisPts[0].x} ${h} Z`}
-        fill="url(#areaGrad)" />
-      <path d={d2} fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeDasharray="4 3"
-        strokeLinecap="round" strokeLinejoin="round" />
-      <path d={d1} fill="none" stroke="#3B82F6" strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round" />
-      {thisPts.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4" fill="white" stroke="#3B82F6" strokeWidth="2" />
-        </g>
+
+      {/* Grid lines */}
+      {[0, 0.5, 1].map((pct, i) => (
+        <line key={i}
+          x1={padL} x2={padL + chartW}
+          y1={padT + chartH * (1 - pct)}
+          y2={padT + chartH * (1 - pct)}
+          stroke="#F1F5F9" strokeWidth="1"
+        />
       ))}
+
+      {/* Area fill */}
+      <path
+        d={`${d1} L ${thisPts[thisPts.length-1].x} ${areaBottom} L ${thisPts[0].x} ${areaBottom} Z`}
+        fill="url(#areaGrad2)"
+        clipPath="url(#chartClip2)"
+      />
+
+      {/* Last year dashed line */}
+      <path d={d2} fill="none" stroke="#CBD5E1" strokeWidth="1.2" strokeDasharray="3 2"
+        strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* This year line */}
+      <path d={d1} fill="none" stroke="#3B82F6" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* Dots */}
+      {thisPts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill="white" stroke="#3B82F6" strokeWidth="1.8" />
+      ))}
+
+      {/* X-axis month labels — always visible at fixed y */}
       {labels.map((l, i) => (
-        <text key={i} x={thisPts[i].x} y={h + 17} textAnchor="middle" fontSize="9" fill="#94A3B8">{l}</text>
+        <text key={i}
+          x={thisPts[i].x}
+          y={vh - 5}
+          textAnchor="middle"
+          fontSize="9"
+          fill="#94A3B8"
+          fontFamily="'DM Sans', sans-serif"
+        >
+          {l}
+        </text>
       ))}
     </svg>
   );
@@ -220,10 +254,10 @@ const Card = ({ children, style = {}, className = "" }) => (
     style={{
       background: "#FFFFFF",
       borderRadius: 16,
-      padding: "20px 22px",
+      padding: "16px 18px",
       boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.04)",
       border: "1px solid rgba(226,232,240,0.8)",
-      overflow: "hidden",   // FIX: prevent chart content from leaking outside card
+      overflow: "hidden",
       ...style,
     }}
   >
@@ -232,8 +266,8 @@ const Card = ({ children, style = {}, className = "" }) => (
 );
 
 const CardTitle = ({ children, action }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-    <span style={{ fontSize: 13, fontWeight: 600, color: "#374151", letterSpacing: "0.1px" }}>{children}</span>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+    <span style={{ fontSize: 12, fontWeight: 600, color: "#374151", letterSpacing: "0.1px" }}>{children}</span>
     {action}
   </div>
 );
@@ -243,13 +277,13 @@ const StatCard = ({ label, value, sub, icon, gradient, loading }) => (
   <div style={{
     background: "#FFFFFF",
     borderRadius: 16,
-    padding: "18px 20px",
+    padding: "16px 18px",
     boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.04)",
     border: "1px solid rgba(226,232,240,0.8)",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
     transition: "transform 0.15s ease, box-shadow 0.15s ease",
     cursor: "default",
   }}
@@ -257,18 +291,18 @@ const StatCard = ({ label, value, sub, icon, gradient, loading }) => (
   onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.04)"; }}
   >
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 4, fontWeight: 500, letterSpacing: "0.3px", textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 10, color: "#94A3B8", marginBottom: 3, fontWeight: 500, letterSpacing: "0.3px", textTransform: "uppercase" }}>{label}</div>
       {loading
-        ? <Skeleton style={{ height: 28, width: 80, marginBottom: 4 }} />
-        : <div style={{ fontSize: 24, fontWeight: 700, color: "#0F172A", lineHeight: 1.1, letterSpacing: "-0.5px" }}>{value}</div>
+        ? <Skeleton style={{ height: 24, width: 70, marginBottom: 3 }} />
+        : <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", lineHeight: 1.1, letterSpacing: "-0.5px" }}>{value}</div>
       }
-      <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>{sub}</div>
+      <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3 }}>{sub}</div>
     </div>
     <div style={{
-      width: 44, height: 44, borderRadius: 12,
+      width: 38, height: 38, borderRadius: 10,
       background: gradient,
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: 18, flexShrink: 0,
+      fontSize: 16, flexShrink: 0,
     }}>
       {icon}
     </div>
@@ -354,25 +388,24 @@ export default function AdminDashboard() {
   const marketingWithPct = marketingData.map(d => ({ ...d, pct: parseFloat(((d.pct / marketingTotal) * 100).toFixed(1)) }));
 
   return (
-    // FIX: background changed from #F8FAFC to #F0F7F2 to match AdminProducts
     <div style={{ display: "flex", minHeight: "100vh", background: "#F0F7F2", fontFamily: "'DM Sans', 'Nunito', system-ui, sans-serif" }}>
       <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <main style={{ flex: 1, minWidth: 0, padding: "24px 28px", overflowX: "hidden" }}>
+      <main style={{ flex: 1, minWidth: 0, padding: "20px 24px", overflowX: "hidden" }}>
 
         {/* ── Top bar ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
           <button
             style={{ display: "none", background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#374151", padding: "6px 8px", borderRadius: 8 }}
             className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >☰</button>
           <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: 0, letterSpacing: "-0.4px" }}>Dashboard</h1>
-            <p style={{ fontSize: 12, color: "#94A3B8", margin: 0, marginTop: 2 }}>Welcome back — here's what's happening today.</p>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0, letterSpacing: "-0.4px" }}>Dashboard</h1>
+            <p style={{ fontSize: 11, color: "#94A3B8", margin: 0, marginTop: 1 }}>Welcome back — here's what's happening today.</p>
           </div>
           {loading && (
-            <span style={{ fontSize: 11, color: "#94A3B8", background: "#F1F5F9", padding: "4px 10px", borderRadius: 20, animation: "pulse 1.5s infinite" }}>
+            <span style={{ fontSize: 11, color: "#94A3B8", background: "#F1F5F9", padding: "4px 10px", borderRadius: 20 }}>
               Loading…
             </span>
           )}
@@ -384,41 +417,57 @@ export default function AdminDashboard() {
         </div>
 
         {/* ── Stats row ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
           {stats.map((stat) => (
             <StatCard key={stat.label} {...stat} loading={loading} />
           ))}
         </div>
 
         {/* ── Main columns ── */}
-        <div style={{ display: "flex", flexDirection: "row", gap: 16, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
 
           {/* ── Left column ── */}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
 
-            {/* Line chart */}
-            <Card>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>Total Users Overview</span>
-                <div style={{ display: "flex", gap: 14, fontSize: 11, color: "#94A3B8" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3B82F6", display: "inline-block" }} />
+            {/* ── Line chart — compact, fixed height ── */}
+            <Card style={{ padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>Total Users Overview</span>
+                <div style={{ display: "flex", gap: 12, fontSize: 10, color: "#94A3B8" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3B82F6", display: "inline-block" }} />
                     This year
                   </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#CBD5E1", display: "inline-block" }} />
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#CBD5E1", display: "inline-block" }} />
                     Last year
                   </span>
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: "#3B82F6", fontWeight: 600, marginBottom: 10 }}>New Accounts / Month</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", fontSize: 9, color: "#CBD5E1", paddingBottom: 18, gap: 20, paddingTop: 2 }}>
-                  <span>Hi</span><span>Mid</span><span>Lo</span>
+              <div style={{ fontSize: 10, color: "#3B82F6", fontWeight: 600, marginBottom: 6 }}>New Accounts / Month</div>
+
+              {/* Fixed-height chart container — no overflow */}
+              <div style={{ display: "flex", gap: 6, alignItems: "stretch" }}>
+                {/* Y-axis labels */}
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  fontSize: 8,
+                  color: "#CBD5E1",
+                  paddingBottom: 16,
+                  paddingTop: 4,
+                  flexShrink: 0,
+                  width: 18,
+                }}>
+                  <span>Hi</span>
+                  <span>Mid</span>
+                  <span>Lo</span>
                 </div>
-                <div style={{ flex: 1 }}>
+                {/* Chart — fixed height, no overflow clipping so labels show */}
+                <div style={{ flex: 1, minWidth: 0, height: 130 }}>
                   {loading
-                    ? <Skeleton style={{ height: 96, width: "100%" }} />
+                    ? <Skeleton style={{ height: "100%", width: "100%" }} />
                     : <LineChart thisYear={accounts.new_per_month ?? {}} lastYear={{}} />
                   }
                 </div>
@@ -428,11 +477,11 @@ export default function AdminDashboard() {
             {/* Recent Orders */}
             <Card>
               <CardTitle action={
-                <div style={{ fontSize: 11, color: "#94A3B8" }}>
+                <div style={{ fontSize: 10, color: "#94A3B8" }}>
                   Total: <strong style={{ color: "#374151" }}>{num(orders.total)}</strong>
-                  <span style={{ margin: "0 5px", color: "#E2E8F0" }}>·</span>
+                  <span style={{ margin: "0 4px", color: "#E2E8F0" }}>·</span>
                   Paid: <strong style={{ color: "#059669" }}>{num(orders.paid)}</strong>
-                  <span style={{ margin: "0 5px", color: "#E2E8F0" }}>·</span>
+                  <span style={{ margin: "0 4px", color: "#E2E8F0" }}>·</span>
                   Unpaid: <strong style={{ color: "#DC2626" }}>{num(orders.unpaid)}</strong>
                 </div>
               }>
@@ -440,28 +489,28 @@ export default function AdminDashboard() {
               </CardTitle>
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 {loading
-                  ? [1,2,3,4].map(i => <Skeleton key={i} style={{ height: 56, width: "100%", marginBottom: 8 }} />)
+                  ? [1,2,3,4].map(i => <Skeleton key={i} style={{ height: 52, width: "100%", marginBottom: 6 }} />)
                   : (orders.recent ?? []).map((order, i, arr) => (
                   <div key={order.checkout_id}
                     style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "12px 0",
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 0",
                       borderBottom: i < arr.length - 1 ? "1px solid #F1F5F9" : "none",
                     }}>
                     <div style={{
-                      width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                      width: 36, height: 36, borderRadius: 9, flexShrink: 0,
                       background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
-                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
                     }}>🛒</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <span style={{ fontWeight: 600, fontSize: 12, color: "#0F172A" }}>
+                        <span style={{ fontWeight: 600, fontSize: 11, color: "#0F172A" }}>
                           {order.first_name} {order.last_name}
                         </span>
                         <span style={{ fontSize: 10, color: "#94A3B8", flexShrink: 0 }}>{timeAgo(order.created_at)}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3 }}>
-                        <span style={{ fontSize: 11, color: "#64748B" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
+                        <span style={{ fontSize: 10, color: "#64748B" }}>
                           {order.paid_at ? peso(order.paid_amount) : "Unpaid"} · {order.payment_method}
                         </span>
                         <StatusBadge status={order.paid_at ? "Paid" : "Unpaid"} />
@@ -473,14 +522,14 @@ export default function AdminDashboard() {
             </Card>
 
             {/* ── Metric cards grid ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
 
               {/* Products */}
               <Card>
                 <CardTitle>📦 Products</CardTitle>
                 {loading
-                  ? <Skeleton style={{ height: 60, width: "100%" }} />
-                  : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
+                  ? <Skeleton style={{ height: 56, width: "100%" }} />
+                  : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 14px" }}>
                     {[
                       { l: "Total",     v: products.total,     color: "#0F172A"   },
                       { l: "On Sale",   v: products.on_sale,   color: "#059669"   },
@@ -488,8 +537,8 @@ export default function AdminDashboard() {
                       { l: "Out Stock", v: products.out_stock, color: "#DC2626"   },
                     ].map(p => (
                       <div key={p.l}>
-                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 2 }}>{p.l}</div>
-                        <div style={{ fontSize: 22, fontWeight: 700, color: p.color, letterSpacing: "-0.5px" }}>{num(p.v)}</div>
+                        <div style={{ fontSize: 9, color: "#94A3B8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 1 }}>{p.l}</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: p.color, letterSpacing: "-0.5px" }}>{num(p.v)}</div>
                       </div>
                     ))}
                   </div>
@@ -500,16 +549,16 @@ export default function AdminDashboard() {
               <Card>
                 <CardTitle>🛒 Orders · This Week</CardTitle>
                 {loading
-                  ? <Skeleton style={{ height: 60, width: "100%" }} />
-                  : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  ? <Skeleton style={{ height: 56, width: "100%" }} />
+                  : <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     {[
                       { l: "Total",  v: orders.weekly_total,  color: "#0F172A" },
                       { l: "Paid",   v: orders.weekly_paid,   color: "#059669" },
                       { l: "Unpaid", v: orders.weekly_unpaid, color: "#DC2626" },
                     ].map(o => (
                       <div key={o.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 11, color: "#64748B" }}>{o.l}</span>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: o.color }}>{num(o.v)}</span>
+                        <span style={{ fontSize: 10, color: "#64748B" }}>{o.l}</span>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: o.color }}>{num(o.v)}</span>
                       </div>
                     ))}
                   </div>
@@ -520,8 +569,8 @@ export default function AdminDashboard() {
               <Card>
                 <CardTitle>🚚 Delivery Status</CardTitle>
                 {loading
-                  ? <Skeleton style={{ height: 60, width: "100%" }} />
-                  : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
+                  ? <Skeleton style={{ height: 56, width: "100%" }} />
+                  : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 14px" }}>
                     {[
                       { l: "Processing", v: orders.processing, color: "#D97706"  },
                       { l: "Ready",      v: orders.ready,      color: "#7C3AED"  },
@@ -529,8 +578,8 @@ export default function AdminDashboard() {
                       { l: "Delivered",  v: orders.delivered,  color: "#059669"  },
                     ].map(s => (
                       <div key={s.l}>
-                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 2 }}>{s.l}</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{num(s.v)}</div>
+                        <div style={{ fontSize: 9, color: "#94A3B8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 1 }}>{s.l}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>{num(s.v)}</div>
                       </div>
                     ))}
                   </div>
@@ -541,48 +590,40 @@ export default function AdminDashboard() {
               <Card>
                 <CardTitle>💰 Revenue</CardTitle>
                 {loading
-                  ? <Skeleton style={{ height: 60, width: "100%" }} />
-                  : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  ? <Skeleton style={{ height: 56, width: "100%" }} />
+                  : <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     {[
                       { l: "Total",      v: peso(sales.total)      },
                       { l: "This Month", v: peso(sales.this_month) },
                       { l: "Today",      v: peso(sales.today)      },
                     ].map(s => (
                       <div key={s.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 11, color: "#64748B" }}>{s.l}</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{s.v}</span>
+                        <span style={{ fontSize: 10, color: "#64748B" }}>{s.l}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{s.v}</span>
                       </div>
                     ))}
                   </div>
                 }
               </Card>
 
-              {/* Sales bar chart — FIX: explicit height container */}
+              {/* Sales bar chart */}
               <Card>
                 <CardTitle>📊 Sales This Year</CardTitle>
                 {loading
                   ? <Skeleton style={{ height: 110, width: "100%" }} />
                   : salesChartData.length > 0
-                    ? (
-                      <div style={{ height: 110, overflow: "hidden" }}>
-                        <BarChart data={salesChartData} />
-                      </div>
-                    )
+                    ? <div style={{ height: 110, overflow: "hidden" }}><BarChart data={salesChartData} /></div>
                     : <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>No sales data yet.</p>
                 }
               </Card>
 
-              {/* Traffic bar chart — FIX: explicit height container */}
+              {/* Traffic bar chart */}
               <Card>
                 <CardTitle>📍 Traffic by Address</CardTitle>
                 {loading
                   ? <Skeleton style={{ height: 110, width: "100%" }} />
                   : trafficChartData.length > 0
-                    ? (
-                      <div style={{ height: 110, overflow: "hidden" }}>
-                        <BarChart data={trafficChartData} />
-                      </div>
-                    )
+                    ? <div style={{ height: 110, overflow: "hidden" }}><BarChart data={trafficChartData} /></div>
                     : <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>No traffic data yet.</p>
                 }
               </Card>
@@ -596,20 +637,20 @@ export default function AdminDashboard() {
                       <Skeleton style={{ flex: 1, height: 80 }} />
                     </div>
                   : marketingWithPct.length > 0
-                    ? <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+                    ? <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                         <DonutChart data={marketingWithPct} />
                         <div style={{ flex: 1 }}>
                           {marketingWithPct.map((m, i) => (
-                            <div key={m.city} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: i < marketingWithPct.length - 1 ? 10 : 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ width: 10, height: 10, borderRadius: "50%", background: m.color, display: "inline-block", flexShrink: 0 }} />
-                                <span style={{ fontSize: 12, color: "#374151", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.city}</span>
+                            <div key={m.city} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: i < marketingWithPct.length - 1 ? 9 : 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: "50%", background: m.color, display: "inline-block", flexShrink: 0 }} />
+                                <span style={{ fontSize: 11, color: "#374151", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.city}</span>
                               </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{ width: 80, height: 4, borderRadius: 4, background: "#F1F5F9", overflow: "hidden" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 72, height: 4, borderRadius: 4, background: "#F1F5F9", overflow: "hidden" }}>
                                   <div style={{ width: `${m.pct}%`, height: "100%", background: m.color, borderRadius: 4 }} />
                                 </div>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", minWidth: 36, textAlign: "right" }}>{m.pct}%</span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: "#0F172A", minWidth: 34, textAlign: "right" }}>{m.pct}%</span>
                               </div>
                             </div>
                           ))}
@@ -623,42 +664,41 @@ export default function AdminDashboard() {
           </div>
 
           {/* ── Right column ── */}
-          <div style={{ width: 260, minWidth: 260, display: "flex", flexDirection: "column", gap: 14 }} className="hidden lg:flex">
+          <div style={{ width: 248, minWidth: 248, display: "flex", flexDirection: "column", gap: 12 }} className="hidden lg:flex">
 
             {/* Notifications */}
             <Card>
               <CardTitle action={
                 notifs.unread > 0 && (
-                  <span style={{ fontSize: 10, background: "#FEE2E2", color: "#DC2626", fontWeight: 600, padding: "2px 8px", borderRadius: 20 }}>
+                  <span style={{ fontSize: 9, background: "#FEE2E2", color: "#DC2626", fontWeight: 600, padding: "2px 7px", borderRadius: 20 }}>
                     {notifs.unread} new
                   </span>
                 )
               }>
                 Notifications
               </CardTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 {loading
-                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 48, width: "100%", marginBottom: 4 }} />)
+                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 44, width: "100%", marginBottom: 3 }} />)
                   : (notifs.recent ?? []).map((n, i) => (
                   <div key={n.notification_id ?? i}
                     style={{
-                      display: "flex", gap: 10, alignItems: "flex-start",
-                      padding: "8px 10px",
-                      borderRadius: 10,
+                      display: "flex", gap: 8, alignItems: "flex-start",
+                      padding: "7px 8px",
+                      borderRadius: 9,
                       background: !n.is_read ? "#EFF6FF" : "transparent",
-                      transition: "background 0.15s",
                     }}>
                     <div style={{
-                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                      width: 28, height: 28, borderRadius: 7, flexShrink: 0,
                       background: !n.is_read ? "#DBEAFE" : "#F1F5F9",
-                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
                     }}>
                       {n.type === "order" ? "🛒" : n.type === "user" ? "👤" : n.type === "product" ? "📦" : "🔔"}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "#0F172A", lineHeight: 1.3 }}>{n.title}</div>
                       <div style={{ fontSize: 10, color: "#64748B", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.message}</div>
-                      <div style={{ fontSize: 10, color: "#CBD5E1", marginTop: 1 }}>{timeAgo(n.created_at)}</div>
+                      <div style={{ fontSize: 9, color: "#CBD5E1", marginTop: 1 }}>{timeAgo(n.created_at)}</div>
                     </div>
                   </div>
                 ))}
@@ -668,24 +708,24 @@ export default function AdminDashboard() {
             {/* Latest Customers */}
             <Card>
               <CardTitle>Latest Customers</CardTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 {loading
-                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 40, width: "100%", marginBottom: 6 }} />)
+                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 38, width: "100%", marginBottom: 4 }} />)
                   : (accounts.recent ?? []).map((acc, i) => (
                   <div key={acc.id}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 8px", borderRadius: 10, transition: "background 0.12s", cursor: "default" }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 6px", borderRadius: 9, transition: "background 0.12s", cursor: "default" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <Avatar name={acc.first_name} index={i} size={32} />
+                    <Avatar name={acc.first_name} index={i} size={30} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {acc.first_name} {acc.last_name}
                       </div>
                       <div style={{ fontSize: 10, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acc.email}</div>
                     </div>
                     <span style={{
-                      fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 20, flexShrink: 0,
+                      fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 20, flexShrink: 0,
                       background: acc.email_verified_at ? "#ECFDF5" : "#F1F5F9",
                       color: acc.email_verified_at ? "#059669" : "#94A3B8",
                     }}>
@@ -699,7 +739,7 @@ export default function AdminDashboard() {
             {/* Recent Contacts */}
             <Card>
               <CardTitle action={
-                <span style={{ fontSize: 11, color: "#94A3B8" }}>
+                <span style={{ fontSize: 10, color: "#94A3B8" }}>
                   Pending: <strong style={{ color: "#D97706" }}>{num(contacts.pending)}</strong>
                 </span>
               }>
@@ -707,20 +747,20 @@ export default function AdminDashboard() {
               </CardTitle>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {loading
-                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 40, width: "100%", marginBottom: 6 }} />)
+                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 38, width: "100%", marginBottom: 4 }} />)
                   : (contacts.recent ?? []).map((c, i, arr) => (
                   <div key={c.message_id ?? i}
                     style={{
-                      display: "flex", alignItems: "flex-start", gap: 10,
-                      padding: "8px 0",
+                      display: "flex", alignItems: "flex-start", gap: 8,
+                      padding: "7px 0",
                       borderBottom: i < arr.length - 1 ? "1px solid #F8FAFC" : "none",
                     }}>
-                    <Avatar name={c.first_name} index={i + 3} size={30} />
+                    <Avatar name={c.first_name} index={i + 3} size={28} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 11, fontWeight: 600, color: "#0F172A" }}>{c.first_name} {c.last_name}</span>
                         <span style={{
-                          fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 20,
+                          fontSize: 9, fontWeight: 600, padding: "2px 5px", borderRadius: 20,
                           background: c.status === "replied" ? "#ECFDF5" : c.status === "read" ? "#EFF6FF" : "#FFFBEB",
                           color: c.status === "replied" ? "#059669" : c.status === "read" ? "#2563EB" : "#D97706",
                         }}>
@@ -739,25 +779,25 @@ export default function AdminDashboard() {
               <CardTitle>📦 Recent Products</CardTitle>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {loading
-                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 40, width: "100%", marginBottom: 6 }} />)
+                  ? [1,2,3].map(i => <Skeleton key={i} style={{ height: 38, width: "100%", marginBottom: 4 }} />)
                   : (products.recent ?? []).map((p, i, arr) => (
                   <div key={p.product_id ?? i}
                     style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "8px 0",
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "7px 0",
                       borderBottom: i < arr.length - 1 ? "1px solid #F8FAFC" : "none",
                     }}>
                     <div style={{
-                      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+                      width: 30, height: 30, borderRadius: 7, flexShrink: 0,
                       background: "linear-gradient(135deg, #F0FDF4, #DCFCE7)",
-                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
                     }}>📦</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.product_name}</div>
                       <div style={{ fontSize: 10, color: "#94A3B8" }}>{peso(p.price)} · Stock: {p.product_stocks}</div>
                     </div>
                     {p.isSale && (
-                      <span style={{ fontSize: 9, background: "#FEE2E2", color: "#DC2626", fontWeight: 700, padding: "2px 6px", borderRadius: 20, flexShrink: 0 }}>SALE</span>
+                      <span style={{ fontSize: 9, background: "#FEE2E2", color: "#DC2626", fontWeight: 700, padding: "2px 5px", borderRadius: 20, flexShrink: 0 }}>SALE</span>
                     )}
                   </div>
                 ))}
