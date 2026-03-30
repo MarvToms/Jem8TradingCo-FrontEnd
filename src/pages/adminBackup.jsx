@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import AdminNav from '../components/AdminNav';
 import '../style/adminBackup.css';
 
-// ── Config ──────────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api';
-
-const getAuthHeaders = () => ({
-  'Content-Type': 'application/json',
+// ── Axios instance (same pattern as your other admin pages) ─────────────────
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api',
+  withCredentials: true,
+  headers: {
+    Accept: 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  },
 });
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -16,14 +20,12 @@ const TYPE_COLORS = {
   Full:     { bg: '#ede9fe', border: '#ddd6fe', text: '#7c3aed' },
 };
 
-// Maps card key → backup_type integer expected by the backend
 const BACKUP_TYPE_MAP = {
-  full:     3,   // TYPE_FULL
-  database: 1,   // TYPE_DATABASE
-  files:    2,   // TYPE_FILES
+  full:     3,
+  database: 1,
+  files:    2,
 };
 
-// Maps backend integer → display label & color key
 const TYPE_LABEL_MAP = {
   1: 'Database',
   2: 'Files',
@@ -89,19 +91,12 @@ const formatBytes = (bytes) => {
 
 const formatDate = (isoString) => {
   if (!isoString) return '—';
-  const d = new Date(isoString);
-  const pad = (n) => String(n).padStart(2, '0');
-  const year  = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day   = pad(d.getDate());
-  const hours = d.getHours();
-  const mins  = pad(d.getMinutes());
-  const ampm  = hours >= 12 ? 'PM' : 'AM';
-  const h12   = pad(hours % 12 || 12);
-  return `${year}/${month}/${day} - ${h12}:${mins} ${ampm}`;
+  const d    = new Date(isoString);
+  const pad  = (n) => String(n).padStart(2, '0');
+  const h    = d.getHours();
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} - ${pad(h % 12 || 12)}:${pad(d.getMinutes())} ${h >= 12 ? 'PM' : 'AM'}`;
 };
 
-// Normalise a raw backup record from the API into what the table expects
 const normaliseBackup = (raw) => ({
   id:       raw.id,
   filename: raw.file_name ?? `backup_${raw.id}`,
@@ -113,38 +108,35 @@ const normaliseBackup = (raw) => ({
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function AdminBackup() {
-  const [sidebarOpen,   setSidebarOpen]   = useState(false);
-  const [backups,       setBackups]       = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [runningKey,    setRunningKey]    = useState(null);
-  const [restoring,     setRestoring]     = useState(false);
-  const [deleteTarget,  setDeleteTarget]  = useState(null);
-  const [toastMsg,      setToastMsg]      = useState('');
-  const [toastType,     setToastType]     = useState('success'); // 'success' | 'error'
+  const [sidebarOpen,  setSidebarOpen]  = useState(false);
+  const [backups,      setBackups]      = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [runningKey,   setRunningKey]   = useState(null);
+  const [restoring,    setRestoring]    = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [toastMsg,     setToastMsg]     = useState('');
+  const [toastType,    setToastType]    = useState('success');
   const fileInputRef = useRef(null);
 
-  // ── Toast ──
+  // ── Toast ──────────────────────────────────────────────────────────────────
   const showToast = useCallback((msg, type = 'success') => {
     setToastMsg(msg);
     setToastType(type);
     setTimeout(() => setToastMsg(''), 3500);
   }, []);
 
-  // ── Fetch history ──
+  // ── Fetch history ──────────────────────────────────────────────────────────
   const fetchHistory = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/backups`, {
-        headers: getAuthHeaders(),
-      });
-      const json = await res.json();
-      if (json.status === 'success') {
-        setBackups((json.data ?? []).map(normaliseBackup));
+      const res = await api.get('/admin/backups');
+      if (res.data.status === 'success') {
+        setBackups((res.data.data ?? []).map(normaliseBackup));
       } else {
-        showToast(json.message ?? 'Failed to load backups', 'error');
+        showToast(res.data.message ?? 'Failed to load backups', 'error');
       }
-    } catch {
-      showToast('Network error – could not load backup history', 'error');
+    } catch (err) {
+      showToast(err.response?.data?.message ?? 'Network error – could not load backup history', 'error');
     } finally {
       setLoading(false);
     }
@@ -152,90 +144,67 @@ export default function AdminBackup() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
-  // ── Run backup ──
+  // ── Run backup ─────────────────────────────────────────────────────────────
   const handleRunNow = async (key) => {
     if (key === 'restore') {
       fileInputRef.current?.click();
       return;
     }
-
     setRunningKey(key);
     try {
-      const res = await fetch(`${API_BASE}/admin/backups/run`, {
-        method:  'POST',
-        headers: getAuthHeaders(),
-        body:    JSON.stringify({ backup_type: BACKUP_TYPE_MAP[key] }),
-      });
-      const json = await res.json();
-
-      if (json.status === 'success') {
-        const newBackup = normaliseBackup(json.data);
+      const res = await api.post('/admin/backups/run', { backup_type: BACKUP_TYPE_MAP[key] });
+      if (res.data.status === 'success') {
+        const newBackup = normaliseBackup(res.data.data);
         setBackups((prev) => [newBackup, ...prev]);
         showToast(`✓ ${newBackup.type} backup completed successfully`);
       } else {
-        const msg = typeof json.message === 'object'
-          ? Object.values(json.message).flat().join(' ')
-          : (json.message ?? 'Backup failed');
+        const msg = typeof res.data.message === 'object'
+          ? Object.values(res.data.message).flat().join(' ')
+          : (res.data.message ?? 'Backup failed');
         showToast(msg, 'error');
       }
-    } catch {
-      showToast('Network error – backup could not be started', 'error');
+    } catch (err) {
+      const msg = err.response?.data?.message ?? 'Network error – backup could not be started';
+      showToast(typeof msg === 'object' ? Object.values(msg).flat().join(' ') : msg, 'error');
     } finally {
       setRunningKey(null);
     }
   };
 
-  // ── Upload & Restore ──
+  // ── Upload & Restore ───────────────────────────────────────────────────────
   const handleFileRestore = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     e.target.value = '';
-
     setRestoring(true);
     try {
       const formData = new FormData();
       formData.append('backup_file', file);
-
-      const res = await fetch(`${API_BASE}/admin/backups/restore`, {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token') ?? ''}` },
-        body:    formData,
+      const res = await api.post('/admin/backups/restore', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const json = await res.json();
-
-      if (json.status === 'success') {
+      if (res.data.status === 'success') {
         showToast(`✓ Restore from "${file.name}" completed successfully`);
         fetchHistory(true);
       } else {
-        const msg = typeof json.message === 'object'
-          ? Object.values(json.message).flat().join(' ')
-          : (json.message ?? 'Restore failed');
+        const msg = typeof res.data.message === 'object'
+          ? Object.values(res.data.message).flat().join(' ')
+          : (res.data.message ?? 'Restore failed');
         showToast(msg, 'error');
       }
-    } catch {
-      showToast('Network error – restore could not be completed', 'error');
+    } catch (err) {
+      showToast(err.response?.data?.message ?? 'Network error – restore could not be completed', 'error');
     } finally {
       setRestoring(false);
     }
   };
 
-  // ── Download ──
+  // ── Download ───────────────────────────────────────────────────────────────
   const handleDownload = async (b) => {
     showToast(`↓ Preparing download for ${b.filename}…`);
     try {
-      const res = await fetch(`${API_BASE}/admin/backups/${b.id}/download`, {
-        headers: getAuthHeaders(),
-      });
-
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        showToast(json.message ?? 'File not found on server', 'error');
-        return;
-      }
-
-      // Trigger browser download
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
+      const res = await api.get(`/admin/backups/${b.id}/download`, { responseType: 'blob' });
+      const url  = URL.createObjectURL(res.data);
       const a    = document.createElement('a');
       a.href     = url;
       a.download = b.filename;
@@ -243,40 +212,35 @@ export default function AdminBackup() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch {
-      showToast('Network error – download failed', 'error');
+    } catch (err) {
+      showToast(err.response?.data?.message ?? 'Network error – download failed', 'error');
     }
   };
 
-  // ── Delete ──
+  // ── Delete ─────────────────────────────────────────────────────────────────
   const confirmDelete = async () => {
     const targetId = deleteTarget;
     setDeleteTarget(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/backups/${targetId}`, {
-        method:  'DELETE',
-        headers: getAuthHeaders(),
-      });
-      const json = await res.json();
-
-      if (json.status === 'success') {
+      const res = await api.delete(`/admin/backups/${targetId}`);
+      if (res.data.status === 'success') {
         setBackups((prev) => prev.filter((b) => b.id !== targetId));
         showToast('Backup deleted successfully');
       } else {
-        showToast(json.message ?? 'Delete failed', 'error');
+        showToast(res.data.message ?? 'Delete failed', 'error');
       }
-    } catch {
-      showToast('Network error – delete failed', 'error');
+    } catch (err) {
+      showToast(err.response?.data?.message ?? 'Network error – delete failed', 'error');
     }
   };
 
-  // ── Refresh ──
+  // ── Refresh ────────────────────────────────────────────────────────────────
   const handleRefresh = () => {
     fetchHistory();
     showToast('✓ Backup list refreshed');
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="br-layout">
       <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
@@ -309,7 +273,7 @@ export default function AdminBackup() {
             </button>
           </div>
 
-          {/* ── Backup Action Cards ── */}
+          {/* Backup Action Cards */}
           <div className="br-cards">
             {backupCards.map((card) => (
               <div key={card.key} className="br-card">
@@ -339,7 +303,7 @@ export default function AdminBackup() {
             ))}
           </div>
 
-          {/* hidden file input for restore */}
+          {/* Hidden file input for restore */}
           <input
             ref={fileInputRef}
             type="file"
@@ -348,7 +312,7 @@ export default function AdminBackup() {
             onChange={handleFileRestore}
           />
 
-          {/* ── Backup History ── */}
+          {/* Backup History */}
           <div className="br-history">
             <h3 className="br-history__title">Backup History</h3>
             <div className="br-table-wrap">
@@ -393,7 +357,6 @@ export default function AdminBackup() {
                               <button
                                 className="br-action-btn br-action-btn--dl"
                                 onClick={() => handleDownload(b)}
-                                aria-label={`Download ${b.filename}`}
                                 title="Download"
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -405,7 +368,6 @@ export default function AdminBackup() {
                               <button
                                 className="br-action-btn br-action-btn--del"
                                 onClick={() => setDeleteTarget(b.id)}
-                                aria-label={`Delete ${b.filename}`}
                                 title="Delete"
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -434,7 +396,7 @@ export default function AdminBackup() {
         </div>
       </div>
 
-      {/* ── Delete Confirm Modal ── */}
+      {/* Delete Confirm Modal */}
       {deleteTarget !== null && (
         <div className="br-overlay" onClick={() => setDeleteTarget(null)}>
           <div className="br-modal" onClick={(e) => e.stopPropagation()}>
@@ -457,7 +419,7 @@ export default function AdminBackup() {
         </div>
       )}
 
-      {/* ── Toast ── */}
+      {/* Toast */}
       {toastMsg && (
         <div className={`br-toast ${toastType === 'error' ? 'br-toast--error' : ''}`}>
           {toastMsg}
