@@ -18,6 +18,7 @@ const mainNavItems = [
 // Settings
 const settingsItems = [
   { label: "Settings", icon: "⚙️", href: "/adminSettings" },
+  { label: "Main Page", icon: "⬅️", href: "/" },
 ];
 
 export default function AdminNav({ sidebarOpen, setSidebarOpen }) {

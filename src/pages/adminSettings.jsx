@@ -1,9 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminNav from '../components/AdminNav';
 import '../style/adminSettings.css';
 
+const API = 'http://localhost:8000/api'; // change to your base URL
+
+const getAuthHeaders = () => {
+  const token = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('jem8_token='))
+    ?.split('=')[1];
+
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+};
+
+
 const AdminPanelSettings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saveMsg, setSaveMsg] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
 
   const [settings, setSettings] = useState({
     siteName: 'Jem 8 Circle Trading Co.',
@@ -30,6 +48,152 @@ const AdminPanelSettings = () => {
     colorHex: '#f9960c',
   });
 
+  // ==============================
+  // LOAD SETTINGS ON MOUNT
+  // ==============================
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API}/admin/settings`, {
+          credentials: 'include', // sends the jem8_token cookie
+          headers: getAuthHeaders(),
+        });
+        const json = await res.json();
+
+        if (res.ok && json.data) {
+          const d = json.data;
+
+          setSettings(prev => ({
+            ...prev,
+            siteName:       d.siteName       ?? prev.siteName,
+            siteURL:        d.siteURL        ?? prev.siteURL,
+            adminEmail:     d.adminEmail     ?? prev.adminEmail,
+            contactNumber:  d.contactNumber  ?? prev.contactNumber,
+            companyAddress: d.companyAddress ?? prev.companyAddress,
+            timezone:       d.timezone       ?? prev.timezone,
+            language:       d.language       ?? prev.language,
+          }));
+
+          setSecurity(prev => ({
+            ...prev,
+            passwordLockout: d.passwordLockout ?? prev.passwordLockout,
+            sessionTimeout:  d.sessionTimeout  ?? prev.sessionTimeout,
+            require2FA:      d.require2FA === '1' || d.require2FA === true,
+          }));
+
+          setAppearance(prev => ({
+            ...prev,
+            theme:        d.theme        ?? prev.theme,
+            primaryColor: d.primaryColor ?? prev.primaryColor,
+            colorHex:     d.primaryColor ?? prev.colorHex,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  // ==============================
+  // SAVE ALL SETTINGS
+  // ==============================
+  const handleSaveAll = async () => {
+    setSaveMsg('');
+    try {
+      const res = await fetch(`${API}/admin/settings`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          ...settings,
+          passwordLockout: security.passwordLockout,
+          sessionTimeout:  security.sessionTimeout,
+          require2FA:      security.require2FA,
+          theme:           appearance.theme,
+          primaryColor:    appearance.primaryColor,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (res.ok) {
+        setSaveMsg('✅ Settings saved successfully!');
+      } else {
+        setSaveMsg(`❌ ${json.message || 'Failed to save settings.'}`);
+      }
+    } catch (err) {
+      setSaveMsg('❌ Network error. Please try again.');
+    }
+
+    setTimeout(() => setSaveMsg(''), 4000);
+  };
+
+  // ==============================
+  // UPDATE PASSWORD
+  // ==============================
+  const handleUpdatePassword = async () => {
+    setPasswordMsg('');
+
+    if (security.newPassword !== security.confirmPassword) {
+      setPasswordMsg('❌ Passwords do not match.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/admin/change-password`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          currentPassword: security.currentPassword,
+          newPassword:     security.newPassword,
+          confirmPassword: security.confirmPassword,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (res.ok) {
+        setPasswordMsg('✅ Password updated successfully!');
+        setSecurity(prev => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        }));
+      } else {
+        setPasswordMsg(`❌ ${json.message || 'Failed to update password.'}`);
+      }
+    } catch (err) {
+      setPasswordMsg('❌ Network error. Please try again.');
+    }
+
+    setTimeout(() => setPasswordMsg(''), 4000);
+  };
+
+  // ==============================
+  // TOGGLE 2FA (saves immediately)
+  // ==============================
+  const handleToggle2FA = async () => {
+    const newValue = !security.require2FA;
+    setSecurity(prev => ({ ...prev, require2FA: newValue }));
+
+    try {
+      await fetch(`${API}/admin/settings`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ require2FA: newValue }),
+      });
+    } catch (err) {
+      console.error('Failed to update 2FA:', err);
+    }
+  };
+
   const handleSettingsChange = (e) => {
     const { id, value } = e.target;
     setSettings(prev => ({ ...prev, [id]: value }));
@@ -48,39 +212,22 @@ const AdminPanelSettings = () => {
     setAppearance(prev => ({ ...prev, primaryColor: e.target.value, colorHex: e.target.value }));
   };
 
-  const handleToggle2FA = () => {
-    setSecurity(prev => ({ ...prev, require2FA: !prev.require2FA }));
-  };
-
-  const handleSaveAll = () => {
-    console.log('Saving all settings:', { settings, security, appearance });
-  };
-
   const handleClearAll = () => {
     setSettings({ siteName: '', siteURL: '', adminEmail: '', contactNumber: '', companyAddress: '', timezone: 'Asia/Manila', language: 'en-PH' });
     setSecurity({ currentPassword: '', newPassword: '', confirmPassword: '', passwordLockout: 10, sessionTimeout: 10, require2FA: false });
   };
 
+  if (loading) return <div className="as-layout"><p style={{ padding: '2rem' }}>Loading settings...</p></div>;
+
   return (
     <div className="as-layout">
-      {/* Sidebar — same pattern as AdminDashboard / AdminProducts */}
       <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      {/* Main scrollable content */}
       <div className="as-body">
-
-        {/* Mobile hamburger */}
-        <button
-          className="as-hamburger"
-          onClick={() => setSidebarOpen(true)}
-          aria-label="Open menu"
-        >
-          ☰
-        </button>
+        <button className="as-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">☰</button>
 
         <div className="as-page">
 
-          {/* Page Header */}
           <div className="as-page-header">
             <div>
               <h2 className="as-page-header__title">Admin Settings</h2>
@@ -168,8 +315,16 @@ const AdminPanelSettings = () => {
                   <input type="password" id="confirmPassword" className="as-input" placeholder="Confirm New Password" value={security.confirmPassword} onChange={handleSecurityChange} />
                 </div>
               </div>
+
+              {/* Password feedback message */}
+              {passwordMsg && (
+                <p style={{ marginBottom: '12px', fontSize: '14px' }}>{passwordMsg}</p>
+              )}
+
               <div style={{ marginBottom: '16px' }}>
-                <button type="button" className="as-btn as-btn--dark">Update Password</button>
+                <button type="button" className="as-btn as-btn--dark" onClick={handleUpdatePassword}>
+                  Update Password
+                </button>
               </div>
 
               <hr className="as-divider" />
@@ -275,6 +430,11 @@ const AdminPanelSettings = () => {
               </div>
             </form>
           </section>
+
+          {/* Save feedback message */}
+          {saveMsg && (
+            <p style={{ textAlign: 'right', fontSize: '14px', marginBottom: '8px' }}>{saveMsg}</p>
+          )}
 
           {/* Action Buttons */}
           <div className="as-actions">
