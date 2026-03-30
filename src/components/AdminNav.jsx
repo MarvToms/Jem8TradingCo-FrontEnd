@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { me } from "../api/auth";
 
 const mainNavItems = [
   { label: "Dashboard", icon: "⊞", href: "/adminDashboard" },
@@ -23,6 +24,24 @@ const settingsItems = [
 
 export default function AdminNav({ sidebarOpen, setSidebarOpen }) {
   const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await me();
+        if (response.status === 200 && response.data.status === "success") {
+          setUser(response.data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const linkStyle = (active) => ({
     display: "flex",
@@ -39,6 +58,13 @@ export default function AdminNav({ sidebarOpen, setSidebarOpen }) {
     transition: "all 0.15s ease",
     textDecoration: "none",
   });
+
+  const getInitials = () => {
+    if (!user) return "AD";
+    const firstInitial = user.first_name?.[0] || "";
+    const lastInitial = user.last_name?.[0] || "";
+    return `${firstInitial}${lastInitial}`.toUpperCase() || "AD";
+  };
 
   const NavContent = () => (
     <>
@@ -118,15 +144,44 @@ export default function AdminNav({ sidebarOpen, setSidebarOpen }) {
         alignItems: "center",
         gap: "10px",
       }}>
-        <div style={{
-          width: "36px", height: "36px", borderRadius: "50%",
-          background: "linear-gradient(135deg, #2B7FFF, #9810FA)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#fff", fontWeight: 700, fontSize: "13px", flexShrink: 0,
-        }}>AD</div>
+        {/* Profile Picture or Initials */}
+        {!loading && user?.profile_image ? (
+          <img 
+            src={user.profile_image}
+            alt="Profile"
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              objectFit: "cover",
+              flexShrink: 0,
+            }}
+          />
+        ) : (
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #2B7FFF, #9810FA)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: "13px",
+            flexShrink: 0,
+          }}>
+            {!loading && user ? getInitials() : "AD"}
+          </div>
+        )}
+        
         <div>
-          <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>Admin User</div>
-          <div style={{ fontSize: "11px", color: "#9CA3AF" }}>admin@company.com</div>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>
+            {!loading && user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Admin User" : "Admin User"}
+          </div>
+          <div style={{ fontSize: "11px", color: "#9CA3AF" }}>
+            {!loading && user ? user.email : "admin@company.com"}
+          </div>
         </div>
       </div>
     </>

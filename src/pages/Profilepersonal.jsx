@@ -445,6 +445,7 @@ function ProfilePhoto({ user, onUploadSuccess }) {
       const newUrl = res.data?.profile_image_url ?? res.data?.data?.profile_image ?? null;
       toast.success("Profile photo updated!");
       if (onUploadSuccess) onUploadSuccess(newUrl);
+      // Dispatch event for Header and other components
       window.dispatchEvent(new CustomEvent("profile-photo-updated", { detail: { url: newUrl } }));
     } catch (err) {
       console.error(err);
@@ -839,6 +840,20 @@ export default function ProfilePersonal() {
   // ── Called after a successful photo upload — updates the URL in state ──────
   const handlePhotoUpdate = (newUrl) => {
     setUser((prev) => ({ ...prev, profile_image: newUrl }));
+    // Dispatch event for Header and other components to update the avatar
+    window.dispatchEvent(new CustomEvent("profile-photo-updated", { 
+      detail: { url: newUrl } 
+    }));
+  };
+
+  // ── Fix the Logout function to dispatch logout event ──
+  const Logout = async () => {
+    const data = await logout();
+    if (data) {
+      // Dispatch logout event to notify all components
+      window.dispatchEvent(new CustomEvent("auth-logout"));
+      navigate("/login");
+    }
   };
 
   if (loading) return <p>Loading...</p>;
@@ -850,9 +865,12 @@ export default function ProfilePersonal() {
 
   const renderContent = () => {
     switch (activeMenu) {
-      case "orders":   return <OrdersOverview />;
-      case "password": return <PasswordSecurity />;
-      case "notif":    return <Notification />;
+      case "orders":   
+        return <OrdersOverview userId={user?.id} />; // FIXED: Pass userId to OrdersOverview
+      case "password": 
+        return <PasswordSecurity />;
+      case "notif":    
+        return <Notification />;
       default:
         return (
           <PersonalInformation
@@ -864,11 +882,6 @@ export default function ProfilePersonal() {
           />
         );
     }
-  };
-
-  const Logout = async () => {
-    const data = await logout();
-    if (data) navigate("/login");
   };
 
   return (

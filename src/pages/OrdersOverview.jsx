@@ -1,5 +1,8 @@
-// ─── MyOrders.jsx ────────────────────────────────────────────────────────────
-import { useState } from "react";
+// ─── OrdersOverview.jsx ────────────────────────────────────────────────────────────
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
 import "../style/OrdersOverview.css";
 
 const EyeIcon = () => (
@@ -24,60 +27,33 @@ const RefreshIcon = () => (
 
 const TABS = ["All", "Completed", "Pending", "Delivered", "Cancelled"];
 
-const STAT_CARDS = [
-  { label: "TOTAL ORDERS", value: 12 },
-  { label: "COMPLETED",    value: 7  },
-  { label: "DELIVERED",    value: 3  },
-  { label: "PENDING",      value: 2  },
-];
-
-const ORDERS = [
-  {
-    id: "JEM-65723-343252",
-    date: "Feb 24, 2026",
-    status: "Completed",
-    items: ["A4 Bondpaper x10", "Pens x10", "Gloves x10", "+1 More"],
-    total: "₱4,092.25",
-    payment: "Bank Transfer",
-  },
-  {
-    id: "JEM-65723-343252",
-    date: "Feb 24, 2026",
-    status: "Pending",
-    items: ["A4 Bondpaper x10", "Pens x10", "Gloves x10", "+1 More"],
-    total: "₱4,092.25",
-    payment: "Bank Transfer",
-    showTracker: true,
-  },
-  {
-    id: "JEM-65723-343252",
-    date: "Feb 24, 2026",
-    status: "Delivered",
-    items: ["A4 Bondpaper x10", "Pens x10", "Gloves x10", "+1 More"],
-    total: "₱4,092.25",
-    payment: "Bank Transfer",
-  },
-  {
-    id: "JEM-65723-343252",
-    date: "Feb 24, 2026",
-    status: "Cancelled",
-    items: ["A4 Bondpaper x10", "Pens x10", "Gloves x10", "+1 More"],
-    total: "₱4,092.25",
-    payment: "Bank Transfer",
-  },
-];
-
 const STATUS_STYLE = {
   Completed: { bg: "#e8f4fd", color: "#2196f3", dot: "#2196f3" },
   Pending:   { bg: "#fff8e1", color: "#f59e0b", dot: "#f59e0b" },
+  Processing: { bg: "#fff8e1", color: "#f59e0b", dot: "#f59e0b" },
   Delivered: { bg: "#e8f4fd", color: "#2196f3", dot: "#2196f3" },
   Cancelled: { bg: "#fde8e8", color: "#ef4444", dot: "#ef4444" },
+  Shipped: { bg: "#e8f5e9", color: "#4caf50", dot: "#4caf50" },
 };
 
 const TRACKER_STEPS = ["Ordered", "Confirmed", "Packed", "Delivered"];
 
-function OrderTracker() {
-  const activeStep = 1; // "Confirmed" is active in the screenshot
+function getActiveTrackerStep(status) {
+  switch(status?.toLowerCase()) {
+    case "pending": return 0;
+    case "processing": return 1;
+    case "shipped": return 2;
+    case "delivered": return 3;
+    case "completed": return 3;
+    default: return -1;
+  }
+}
+
+function OrderTracker({ status }) {
+  const activeStep = getActiveTrackerStep(status);
+  
+  if (activeStep === -1) return null;
+  
   return (
     <div className="order-tracker">
       {TRACKER_STEPS.map((step, i) => (
@@ -94,15 +70,17 @@ function OrderTracker() {
 }
 
 function OrderCard({ order }) {
-  const s = STATUS_STYLE[order.status] || {};
-  const canReorder = order.status === "Delivered" || order.status === "Cancelled";
+  const s = STATUS_STYLE[order.status] || { bg: "#f3f4f6", color: "#6b7280", dot: "#6b7280" };
+  const canReorder = order.status === "Delivered" || order.status === "Completed";
 
   return (
     <div className="order-card">
       <div className="order-card__top">
         <div className="order-card__id-wrap">
-          <span className="order-card__id">{order.id}</span>
-          <span className="order-card__date">{order.date}</span>
+          <span className="order-card__id">Order #{order.order_number || order.id}</span>
+          <span className="order-card__date">
+            {new Date(order.created_at).toLocaleDateString()}
+          </span>
         </div>
         <span
           className="order-card__status-badge"
@@ -114,28 +92,39 @@ function OrderCard({ order }) {
       </div>
 
       <div className="order-card__items">
-        {order.items.map((item, i) => (
-          <span key={i} className="order-card__item-tag">{item}</span>
-        ))}
+        {order.items && order.items.length > 0 ? (
+          order.items.slice(0, 3).map((item, i) => (
+            <span key={i} className="order-card__item-tag">
+              {item.product_name} x{item.quantity}
+            </span>
+          ))
+        ) : (
+          <span className="order-card__item-tag">No items</span>
+        )}
+        {order.items && order.items.length > 3 && (
+          <span className="order-card__item-tag">+{order.items.length - 3} More</span>
+        )}
       </div>
 
-      {order.showTracker && <OrderTracker />}
+      {order.status !== "Cancelled" && order.status !== "Completed" && (
+        <OrderTracker status={order.status} />
+      )}
 
       <div className="order-card__bottom">
         <span className="order-card__total">
-          TOTAL: <strong>{order.total}</strong>
-          <span className="order-card__payment"> · {order.payment}</span>
+          TOTAL: <strong>₱{Number(order.total_amount).toLocaleString()}</strong>
+          <span className="order-card__payment"> · {order.payment_method || "Bank Transfer"}</span>
         </span>
         <div className="order-card__actions">
-          <button className="btn-order-outline">
+          <button className="btn-order-outline" onClick={() => window.location.href = `/orders/${order.id}`}>
             <EyeIcon /> View Details
           </button>
           {canReorder ? (
-            <button className="btn-order-dark">
+            <button className="btn-order-dark" onClick={() => window.location.href = `/products?reorder=${order.id}`}>
               <RefreshIcon /> Re Order
             </button>
           ) : (
-            <button className="btn-order-outline">
+            <button className="btn-order-outline" onClick={() => window.location.href = "/contact"}>
               <MessageIcon /> Contact Us
             </button>
           )}
@@ -145,12 +134,131 @@ function OrderCard({ order }) {
   );
 }
 
-export default function OrdersOverview() {
+// ─── Axios instance ───────────────────────────────────────────────────────────
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api",
+  withCredentials: true,
+  headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+});
+
+export default function OrdersOverview({ userId }) {
   const [activeTab, setActiveTab] = useState("All");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    completed: 0,
+    delivered: 0,
+    pending: 0,
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!userId) {
+        console.log("No userId provided");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        console.log("Fetching orders for userId:", userId);
+        
+        // Try different possible endpoints
+        let response;
+        try {
+          // Try with user_id parameter
+          response = await api.get(`/orders?user_id=${userId}`);
+        } catch (err) {
+          if (err.response?.status === 404) {
+            try {
+              // Try with user endpoint
+              response = await api.get(`/user/${userId}/orders`);
+            } catch (err2) {
+              if (err2.response?.status === 404) {
+                // Try with orders/user endpoint
+                response = await api.get(`/orders/user/${userId}`);
+              } else {
+                throw err2;
+              }
+            }
+          } else {
+            throw err;
+          }
+        }
+        
+        if (response.status === 200) {
+          const ordersData = response.data.data || response.data || [];
+          console.log("Orders fetched:", ordersData);
+          setOrders(ordersData);
+          
+          // Calculate stats
+          const total = ordersData.length;
+          const completed = ordersData.filter(o => o.status === "Completed").length;
+          const delivered = ordersData.filter(o => o.status === "Delivered").length;
+          const pending = ordersData.filter(o => o.status === "Pending" || o.status === "Processing").length;
+          
+          setStats({ total, completed, delivered, pending });
+        }
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+        // Don't show error toast for 404, just show empty state
+        if (error.response?.status !== 404) {
+          toast.error("Failed to load your orders");
+        }
+        
+        // If unauthorized, redirect to login
+        if (error.response?.status === 401) {
+          navigate("/login");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [userId, navigate]);
 
   const filtered = activeTab === "All"
-    ? ORDERS
-    : ORDERS.filter(o => o.status === activeTab);
+    ? orders
+    : orders.filter(o => o.status === activeTab);
+
+  const STAT_CARDS = [
+    { label: "TOTAL ORDERS", value: stats.total },
+    { label: "COMPLETED",    value: stats.completed },
+    { label: "DELIVERED",    value: stats.delivered },
+    { label: "PENDING",      value: stats.pending },
+  ];
+
+  if (loading) {
+    return (
+      <div className="profile-main">
+        <div className="orders-loading">
+          <div className="orders-loading-spinner"></div>
+          <p>Loading your orders...</p>
+        </div>
+        <style>{`
+          .orders-loading {
+            text-align: center;
+            padding: 60px 20px;
+          }
+          .orders-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #1a1a1a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-main">
@@ -182,7 +290,7 @@ export default function OrdersOverview() {
               <div className="profile-card__subtitle">Track and manage all your purchases</div>
             </div>
           </div>
-          <span className="orders-total-badge">{ORDERS.length} Total Orders</span>
+          <span className="orders-total-badge">{stats.total} Total Orders</span>
         </div>
 
         {/* Tabs */}
@@ -191,7 +299,7 @@ export default function OrdersOverview() {
             <button
               key={tab}
               className={`orders-tab${activeTab === tab ? " active" : ""}`}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setActiveMenu(tab)}
             >
               {tab}
             </button>
@@ -199,12 +307,58 @@ export default function OrdersOverview() {
         </div>
 
         {/* Order list */}
-        <div className="orders-list">
-          {filtered.map((order, i) => (
-            <OrderCard key={i} order={order} />
-          ))}
-        </div>
+        {filtered.length === 0 ? (
+          <div className="orders-empty-state">
+            <div className="orders-empty-icon">📦</div>
+            <h3>No orders found</h3>
+            <p>You don't have any {activeTab !== "All" ? activeTab.toLowerCase() : ""} orders yet.</p>
+            <button className="orders-shop-btn" onClick={() => navigate("/products")}>
+              Start Shopping
+            </button>
+          </div>
+        ) : (
+          <div className="orders-list">
+            {filtered.map((order) => (
+              <OrderCard key={order.id} order={order} />
+            ))}
+          </div>
+        )}
       </div>
+
+      <style>{`
+        .orders-empty-state {
+          text-align: center;
+          padding: 60px 20px;
+        }
+        .orders-empty-icon {
+          font-size: 64px;
+          margin-bottom: 20px;
+        }
+        .orders-empty-state h3 {
+          font-size: 20px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-bottom: 8px;
+        }
+        .orders-empty-state p {
+          color: #666;
+          margin-bottom: 24px;
+        }
+        .orders-shop-btn {
+          padding: 10px 24px;
+          background: #1a1a1a;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .orders-shop-btn:hover {
+          background: #333;
+        }
+      `}</style>
     </div>
   );
 }

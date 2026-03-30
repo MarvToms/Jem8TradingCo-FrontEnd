@@ -15,6 +15,8 @@ export function Header() {
   const { totalItems }              = useCart();
   const [isLog, setIsLog]           = useState(false);
   const [profileImage, setProfileImage] = useState(null); 
+  const [loading, setLoading]       = useState(true);
+  const [userRole, setUserRole]     = useState(null); // Add state for user role
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -22,24 +24,58 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     const handler = (e) => setProfileImage(e.detail.url);
     window.addEventListener("profile-photo-updated", handler);
     return () => window.removeEventListener("profile-photo-updated", handler);
   }, []);
 
+  // Function to check login status
+  const checkLogin = async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/api/me", { withCredentials: true });
+      setIsLog(true);
+      // Pull the image and role from the same response
+      setProfileImage(res.data?.profile_image ?? res.data?.data?.profile_image ?? null);
+      setUserRole(res.data?.role ?? res.data?.data?.role ?? null);
+    } catch {
+      setIsLog(false);
+      setProfileImage(null);
+      setUserRole(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const checkLogin = async () => {
-      try {
-        const res = await axios.get("http://127.0.0.1:8000/api/me", { withCredentials: true });
-        setIsLog(res.data);
-        // Pull the image from the same response
-        setProfileImage(res.data?.profile_image ?? res.data?.data?.profile_image ?? null);
-      } catch {
-        setIsLog(false);
-      }
-    };
     checkLogin();
+
+    // Listen for logout event
+    const handleLogout = () => {
+      setIsLog(false);
+      setProfileImage(null);
+      setUserRole(null);
+    };
+
+    // Listen for login event
+    const handleLogin = () => {
+      checkLogin();
+    };
+
+    // Listen for profile photo updates
+    const handlePhotoUpdate = (e) => {
+      setProfileImage(e.detail.url);
+    };
+
+    window.addEventListener("auth-logout", handleLogout);
+    window.addEventListener("auth-login", handleLogin);
+    window.addEventListener("profile-photo-updated", handlePhotoUpdate);
+
+    return () => {
+      window.removeEventListener("auth-logout", handleLogout);
+      window.removeEventListener("auth-login", handleLogin);
+      window.removeEventListener("profile-photo-updated", handlePhotoUpdate);
+    };
   }, []);
 
   // Lock body scroll when mobile menu is open
@@ -51,6 +87,9 @@ export function Header() {
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const isActive = (path) => location.pathname === path;
+
+  // Check if user is admin (you may need to adjust this based on your role structure)
+  const isAdmin = userRole === "admin" || userRole === "administrator" || userRole === "Admin";
 
   const NAV_LINKS = [
     { to: "/",         label: "Home"      },
@@ -378,10 +417,12 @@ export function Header() {
               )}
             </Link>
 
-            {/* Admin */}
-            <Link to="/adminDashboard" style={S.iconBtn} className="jem-icon-btn" aria-label="Admin" title="Admin">
-              🛠️
-            </Link>
+            {/* Admin - Only show if user is admin */}
+            {isLog && isAdmin && (
+              <Link to="/adminDashboard" style={S.iconBtn} className="jem-icon-btn" aria-label="Admin" title="Admin">
+                🛠️
+              </Link>
+            )}
 
             {/* Contact (desktop only) */}
             <Link to="/contact" className="jem-contact-btn" style={S.contactBtn}>
@@ -393,7 +434,7 @@ export function Header() {
               <button style={S.loginBtn} onClick={() => navigate("/login")}>
                 Login
               </button>
-                ) : (
+            ) : (
               <button
                 style={S.avatarBtn}
                 onClick={() => navigate("/Profilepersonal")}
@@ -432,7 +473,6 @@ export function Header() {
         </div>
       </header>
 
-
       {/* ── MOBILE MENU ── */}
       {/* Overlay backdrop */}
       <div style={S.overlay} onClick={() => setMobileOpen(false)} aria-hidden="true" />
@@ -454,6 +494,13 @@ export function Header() {
         <Link to="/Profilepersonal" style={S.panelLink(isActive("/Profilepersonal"))}>
           👤 My Profile
         </Link>
+
+        {/* Admin link in mobile menu - Only show if user is admin */}
+        {isLog && isAdmin && (
+          <Link to="/adminDashboard" style={S.panelLink(isActive("/adminDashboard"))}>
+            🛠️ Admin Dashboard
+          </Link>
+        )}
 
         <div style={S.panelCta}>
           <Link to="/contact" style={S.ctaLink}>
