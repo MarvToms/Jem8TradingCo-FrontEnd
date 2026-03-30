@@ -70,14 +70,19 @@ function OrderTracker({ status }) {
 }
 
 function OrderCard({ order }) {
-  const s = STATUS_STYLE[order.status] || { bg: "#f3f4f6", color: "#6b7280", dot: "#6b7280" };
-  const canReorder = order.status === "Delivered" || order.status === "Completed";
-
+  // Get status from delivery if available
+  const orderStatus = order.delivery?.status || order.status || "Processing";
+  const s = STATUS_STYLE[orderStatus] || { bg: "#f3f4f6", color: "#6b7280", dot: "#6b7280" };
+  const canReorder = orderStatus === "Delivered" || orderStatus === "Completed";
+  
+  // Get items from cart
+  const items = order.cart || [];
+  
   return (
     <div className="order-card">
       <div className="order-card__top">
         <div className="order-card__id-wrap">
-          <span className="order-card__id">Order #{order.order_number || order.id}</span>
+          <span className="order-card__id">Order #{order.checkout_id}</span>
           <span className="order-card__date">
             {new Date(order.created_at).toLocaleDateString()}
           </span>
@@ -87,40 +92,43 @@ function OrderCard({ order }) {
           style={{ background: s.bg, color: s.color }}
         >
           <span className="order-card__status-dot" style={{ background: s.dot }} />
-          {order.status}
+          {orderStatus}
         </span>
       </div>
 
       <div className="order-card__items">
-        {order.items && order.items.length > 0 ? (
-          order.items.slice(0, 3).map((item, i) => (
+        {items.length > 0 ? (
+          items.slice(0, 3).map((item, i) => (
             <span key={i} className="order-card__item-tag">
-              {item.product_name} x{item.quantity}
+              {item.product?.name || "Product"} x{item.quantity}
             </span>
           ))
         ) : (
           <span className="order-card__item-tag">No items</span>
         )}
-        {order.items && order.items.length > 3 && (
-          <span className="order-card__item-tag">+{order.items.length - 3} More</span>
+        {items.length > 3 && (
+          <span className="order-card__item-tag">+{items.length - 3} More</span>
         )}
       </div>
 
-      {order.status !== "Cancelled" && order.status !== "Completed" && (
-        <OrderTracker status={order.status} />
+      {orderStatus !== "Cancelled" && orderStatus !== "Completed" && (
+        <OrderTracker status={orderStatus} />
       )}
 
       <div className="order-card__bottom">
         <span className="order-card__total">
-          TOTAL: <strong>₱{Number(order.total_amount).toLocaleString()}</strong>
-          <span className="order-card__payment"> · {order.payment_method || "Bank Transfer"}</span>
+          TOTAL: <strong>₱{Number(order.paid_amount).toLocaleString()}</strong>
+          <span className="order-card__payment"> · {order.payment_method === "cod" ? "Cash on Delivery" : 
+            order.payment_method === "gcash" ? "GCash" :
+            order.payment_method === "maya" ? "Maya" :
+            order.payment_method === "bank_transfer" ? "Bank Transfer" : "Check"}</span>
         </span>
         <div className="order-card__actions">
-          <button className="btn-order-outline" onClick={() => window.location.href = `/orders/${order.id}`}>
+          <button className="btn-order-outline" onClick={() => window.location.href = `/orders/${order.checkout_id}`}>
             <EyeIcon /> View Details
           </button>
           {canReorder ? (
-            <button className="btn-order-dark" onClick={() => window.location.href = `/products?reorder=${order.id}`}>
+            <button className="btn-order-dark" onClick={() => window.location.href = `/products?reorder=${order.checkout_id}`}>
               <RefreshIcon /> Re Order
             </button>
           ) : (
@@ -155,74 +163,57 @@ export default function OrdersOverview({ userId }) {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      if (!userId) {
-        console.log("No userId provided");
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
-        console.log("Fetching orders for userId:", userId);
+        console.log("Fetching orders...");
         
-        // Try different possible endpoints
-        let response;
-        try {
-          // Try with user_id parameter
-          response = await api.get(`/orders?user_id=${userId}`);
-        } catch (err) {
-          if (err.response?.status === 404) {
-            try {
-              // Try with user endpoint
-              response = await api.get(`/user/${userId}/orders`);
-            } catch (err2) {
-              if (err2.response?.status === 404) {
-                // Try with orders/user endpoint
-                response = await api.get(`/orders/user/${userId}`);
-              } else {
-                throw err2;
-              }
-            }
-          } else {
-            throw err;
-          }
-        }
+        // Use the checkout endpoint from your CheckoutController
+        const response = await api.get("/checkout");
         
         if (response.status === 200) {
-          const ordersData = response.data.data || response.data || [];
+          let ordersData = response.data;
+          
+          // If it's not an array, wrap it
+          if (!Array.isArray(ordersData)) {
+            ordersData = [ordersData];
+          }
+          
           console.log("Orders fetched:", ordersData);
           setOrders(ordersData);
           
-          // Calculate stats
+          // Calculate stats based on delivery status
           const total = ordersData.length;
-          const completed = ordersData.filter(o => o.status === "Completed").length;
-          const delivered = ordersData.filter(o => o.status === "Delivered").length;
-          const pending = ordersData.filter(o => o.status === "Pending" || o.status === "Processing").length;
+          const completed = ordersData.filter(o => o.delivery?.status === "Delivered" || o.delivery?.status === "Completed").length;
+          const delivered = ordersData.filter(o => o.delivery?.status === "Delivered").length;
+          const pending = ordersData.filter(o => o.delivery?.status === "Processing" || o.delivery?.status === "Pending").length;
           
           setStats({ total, completed, delivered, pending });
         }
       } catch (error) {
         console.error("Failed to fetch orders:", error);
-        // Don't show error toast for 404, just show empty state
-        if (error.response?.status !== 404) {
+        
+        if (error.response?.status === 401) {
+          navigate("/login");
+        } else {
           toast.error("Failed to load your orders");
         }
         
-        // If unauthorized, redirect to login
-        if (error.response?.status === 401) {
-          navigate("/login");
-        }
+        setOrders([]);
+        setStats({ total: 0, completed: 0, delivered: 0, pending: 0 });
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrders();
-  }, [userId, navigate]);
+  }, [navigate]);
 
   const filtered = activeTab === "All"
     ? orders
-    : orders.filter(o => o.status === activeTab);
+    : orders.filter(o => {
+        const status = o.delivery?.status || o.status;
+        return status === activeTab;
+      });
 
   const STAT_CARDS = [
     { label: "TOTAL ORDERS", value: stats.total },
@@ -299,7 +290,7 @@ export default function OrdersOverview({ userId }) {
             <button
               key={tab}
               className={`orders-tab${activeTab === tab ? " active" : ""}`}
-              onClick={() => setActiveMenu(tab)}
+              onClick={() => setActiveTab(tab)}
             >
               {tab}
             </button>
@@ -319,7 +310,7 @@ export default function OrdersOverview({ userId }) {
         ) : (
           <div className="orders-list">
             {filtered.map((order) => (
-              <OrderCard key={order.id} order={order} />
+              <OrderCard key={order.checkout_id} order={order} />
             ))}
           </div>
         )}
