@@ -24,11 +24,31 @@ const STATUS_COLORS = {
   ready:      { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
 };
 
-const STATUS_STEPS = ["processing", "confirmed", "shipped", "delivered"];
+// Tracker labels (match PHP map): Ordered, Confirmed, Packed, Delivered
+const TRACKER_LABELS = ["Ordered", "Confirmed", "Packed", "Delivered"];
+
+const STATUS_TO_TRACKER_LABEL = {
+  pending: 'Ordered',
+  processing: 'Confirmed',
+  ready: 'Packed',
+  on_the_way: 'Packed',
+  shipped: 'Packed',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
+function getTrackerIndexFromStatus(status) {
+  const s = (status || '').toString().trim().toLowerCase();
+  const label = STATUS_TO_TRACKER_LABEL[s] || (TRACKER_LABELS.find(l => l.toLowerCase() === s) || null);
+  if (!label || label === 'Cancelled') return -1;
+  return TRACKER_LABELS.indexOf(label);
+}
 
 function normaliseOrder(o, account) {
   const { checkout, delivery, items = [] } = o;
   const status = (delivery?.status ?? "processing").toLowerCase();
+
+  const mappedLabel = (STATUS_TO_TRACKER_LABEL[status] || status).toString();
 
   return {
     id:             delivery?.delivery_id ?? checkout?.checkout_id,
@@ -37,7 +57,8 @@ function normaliseOrder(o, account) {
                           year: "numeric", month: "long", day: "numeric",
                         })
                       : "—",
-    status,
+    status, // raw backend status key (e.g. on_the_way)
+    label: mappedLabel, // human-friendly mapped label (e.g. Packed)
     paymentMethod:  checkout?.payment_method ?? "—",
     paymentDetails: checkout?.payment_details ?? null,
     subtotal:       Number(checkout?.paid_amount ?? 0) - Number(checkout?.shipping_fee ?? 0),
@@ -253,7 +274,7 @@ export default function MyOrders() {
                           className="text-[11px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0"
                           style={{ background: colors.bg, color: colors.color, borderColor: colors.border }}
                         >
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          {(order.label || order.status).toString().charAt(0).toUpperCase() + (order.label || order.status).toString().slice(1)}
                         </span>
                       </div>
 
@@ -313,40 +334,40 @@ export default function MyOrders() {
                       className="text-xs font-bold px-3.5 py-1.5 rounded-full border"
                       style={{ background: colors.bg, color: colors.color, borderColor: colors.border }}
                     >
-                      {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                      {(selectedOrder.label || selectedOrder.status).toString().charAt(0).toUpperCase() + (selectedOrder.label || selectedOrder.status).toString().slice(1)}
                     </span>
                   </div>
 
                   {/* Tracker */}
-                  {selectedOrder.status !== "cancelled" && (
+                  {(selectedOrder.label || selectedOrder.status).toString().toLowerCase() !== "cancelled" && (
                     <div className="flex items-center mb-7 p-5 bg-[#f8faf9] rounded-xl border border-[#e8f0eb] overflow-x-auto">
-                      {STATUS_STEPS.map((s, i) => {
-                        const currentIdx = STATUS_STEPS.indexOf(selectedOrder.status);
-                        const isDone    = i < currentIdx;
-                        const isCurrent = i === currentIdx;
-                        return (
-                          <div key={s} className="flex items-center gap-2 flex-shrink-0">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all
-                                ${isDone    ? "bg-green-600 text-white"
-                                : isCurrent ? "bg-[#4d7b65] text-white"
-                                :             "bg-[#e8f0eb] text-slate-400"}`}>
-                                {isDone ? "✓" : i + 1}
+                        {TRACKER_LABELS.map((label, i) => {
+                          const currentIdx = getTrackerIndexFromStatus(selectedOrder.status);
+                          const isDone    = i < currentIdx;
+                          const isCurrent = i === currentIdx;
+                          return (
+                            <div key={label} className="flex items-center gap-2 flex-shrink-0">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all
+                                  ${isDone    ? "bg-green-600 text-white"
+                                  : isCurrent ? "bg-[#4d7b65] text-white"
+                                  :             "bg-[#e8f0eb] text-slate-400"}`}>
+                                  {isDone ? "✓" : i + 1}
+                                </div>
+                                <span className={`text-xs font-semibold transition-colors hidden sm:block
+                                  ${isDone    ? "text-green-600"
+                                  : isCurrent ? "text-[#4d7b65] font-bold"
+                                  :             "text-slate-400"}`}>
+                                  {label}
+                                </span>
                               </div>
-                              <span className={`text-xs font-semibold transition-colors hidden sm:block
-                                ${isDone    ? "text-green-600"
-                                : isCurrent ? "text-[#4d7b65] font-bold"
-                                :             "text-slate-400"}`}>
-                                {s.charAt(0).toUpperCase() + s.slice(1)}
-                              </span>
+                              {i < TRACKER_LABELS.length - 1 && (
+                                <div className={`min-w-6 h-0.5 mx-1.5 transition-colors flex-shrink-0 ${isDone ? "bg-green-600" : "bg-[#e8f0eb]"}`} />
+                              )}
                             </div>
-                            {i < STATUS_STEPS.length - 1 && (
-                              <div className={`min-w-6 h-0.5 mx-1.5 transition-colors flex-shrink-0 ${isDone ? "bg-green-600" : "bg-[#e8f0eb]"}`} />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
                   )}
 
                   {/* Delivery Address */}

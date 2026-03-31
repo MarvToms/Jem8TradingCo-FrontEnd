@@ -38,15 +38,37 @@ const STATUS_STYLE = {
 
 const TRACKER_STEPS = ["Ordered", "Confirmed", "Packed", "Delivered"];
 
-function getActiveTrackerStep(status) {
-  switch(status?.toLowerCase()) {
-    case "pending": return 0;
-    case "processing": return 1;
-    case "shipped": return 2;
-    case "delivered": return 3;
-    case "completed": return 3;
-    default: return -1;
+function getActiveTrackerStep(statusOrStep) {
+  // If backend provided a numeric step (1..4), convert to 0-based index
+  if (typeof statusOrStep === "number") {
+    const idx = Math.max(0, Math.min(TRACKER_STEPS.length - 1, statusOrStep - 1));
+    return idx;
   }
+
+  // Map of raw backend status keys to tracker step labels (matches backend PHP map)
+  const STATUS_TO_TRACKER_LABEL = {
+    pending: 'Ordered',
+    processing: 'Confirmed',
+    ready: 'Packed',
+    on_the_way: 'Packed',
+    shipped: 'Packed',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled',
+  };
+
+  const s = (statusOrStep || "").toString().trim();
+  const key = s.toLowerCase();
+
+  // If the backend already supplied a tracker label like "Ordered"/"Confirmed" use it
+  const asTrackerLabel = STATUS_TO_TRACKER_LABEL[key] ||
+    // sometimes backend gives friendly words (Ordered, Confirmed, Packed, Delivered)
+    (TRACKER_STEPS.find(step => step.toLowerCase() === key) || null);
+
+  if (!asTrackerLabel) return -1;
+  if (asTrackerLabel === 'Cancelled') return -1;
+
+  const idx = TRACKER_STEPS.indexOf(asTrackerLabel);
+  return idx >= 0 ? idx : -1;
 }
 
 function OrderTracker({ status }) {
@@ -71,9 +93,12 @@ function OrderTracker({ status }) {
 
 function OrderCard({ order }) {
   // Get status from delivery if available
-  const orderStatus = order.delivery?.status || order.status || "Processing";
-  const s = STATUS_STYLE[orderStatus] || { bg: "#f3f4f6", color: "#6b7280", dot: "#6b7280" };
-  const canReorder = orderStatus === "Delivered" || orderStatus === "Completed";
+  // Prefer backend-provided human-friendly label and step when available
+  const backendStep = order.delivery?.status_step ?? null;
+  const backendLabel = order.delivery?.status_label || order.delivery?.status || order.status || "Processing";
+  const normalizedLabel = String(backendLabel).charAt(0).toUpperCase() + String(backendLabel).slice(1).toLowerCase();
+  const s = STATUS_STYLE[normalizedLabel] || { bg: "#f3f4f6", color: "#6b7280", dot: "#6b7280" };
+  const canReorder = normalizedLabel === "Delivered" || normalizedLabel === "Completed";
   
   // Get items from cart
   const items = order.cart || [];
@@ -92,7 +117,7 @@ function OrderCard({ order }) {
           style={{ background: s.bg, color: s.color }}
         >
           <span className="order-card__status-dot" style={{ background: s.dot }} />
-          {orderStatus}
+          {normalizedLabel}
         </span>
       </div>
 
@@ -111,12 +136,12 @@ function OrderCard({ order }) {
         )}
       </div>
 
-      {orderStatus !== "Cancelled" && orderStatus !== "Completed" && (
-        <OrderTracker status={orderStatus} />
+      {getActiveTrackerStep(backendStep ?? backendLabel) !== -1 && (
+        <OrderTracker status={backendStep ?? backendLabel} />
       )}
 
       <div className="order-card__bottom">
-        <span className="order-card__total">
+          <span className="order-card__total">
           TOTAL: <strong>₱{Number(order.paid_amount).toLocaleString()}</strong>
           <span className="order-card__payment"> · {order.payment_method === "cod" ? "Cash on Delivery" : 
             order.payment_method === "gcash" ? "GCash" :
@@ -181,12 +206,24 @@ export default function OrdersOverview({ userId }) {
           console.log("Orders fetched:", ordersData);
           setOrders(ordersData);
           
-          // Calculate stats based on delivery status
+          // Calculate stats based on delivery status (prefer status_label when available)
           const total = ordersData.length;
-          const completed = ordersData.filter(o => o.delivery?.status === "Delivered" || o.delivery?.status === "Completed").length;
-          const delivered = ordersData.filter(o => o.delivery?.status === "Delivered").length;
-          const pending = ordersData.filter(o => o.delivery?.status === "Processing" || o.delivery?.status === "Pending").length;
-          
+          const normalize = (o) => {
+            const label = o.delivery?.status_label || o.delivery?.status || o.status || "";
+            const str = String(label);
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+          };
+
+          const completed = ordersData.filter(o => {
+            const s = normalize(o);
+            return s === "Delivered" || s === "Completed";
+          }).length;
+          const delivered = ordersData.filter(o => normalize(o) === "Delivered").length;
+          const pending = ordersData.filter(o => {
+            const s = normalize(o);
+            return s === "Processing" || s === "Pending" || s === "Confirmed";
+          }).length;
+
           setStats({ total, completed, delivered, pending });
         }
       } catch (error) {
@@ -211,8 +248,9 @@ export default function OrdersOverview({ userId }) {
   const filtered = activeTab === "All"
     ? orders
     : orders.filter(o => {
-        const status = o.delivery?.status || o.status;
-        return status === activeTab;
+        const label = o.delivery?.status_label || o.delivery?.status || o.status || "";
+        const normalized = String(label).charAt(0).toUpperCase() + String(label).slice(1).toLowerCase();
+        return normalized === activeTab;
       });
 
   const STAT_CARDS = [
