@@ -44,6 +44,16 @@ function getTrackerIndexFromStatus(status) {
   return TRACKER_LABELS.indexOf(label);
 }
 
+function formatStatusText(status) {
+  if (!status) return "";
+  return status
+    .toString()
+    .replace(/_/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, (t) => t.toUpperCase());
+}
+
 function normaliseOrder(o, account) {
   const { checkout, delivery, items = [] } = o;
   const status = (delivery?.status ?? "processing").toLowerCase();
@@ -274,7 +284,7 @@ export default function MyOrders() {
                           className="text-[11px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0"
                           style={{ background: colors.bg, color: colors.color, borderColor: colors.border }}
                         >
-                          {(order.label || order.status).toString().charAt(0).toUpperCase() + (order.label || order.status).toString().slice(1)}
+                          {formatStatusText(order.status)}
                         </span>
                       </div>
 
@@ -334,12 +344,12 @@ export default function MyOrders() {
                       className="text-xs font-bold px-3.5 py-1.5 rounded-full border"
                       style={{ background: colors.bg, color: colors.color, borderColor: colors.border }}
                     >
-                      {(selectedOrder.label || selectedOrder.status).toString().charAt(0).toUpperCase() + (selectedOrder.label || selectedOrder.status).toString().slice(1)}
+                      {formatStatusText(selectedOrder.status)}
                     </span>
                   </div>
 
                   {/* Tracker */}
-                  {(selectedOrder.label || selectedOrder.status).toString().toLowerCase() !== "cancelled" && (
+                  {selectedOrder.status.toString().toLowerCase() !== "cancelled" && (
                     <div className="flex items-center mb-7 p-5 bg-[#f8faf9] rounded-xl border border-[#e8f0eb] overflow-x-auto">
                         {TRACKER_LABELS.map((label, i) => {
                           const currentIdx = getTrackerIndexFromStatus(selectedOrder.status);
