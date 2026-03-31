@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { Header, Footer } from "./components/Layout";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 const img = (w, h, label = "") =>
   `https://placehold.co/${w}x${h}/edf4f0/4d7b65?text=${encodeURIComponent(label)}`;
@@ -49,11 +51,17 @@ const WHY_ITEMS = [
   { num: "3", title: "Dedicated & Professional Team", desc: "Every order, big or small, gets the same level of care and commitment." },
 ];
 
-const TESTIMONIALS = [
-  { name: "Sarah Johnson",   role: "Business Owner", review: "Absolutely fantastic service! The team went above and beyond to ensure everything was perfect. Highly recommend to anyone looking for a reliable supplier." },
-  { name: "Michael Chen",    role: "Office Manager", review: "Great experience from start to finish. The product quality exceeded my expectations and delivery was super fast. Will definitely order again." },
-  { name: "Emily Rodriguez", role: "HR Director",    review: "Outstanding quality and customer care. This is exactly what I was looking for. Will definitely be a returning customer — the giveaways were a hit!" },
+const FALLBACK_TESTIMONIALS = [
+  { name: "Sarah Johnson", role: "Business Owner", review_text: "Absolutely fantastic...", rating: 5 },
+  // use review_text, not review ↑
 ];
+
+// ─── Axios instance ───────────────────────────────────────────────────────────
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api",
+  withCredentials: true,
+  headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+});
 
 /* ── Product Card ── */
 function ProductCard({ imgSrc, title, desc }) {
@@ -62,7 +70,6 @@ function ProductCard({ imgSrc, title, desc }) {
       to="/products"
       className="group bg-white rounded-[16px] overflow-hidden border border-[#e2e8f0] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[6px] hover:border-[#b8d9c8] no-underline text-inherit"
     >
-      {/* Image */}
       <div className="w-full overflow-hidden bg-[#f1f5f9]" style={{ aspectRatio: "16/10" }}>
         <img
           src={imgSrc}
@@ -71,7 +78,6 @@ function ProductCard({ imgSrc, title, desc }) {
         />
       </div>
 
-      {/* Body */}
       <div className="px-[24px] py-[22px] flex-1 flex flex-col">
         <h3 className="text-[15px] font-bold text-[#1e293b] mb-[10px] leading-[1.4]">
           {title}
@@ -92,13 +98,12 @@ function ProductCard({ imgSrc, title, desc }) {
 function Hero() {
   return (
     <section
-      className="relative overflow-hidden flex items-center min-h-screen"
+      className="relative flex items-center min-h-screen overflow-hidden"
       style={{
         paddingTop: "var(--header-h)",
         background: "linear-gradient(135deg, #f9fdf9 0%, #fff 50%, #edf4f0 100%)",
       }}
     >
-      {/* Decorative blob */}
       <div
         className="absolute pointer-events-none"
         style={{
@@ -112,9 +117,7 @@ function Hero() {
         className="relative z-[1] max-w-[1200px] w-full mx-auto px-[24px] grid items-center gap-[60px] pt-[60px] pb-[80px]"
         style={{ gridTemplateColumns: "1fr 1fr" }}
       >
-        {/* Left: content */}
         <div>
-          {/* Badge */}
           <div className="inline-flex items-center gap-[9px] bg-white border border-[#b8d9c8] rounded-full px-[18px] py-[7px] text-[13px] font-medium text-[#4d7b65] mb-[24px]">
             <span
               className="w-[6px] h-[6px] bg-[#4d7b65] rounded-full"
@@ -155,7 +158,6 @@ function Hero() {
           </div>
         </div>
 
-        {/* Right: image */}
         <div
           className="relative rounded-[20px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.12)]"
           style={{ aspectRatio: "1 / 0.88" }}
@@ -163,9 +165,8 @@ function Hero() {
           <img
             src={img(693, 612, "JEM 8 Products")}
             alt="JEM 8 Circle Trading products showcase"
-            className="w-full h-full object-cover"
+            className="object-cover w-full h-full"
           />
-          {/* Float badge */}
           <div className="absolute bottom-[24px] left-[24px] flex items-center gap-[12px] bg-white/95 backdrop-blur-[8px] rounded-[10px] px-[18px] py-[12px] shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
             <span className="text-[24px]">🏆</span>
             <div>
@@ -194,7 +195,6 @@ function ProductsSection() {
       style={{ padding: "clamp(64px, 8vw, 120px) 0" }}
     >
       <div className="max-w-[1200px] mx-auto px-[24px]">
-        {/* Header */}
         <div
           className="flex flex-col gap-[12px]"
           style={{ marginBottom: "clamp(40px, 6vw, 72px)" }}
@@ -213,7 +213,6 @@ function ProductsSection() {
           </p>
         </div>
 
-        {/* Grid */}
         <div
           className="grid gap-[28px]"
           style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
@@ -236,7 +235,6 @@ function WhyChooseUs() {
       }}
     >
       <div className="max-w-[1200px] mx-auto px-[24px]">
-        {/* Header */}
         <div
           className="flex flex-col gap-[12px]"
           style={{ marginBottom: "clamp(40px, 6vw, 72px)" }}
@@ -252,7 +250,6 @@ function WhyChooseUs() {
           </h2>
         </div>
 
-        {/* Grid */}
         <div
           className="grid gap-[28px]"
           style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
@@ -263,7 +260,6 @@ function WhyChooseUs() {
               className="group bg-white rounded-[16px] border border-[#e2e8f0] shadow-sm transition-all duration-300 text-center hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[5px] hover:border-[#b8d9c8]"
               style={{ padding: "clamp(32px, 4vw, 48px) clamp(24px, 3vw, 36px)" }}
             >
-              {/* Number circle */}
               <div className="inline-flex items-center justify-center w-[56px] h-[56px] bg-[#edf4f0] border-2 border-[#b8d9c8] rounded-full text-[24px] font-bold text-[#4d7b65] mx-auto mb-[20px]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
@@ -284,14 +280,53 @@ function WhyChooseUs() {
 }
 
 /* ── Testimonials ── */
-function Testimonials() {
+function Testimonials({ reviews }) {
+  // Display stars based on rating
+  const renderStars = (rating) => {
+    return (
+      <div className="text-[#f5a623] text-[14px] tracking-[2px]">
+        {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+      </div>
+    );
+  };
+
+  if (!reviews || reviews.length === 0) {
+    return (
+      <section
+        className="bg-[#f1f5f9]"
+        style={{ padding: "clamp(64px, 8vw, 120px) 0" }}
+      >
+        <div className="max-w-[1200px] mx-auto px-[24px]">
+          <div
+            className="flex flex-col gap-[12px]"
+            style={{ marginBottom: "clamp(40px, 6vw, 64px)" }}
+          >
+            <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-[14px] py-[5px] self-start">
+              What Clients Say
+            </span>
+            <h2
+              className="font-bold text-[#1e293b] leading-[1.2]"
+              style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.5vw, 42px)" }}
+            >
+              Customer Feedback
+            </h2>
+          </div>
+
+          <div className="text-center py-[60px]">
+            <div className="text-[48px] mb-[20px]">📝</div>
+            <p className="text-[#64748b] text-[16px]">No reviews yet. Be the first to leave a review!</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       className="bg-[#f1f5f9]"
       style={{ padding: "clamp(64px, 8vw, 120px) 0" }}
     >
       <div className="max-w-[1200px] mx-auto px-[24px]">
-        {/* Header */}
         <div
           className="flex flex-col gap-[12px]"
           style={{ marginBottom: "clamp(40px, 6vw, 64px)" }}
@@ -307,22 +342,21 @@ function Testimonials() {
           </h2>
         </div>
 
-        {/* Grid */}
         <div
           className="grid gap-[24px]"
           style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
         >
-          {TESTIMONIALS.map((fb) => (
+          {reviews.map((review, index) => (
             <div
-              key={fb.name}
+              key={review.review_id || index}
               className="bg-white rounded-[16px] px-[28px] py-[32px] border border-[#e2e8f0] shadow-sm transition-all duration-300 flex flex-col gap-[16px] hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[4px] hover:border-[#b8d9c8]"
             >
-              {/* Stars */}
-              <div className="text-[#f5a623] text-[16px] tracking-[2px]">★★★★★</div>
+              {/* Rating Stars */}
+              {renderStars(review.rating)}
 
-              {/* Review */}
+              {/* Review Text */}
               <p className="text-[15px] text-[#555] leading-[1.75] italic flex-1">
-                "{fb.review}"
+                "{review.review_text}"
               </p>
 
               {/* Author */}
@@ -330,11 +364,15 @@ function Testimonials() {
                 <div className="w-[40px] h-[40px] rounded-full bg-[#edf4f0] border-2 border-[#b8d9c8] flex items-center justify-center text-[16px] font-bold text-[#4d7b65] flex-shrink-0"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
-                  {fb.name.charAt(0)}
+                  {review.user?.first_name?.[0] || review.name?.[0] || 'C'}
                 </div>
                 <div>
-                  <div className="text-[14px] font-semibold text-[#1e293b]">{fb.name}</div>
-                  <div className="text-[12px] text-[#64748b]">{fb.role}</div>
+                  <div className="text-[14px] font-semibold text-[#1e293b]">
+                    {review.user ? `${review.user.first_name} ${review.user.last_name}` : review.name || 'Customer'}
+                  </div>
+                  <div className="text-[12px] text-[#64748b]">
+                    {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Recent'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -355,7 +393,6 @@ function CtaBanner() {
         padding: "clamp(64px, 8vw, 110px) 0",
       }}
     >
-      {/* Decorative blobs */}
       <div
         className="absolute pointer-events-none"
         style={{
@@ -407,6 +444,28 @@ function CtaBanner() {
 
 /* ── Page ── */
 export default function Jem8HomePage() {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const response = await api.get('/reviews/latest');
+        if (response.data.status === 'success') {
+          setReviews(response.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+        // Use fallback data if API fails
+        setReviews(FALLBACK_TESTIMONIALS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
   return (
     <>
       <Header />
@@ -414,9 +473,19 @@ export default function Jem8HomePage() {
         <Hero />
         <ProductsSection />
         <WhyChooseUs />
-        <Testimonials />
+        {loading ? (
+          <section className="bg-[#f1f5f9]" style={{ padding: "clamp(64px, 8vw, 120px) 0" }}>
+            <div className="max-w-[1200px] mx-auto px-[24px] text-center">
+              <div className="inline-block w-8 h-8 border-4 border-[#4d7b65] border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-[#64748b]">Loading reviews...</p>
+            </div>
+          </section>
+        ) : (
+          <Testimonials reviews={reviews} />
+        )}
         <CtaBanner />
       </main>
+      <Footer />
     </>
   );
 }
