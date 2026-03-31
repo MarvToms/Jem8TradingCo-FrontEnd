@@ -789,7 +789,7 @@ const addressStyles = {
 // ─── Menu Items ───────────────────────────────────────────────────────────────
 const MENU_ITEMS = [
   { key: "personal", label: "Personal Information", Icon: PersonIcon },
-  { key: "orders",   label: "My Orders",            Icon: OrderIcon, badge: 12 },
+  { key: "orders",   label: "My Orders",            Icon: OrderIcon },
   { key: "password", label: "Password & Security",  Icon: LockIcon },
   { key: "notif",    label: "Notification",         Icon: BellIcon },
 ];
@@ -800,6 +800,7 @@ export default function ProfilePersonal() {
   const [user, setUser]             = useState(null);
   const [loading, setLoading]       = useState(true);
   const [addresses, setAddresses]   = useState([]);
+  const [ordersCount, setOrdersCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -826,6 +827,25 @@ export default function ProfilePersonal() {
     };
     loadUser();
   }, []);
+
+  // Fetch orders count for the sidebar badge
+  useEffect(() => {
+    const fetchOrdersCount = async () => {
+      try {
+        const res = await api.get("/checkout");
+        if (res.status === 200) {
+          let data = res.data;
+          if (!Array.isArray(data)) data = [data];
+          setOrdersCount(Array.isArray(data) ? data.length : 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch orders count:", err);
+        setOrdersCount(0);
+      }
+    };
+
+    if (user) fetchOrdersCount();
+  }, [user]);
 
   const handleUserUpdate = async (updatedFields) => {
     setUser((prev) => ({ ...prev, ...updatedFields }));
@@ -905,16 +925,19 @@ export default function ProfilePersonal() {
 
           <nav className="profile-sidebar__nav">
             <span className="profile-sidebar__nav-label">Overview</span>
-            {MENU_ITEMS.map(({ key, label, Icon, badge }) => (
-              <button
-                key={key}
-                className={`profile-sidebar__item${activeMenu === key ? " active" : ""}`}
-                onClick={() => setActiveMenu(key)}
-              >
-                <Icon />{label}
-                {badge && <span className="profile-sidebar__badge">{badge}</span>}
-              </button>
-            ))}
+            {MENU_ITEMS.map(({ key, label, Icon, badge }) => {
+              const badgeValue = key === "orders" ? ordersCount : badge;
+              return (
+                <button
+                  key={key}
+                  className={`profile-sidebar__item${activeMenu === key ? " active" : ""}`}
+                  onClick={() => setActiveMenu(key)}
+                >
+                  <Icon />{label}
+                  {badgeValue > 0 && <span className="profile-sidebar__badge">{badgeValue}</span>}
+                </button>
+              );
+            })}
           </nav>
 
           <div className="profile-sidebar__divider" />
