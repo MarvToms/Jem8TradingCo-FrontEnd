@@ -4,6 +4,82 @@ import { Header, Footer } from "../components/Layout";
 import { useCart } from "../context/CartContext";
 import axios from "axios";
 
+// ── CATEGORY THEME MAP ──────────────────────────────────────────────────────
+// Keys match keywords in category names (lowercase).
+// logo: put your image file in src/assets/ and update the path here.
+// bg: the hero background gradient when this category is active.
+// accent: used for text, borders, buttons in that theme.
+// ───────────────────────────────────────────────────────────────────────────
+const CATEGORY_THEMES = {
+  all: {
+    logo: null, // default — no category logo, shows normal hero
+    bg: "linear-gradient(135deg, #edf4f0 0%, #fff 55%, #f9fdf9 100%)",
+    accent: "#4d7b65",
+    label: "All Products",
+  },
+  office: {
+    // Red — Office Supplies and Equipments
+    logo: new URL("../assets/logo-office.png", import.meta.url).href,
+    bg: "linear-gradient(135deg, #fdf0f0 0%, #fff 55%, #fff5f5 100%)",
+    accent: "#e03131",
+    label: "Office Supplies",
+  },
+  pantry: {
+    // Orange — Pantry Supplies
+    logo: new URL("../assets/logo-pantry.png", import.meta.url).href,
+    bg: "linear-gradient(135deg, #fff7ed 0%, #fff 55%, #fffbf5 100%)",
+    accent: "#ea6c00",
+    label: "Pantry Supplies",
+  },
+  janitor: {
+    // Shade of green — Janitorial Supplies
+    logo: new URL("../assets/logo-janitorial.png", import.meta.url).href,
+    bg: "linear-gradient(135deg, #edfaf0 0%, #fff 55%, #f4fdf6 100%)",
+    accent: "#2e8b57",
+    label: "Janitorial Supplies",
+  },
+  personal: {
+    // Teal — Personal/Home Care & Wellness
+    logo: new URL("../assets/logo-personal.png", import.meta.url).href,
+    bg: "linear-gradient(135deg, #e6fafa 0%, #fff 55%, #f0fafa 100%)",
+    accent: "#0d9488",
+    label: "Personal/Home Care",
+  },
+  wellness: {
+    // Teal — same family as personal/home care
+    logo: new URL("../assets/logo-wellness.png", import.meta.url).href,
+    bg: "linear-gradient(135deg, #e6fafa 0%, #fff 55%, #f0fafa 100%)",
+    accent: "#0d9488",
+    label: "Wellness Supplies",
+  },
+  giveaway: {
+    // Purple — Promotional Items & Giveaways
+    logo: new URL("../assets/logo-giveaway.png", import.meta.url).href,
+    bg: "linear-gradient(135deg, #f8f0ff 0%, #fff 55%, #faf5ff 100%)",
+    accent: "#7c3aed",
+    label: "Promotional Items",
+  },
+  promo: {
+    // Purple — same as giveaway
+    logo: new URL("../assets/logo-giveaway.png", import.meta.url).href,
+    bg: "linear-gradient(135deg, #f8f0ff 0%, #fff 55%, #faf5ff 100%)",
+    accent: "#7c3aed",
+    label: "Promotional Items",
+  },
+};
+
+// Map a category label to its theme key
+function resolveThemeKey(label = "") {
+  const l = label.toLowerCase();
+  if (l.includes("office"))                          return "office";
+  if (l.includes("pantry") || l.includes("food"))   return "pantry";
+  if (l.includes("janitor") || l.includes("clean")) return "janitor";
+  if (l.includes("personal") || l.includes("home")) return "personal";
+  if (l.includes("wellness") || l.includes("health")) return "wellness";
+  if (l.includes("giveaway") || l.includes("promo") || l.includes("custom")) return "giveaway";
+  return "all";
+}
+
 const BASE = "http://127.0.0.1:8000";
 
 const ph = (w, h, label = "") =>
@@ -40,7 +116,6 @@ function StarRating({ rating }) {
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-[16px] overflow-hidden border border-[#e2e8f0] shadow-sm pointer-events-none flex flex-col">
-      {/* image skeleton */}
       <div className="w-full aspect-[4/3] bg-[#e5ede9] rounded-t-[12px] overflow-hidden">
         <div
           className="w-full h-full"
@@ -51,7 +126,6 @@ function SkeletonCard() {
           }}
         />
       </div>
-      {/* body skeleton */}
       <div className="p-[14px_16px_16px] flex flex-col gap-2">
         <div className="h-[10px] w-[50%] bg-[#e5ede9] rounded-[6px]" />
         <div className="h-[14px] w-[85%] bg-[#e5ede9] rounded-[6px]" />
@@ -97,20 +171,18 @@ function ProductCard({ product, onToast }) {
   const [adding, setAdding]     = useState(false);
   const { addToCart }           = useCart();
 
-  // Normalise fields from API response
   const productId = product.id ?? product.product_id;
   const name      = product.product_name ?? product.name ?? "Product";
-  const priceRaw = parseFloat(product.price ?? 0);
-  const price    = `₱${priceRaw.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
-  const isOnSale = product.isSale == 1;
-  const catRaw   = product.category;
-  const catLabel = typeof catRaw === "object" && catRaw !== null
+  const priceRaw  = parseFloat(product.price ?? 0);
+  const price     = `₱${priceRaw.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
+  const isOnSale  = product.isSale == 1;
+  const catRaw    = product.category;
+  const catLabel  = typeof catRaw === "object" && catRaw !== null
     ? (catRaw.name ?? catRaw.category_name ?? "")
     : (catRaw ?? product.category_name ?? "");
-  const rating   = parseFloat(product.rating ?? 4.5);
-  const stock    = Number(product.product_stocks ?? product.stock ?? 0);
+  const rating    = parseFloat(product.rating ?? 4.5);
+  const stock     = Number(product.product_stocks ?? product.stock ?? 0);
 
-  // Resolve image
   const rawImg = product.images?.[0]?.image_path;
   const imgSrc = imgError || !rawImg
     ? ph(400, 300, name)
@@ -130,7 +202,7 @@ function ProductCard({ product, onToast }) {
       );
       addToCart(product, 1);
       setAdded(true);
-      onToast(name); // fire toast with item name
+      onToast(name);
       setTimeout(() => setAdded(false), 1500);
     } catch (err) {
       console.error("Add to cart failed:", err.response ?? err);
@@ -146,7 +218,6 @@ function ProductCard({ product, onToast }) {
         className="flex flex-col flex-1 no-underline text-inherit"
         style={{ textDecoration: "none", color: "inherit" }}
       >
-        {/* Image wrap */}
         <div className="relative w-full aspect-[4/3] bg-[#f1f5f9] overflow-hidden">
           <img
             src={imgSrc}
@@ -176,7 +247,6 @@ function ProductCard({ product, onToast }) {
           </div>
         </div>
 
-        {/* Card Body */}
         <div className="px-[16px] pt-[14px] pb-[16px] flex-1 flex flex-col">
           {catLabel && (
             <div className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-[1.5px] mb-[5px]">
@@ -194,7 +264,6 @@ function ProductCard({ product, onToast }) {
         </div>
       </Link>
 
-      {/* + button — outside Link so it's always clickable */}
       <button
         className={`absolute bottom-[16px] right-[16px] w-[32px] h-[32px] rounded-[8px] flex items-center justify-center text-[18px] leading-[1] flex-shrink-0 transition-all duration-200 shadow-[0_2px_8px_rgba(77,123,101,0.35)] z-10 ${
           added   ? "bg-[#4d7b65] text-white scale-[1.08]" :
@@ -219,9 +288,16 @@ export default function Products() {
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState(null);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeCatName, setActiveCatName]   = useState("all");  // label string for theme lookup
   const [searchQuery, setSearchQuery]       = useState("");
   const [sortBy, setSortBy]                 = useState("default");
   const [toasts, setToasts]                 = useState([]);
+  const [logoVisible, setLogoVisible]       = useState(true);
+
+  // Resolve current theme based on active category label
+  const themeKey    = resolveThemeKey(activeCatName);
+  const theme       = CATEGORY_THEMES[themeKey] ?? CATEGORY_THEMES.all;
+  const isAllActive = activeCatName === "all";
 
   const showToast = (name) => {
     const id = Date.now();
@@ -229,7 +305,17 @@ export default function Products() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   };
 
-  // ── Fetch products & categories ──
+  // Animated logo swap: fade out → swap → fade in
+  const switchCategory = (catId, catName) => {
+    setLogoVisible(false);
+    setTimeout(() => {
+      setActiveCategory(catId);
+      setActiveCatName(catName);
+      setSearchQuery("");
+      setLogoVisible(true);
+    }, 220);
+  };
+
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
@@ -255,7 +341,6 @@ export default function Products() {
     fetchAll();
   }, []);
 
-  // ── Build category tabs from API ──
   const categoryTabs = useMemo(() => {
     const all = { id: "all", label: "All Products", icon: "🛒", count: products.length };
     const tabs = categories.map(cat => {
@@ -270,7 +355,6 @@ export default function Products() {
     return [all, ...tabs];
   }, [categories, products]);
 
-  // ── Filter + sort ──
   const filtered = useMemo(() => {
     let list = products.filter(p => {
       const name     = (p.product_name ?? p.name ?? "").toLowerCase();
@@ -292,8 +376,8 @@ export default function Products() {
   const activeCatLabel = categoryTabs.find(c => c.id === activeCategory)?.label ?? "All Products";
 
   return (
-<div className="bg-white">     
-   <Header />
+    <div className="bg-white">
+      <Header />
 
       <style>{`
         @keyframes shimmer {
@@ -308,32 +392,58 @@ export default function Products() {
           0%   { opacity: 0; transform: translateX(60px) scale(0.92); }
           100% { opacity: 1; transform: translateX(0)    scale(1);    }
         }
+        @keyframes logo-spin-in {
+          0%   { opacity: 0; transform: scale(0.7) rotate(-8deg); }
+          100% { opacity: 1; transform: scale(1)   rotate(0deg);  }
+        }
+        @keyframes hero-bg-shift {
+          0%   { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        .hero-bg-layer {
+          transition: background 0.5s ease;
+        }
+        .category-logo {
+          transition: opacity 0.22s ease, transform 0.22s ease;
+        }
+        .category-logo.hidden {
+          opacity: 0;
+          transform: scale(0.8) rotate(-6deg);
+        }
+        .category-logo.visible {
+          opacity: 1;
+          transform: scale(1) rotate(0deg);
+          animation: logo-spin-in 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
       `}</style>
 
       <ToastContainer toasts={toasts} />
 
       {/* ── HERO ── */}
       <section
-        className="relative px-0 overflow-hidden"
+        className="relative px-0 overflow-hidden hero-bg-layer"
         style={{
-          background: "linear-gradient(135deg, #edf4f0 0%, #fff 55%, #f9fdf9 100%)",
+          background: theme.bg,
           paddingTop: "clamp(64px, 9vw, 120px)",
           paddingBottom: "clamp(48px, 7vw, 88px)",
+          transition: "background 0.5s ease",
         }}
       >
-        {/* decorative circles */}
+        {/* decorative circles — color follows theme accent */}
         <div
           className="absolute pointer-events-none"
           style={{
             top: "-140px", right: "-140px", width: "520px", height: "520px",
-            background: "radial-gradient(circle, rgba(77,123,101,0.09) 0%, transparent 70%)",
+            background: `radial-gradient(circle, ${theme.accent}18 0%, transparent 70%)`,
+            transition: "background 0.5s ease",
           }}
         />
         <div
           className="absolute pointer-events-none"
           style={{
             bottom: "-80px", left: "-80px", width: "340px", height: "340px",
-            background: "radial-gradient(circle, rgba(77,123,101,0.06) 0%, transparent 70%)",
+            background: `radial-gradient(circle, ${theme.accent}10 0%, transparent 70%)`,
+            transition: "background 0.5s ease",
           }}
         />
 
@@ -341,23 +451,56 @@ export default function Products() {
           className="relative z-[1] max-w-[1200px] mx-auto px-[24px] grid items-center gap-[56px]"
           style={{ gridTemplateColumns: "1fr 1fr" }}
         >
-          {/* Left: text */}
+          {/* Left: text + logo swap */}
           <div>
-            {/* Badge */}
-            <div className="inline-flex items-center gap-[9px] bg-white border border-[#b8d9c8] rounded-full px-[18px] py-[7px] text-[13px] font-medium text-[#4d7b65] mb-[20px]">
-              <span
-                className="w-[6px] h-[6px] bg-[#4d7b65] rounded-full"
-                style={{ animation: "ph-pulse 2s infinite" }}
-              />
-              JEM 8 Product Catalog
-            </div>
+            {/* ── LOGO / BADGE AREA ── */}
+            {isAllActive ? (
+              /* Default badge when "All Products" is selected */
+              <div
+                className={`inline-flex items-center gap-[9px] bg-white border rounded-full px-[18px] py-[7px] text-[13px] font-medium mb-[20px] category-logo ${logoVisible ? "visible" : "hidden"}`}
+                style={{ borderColor: `${theme.accent}55`, color: theme.accent, transition: "border-color 0.4s, color 0.4s" }}
+              >
+                <span
+                  className="w-[6px] h-[6px] rounded-full"
+                  style={{ background: theme.accent, animation: "ph-pulse 2s infinite" }}
+                />
+                JEM 8 Product Catalog
+              </div>
+            ) : (
+              /* Category logo image */
+              <div className={`mb-[20px] category-logo ${logoVisible ? "visible" : "hidden"}`}>
+                <img
+                  src={theme.logo}
+                  alt={theme.label}
+                  className="w-[160px] h-[160px] object-contain drop-shadow-lg"
+                  onError={(e) => {
+                    // Fallback to a pill badge if image isn't placed yet
+                    e.currentTarget.style.display = "none";
+                    e.currentTarget.nextSibling.style.display = "inline-flex";
+                  }}
+                />
+                {/* Fallback pill — hidden unless image fails */}
+                <div
+                  className="items-center gap-[9px] bg-white border rounded-full px-[18px] py-[7px] text-[13px] font-medium"
+                  style={{ display: "none", borderColor: `${theme.accent}55`, color: theme.accent }}
+                >
+                  <span
+                    className="w-[6px] h-[6px] rounded-full inline-block mr-1"
+                    style={{ background: theme.accent }}
+                  />
+                  {theme.label}
+                </div>
+              </div>
+            )}
 
             <h1
               className="font-bold text-[#1e293b] leading-[1.15] mb-[18px]"
               style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 4.5vw, 56px)" }}
             >
               Quality Supplies for<br />
-              <span className="text-[#4d7b65] italic">Every Business Need</span>
+              <span style={{ color: theme.accent, fontStyle: "italic", transition: "color 0.4s ease" }}>
+                {isAllActive ? "Every Business Need" : activeCatLabel}
+              </span>
             </h1>
 
             <p
@@ -370,14 +513,24 @@ export default function Products() {
 
             <div className="flex items-center gap-[14px] flex-wrap">
               <button
-                className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-[#4d7b65] text-white rounded-[10px] font-semibold text-[15px] shadow-[0_4px_16px_rgba(77,123,101,0.35)] transition-all duration-200 hover:bg-[#3a5e4e] hover:-translate-y-[2px]"
+                className="inline-flex items-center gap-[8px] px-[28px] py-[13px] text-white rounded-[10px] font-semibold text-[15px] transition-all duration-200 hover:-translate-y-[2px]"
+                style={{
+                  background: theme.accent,
+                  boxShadow: `0 4px 16px ${theme.accent}55`,
+                  transition: "background 0.4s ease, box-shadow 0.4s ease",
+                }}
                 onClick={() => document.querySelector(".products-filter-bar")?.scrollIntoView({ behavior: "smooth" })}
               >
                 🛒 Browse Products
               </button>
               <Link
                 to="/contact"
-                className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-transparent border-2 border-[#4d7b65] text-[#4d7b65] rounded-[10px] font-semibold text-[15px] transition-all duration-200 hover:bg-[#edf4f0] hover:-translate-y-[2px] no-underline"
+                className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-transparent rounded-[10px] font-semibold text-[15px] transition-all duration-200 hover:-translate-y-[2px] no-underline"
+                style={{
+                  border: `2px solid ${theme.accent}`,
+                  color: theme.accent,
+                  transition: "border-color 0.4s, color 0.4s",
+                }}
               >
                 Request a Quote →
               </Link>
@@ -389,10 +542,16 @@ export default function Products() {
             {HERO_STATS.map((s) => (
               <div
                 key={s.label}
-                className="bg-white border border-[#e2e8f0] rounded-[16px] p-[24px_20px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 text-center hover:shadow-[0_8px_28px_rgba(0,0,0,0.1)] hover:-translate-y-[3px] hover:border-[#b8d9c8]"
+                className="bg-white border border-[#e2e8f0] rounded-[16px] p-[24px_20px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 text-center hover:shadow-[0_8px_28px_rgba(0,0,0,0.1)] hover:-translate-y-[3px]"
+                style={{ "--hover-border": theme.accent }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = theme.accent + "66"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "#e2e8f0"}
               >
                 <div className="text-[28px] mb-[8px]">{s.icon}</div>
-                <span className="block text-[26px] font-bold text-[#4d7b65] leading-[1] mb-[4px]" style={{ fontFamily: "var(--font-heading)" }}>
+                <span
+                  className="block text-[26px] font-bold leading-[1] mb-[4px]"
+                  style={{ fontFamily: "var(--font-heading)", color: theme.accent, transition: "color 0.4s" }}
+                >
                   {s.num}
                 </span>
                 <span className="text-[12px] text-[#64748b] font-medium uppercase tracking-[1px]">
@@ -409,10 +568,46 @@ export default function Products() {
         className="products-filter-bar bg-white border-b border-[#e2e8f0] sticky z-[100] shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
         style={{ top: "var(--header-h)" }}
       >
-        <div className="max-w-[1200px] mx-auto px-[24px]">
+        <div className="max-w-[1200px] mx-auto px-[24px] relative">
+
+          {/* Left fade + arrow */}
           <div
-            className="flex items-center gap-[10px] py-[16px] overflow-x-auto"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            className="absolute left-0 top-0 bottom-0 w-[56px] z-[10] pointer-events-none flex items-center justify-start pl-[6px]"
+            style={{ background: "linear-gradient(to right, white 60%, transparent 100%)" }}
+          >
+            <button
+              className="pointer-events-auto w-[28px] h-[28px] rounded-full bg-white border border-[#e2e8f0] shadow-sm flex items-center justify-center text-[#64748b] text-[12px] hover:border-[#b8d9c8] hover:text-[#4d7b65] transition-all duration-150"
+              onClick={() => {
+                const el = document.querySelector(".filter-scroll-track");
+                if (el) el.scrollBy({ left: -200, behavior: "smooth" });
+              }}
+              aria-label="Scroll left"
+            >
+              ‹
+            </button>
+          </div>
+
+          {/* Right fade + arrow */}
+          <div
+            className="absolute right-0 top-0 bottom-0 w-[56px] z-[10] pointer-events-none flex items-center justify-end pr-[6px]"
+            style={{ background: "linear-gradient(to left, white 60%, transparent 100%)" }}
+          >
+            <button
+              className="pointer-events-auto w-[28px] h-[28px] rounded-full bg-white border border-[#e2e8f0] shadow-sm flex items-center justify-center text-[#64748b] text-[12px] hover:border-[#b8d9c8] hover:text-[#4d7b65] transition-all duration-150"
+              onClick={() => {
+                const el = document.querySelector(".filter-scroll-track");
+                if (el) el.scrollBy({ left: 200, behavior: "smooth" });
+              }}
+              aria-label="Scroll right"
+            >
+              ›
+            </button>
+          </div>
+
+          {/* Scrollable track */}
+          <div
+            className="filter-scroll-track flex items-center gap-[10px] py-[16px] overflow-x-auto px-[36px]"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
           >
             {loading
               ? Array.from({ length: 5 }).map((_, i) => (
@@ -422,25 +617,53 @@ export default function Products() {
                   />
                 ))
               : categoryTabs.map((cat) => {
-                  const isActive = activeCategory === cat.id;
+                  const isActive    = activeCategory === cat.id;
+                  const catThemeKey = cat.id === "all" ? "all" : resolveThemeKey(cat.label);
+                  const catTheme    = CATEGORY_THEMES[catThemeKey] ?? CATEGORY_THEMES.all;
+
                   return (
                     <button
                       key={cat.id}
-                      onClick={() => { setActiveCategory(cat.id); setSearchQuery(""); }}
-                      className={`inline-flex items-center gap-[8px] px-[18px] py-[9px] rounded-full text-[13px] font-medium whitespace-nowrap flex-shrink-0 border-[1.5px] transition-all duration-200 cursor-pointer ${
+                      onClick={() => switchCategory(cat.id, cat.id === "all" ? "all" : cat.label)}
+                      className="inline-flex items-center gap-[8px] px-[18px] py-[9px] rounded-full text-[13px] font-medium whitespace-nowrap flex-shrink-0 border-[1.5px] transition-all duration-200 cursor-pointer"
+                      style={
                         isActive
-                          ? "bg-[#4d7b65] text-white border-[#4d7b65] shadow-[0_2px_8px_rgba(77,123,101,0.35)]"
-                          : "bg-[#f1f5f9] text-[#64748b] border-transparent hover:text-[#4d7b65] hover:bg-[#edf4f0] hover:border-[#b8d9c8]"
-                      }`}
+                          ? {
+                              background: catTheme.accent,
+                              color: "white",
+                              borderColor: catTheme.accent,
+                              boxShadow: `0 2px 8px ${catTheme.accent}55`,
+                            }
+                          : {
+                              background: "#f1f5f9",
+                              color: "#64748b",
+                              borderColor: "transparent",
+                            }
+                      }
+                      onMouseEnter={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = catTheme.accent + "15";
+                          e.currentTarget.style.color = catTheme.accent;
+                          e.currentTarget.style.borderColor = catTheme.accent + "55";
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = "#f1f5f9";
+                          e.currentTarget.style.color = "#64748b";
+                          e.currentTarget.style.borderColor = "transparent";
+                        }
+                      }}
                     >
                       <span className="text-[15px]">{cat.icon}</span>
                       {cat.label}
                       <span
-                        className={`inline-flex items-center justify-center min-w-[20px] h-[20px] px-[6px] rounded-full text-[11px] font-bold ${
+                        className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-[6px] rounded-full text-[11px] font-bold"
+                        style={
                           isActive
-                            ? "bg-white/25 text-white"
-                            : "bg-[rgba(77,123,101,0.12)] text-[#4d7b65]"
-                        }`}
+                            ? { background: "rgba(255,255,255,0.25)", color: "white" }
+                            : { background: `${catTheme.accent}20`, color: catTheme.accent }
+                        }
                       >
                         {cat.count}
                       </span>
@@ -459,7 +682,6 @@ export default function Products() {
           {/* Toolbar */}
           <div className="pt-[24px]">
             <div className="flex items-center justify-between gap-[16px] flex-wrap mb-[24px]">
-              {/* Left: search + sort */}
               <div className="flex items-center gap-[10px] flex-1 min-w-[240px]">
                 {/* Search */}
                 <div className="relative flex-1 max-w-[360px]">
@@ -468,7 +690,18 @@ export default function Products() {
                   </span>
                   <input
                     type="text"
-                    className="w-full h-[42px] pl-[36px] pr-[14px] bg-[#f1f5f9] border-[1.5px] border-transparent rounded-[10px] text-[14px] text-[#1e293b] outline-none transition-all duration-200 focus:border-[#4d7b65] focus:bg-white focus:shadow-[0_0_0_3px_rgba(77,123,101,0.15)] placeholder:text-[#94a3b8]"
+                    className="w-full h-[42px] pl-[36px] pr-[14px] bg-[#f1f5f9] border-[1.5px] border-transparent rounded-[10px] text-[14px] text-[#1e293b] outline-none transition-all duration-200 focus:bg-white placeholder:text-[#94a3b8]"
+                    style={{
+                      "--focus-border": theme.accent,
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = theme.accent;
+                      e.target.style.boxShadow = `0 0 0 3px ${theme.accent}25`;
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = "transparent";
+                      e.target.style.boxShadow = "none";
+                    }}
                     placeholder="Search products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -488,7 +721,8 @@ export default function Products() {
                   <select
                     value={sortBy}
                     onChange={e => setSortBy(e.target.value)}
-                    className="pl-[12px] pr-[32px] py-[8px] border border-[#D1FAE5] rounded-[8px] bg-white text-[13px] text-[#374151] cursor-pointer outline-none appearance-none"
+                    className="pl-[12px] pr-[32px] py-[8px] rounded-[8px] bg-white text-[13px] text-[#374151] cursor-pointer outline-none appearance-none"
+                    style={{ border: `1px solid ${theme.accent}44`, transition: "border-color 0.4s" }}
                   >
                     <option value="default">Sort: Default</option>
                     <option value="price-asc">Price: Low → High</option>
@@ -510,7 +744,7 @@ export default function Products() {
                   : (
                     <>
                       Showing <strong className="text-[#1e293b] font-semibold">{filtered.length}</strong> result{filtered.length !== 1 ? "s" : ""}
-                      {activeCategory !== "all" && <> in <strong className="text-[#1e293b] font-semibold">{activeCatLabel}</strong></>}
+                      {activeCategory !== "all" && <> in <strong style={{ color: theme.accent }}>{activeCatLabel}</strong></>}
                       {searchQuery && <> for <strong className="text-[#1e293b] font-semibold">"{searchQuery}"</strong></>}
                     </>
                   )
@@ -555,7 +789,7 @@ export default function Products() {
                         Try adjusting your search or browsing a different category.
                       </p>
                       <button
-                        onClick={() => { setActiveCategory("all"); setSearchQuery(""); setSortBy("default"); }}
+                        onClick={() => { switchCategory("all", "all"); setSortBy("default"); }}
                         className="mt-[14px] px-[20px] py-[9px] bg-[#155DFC] text-white border-none rounded-[8px] cursor-pointer text-[13px] font-semibold hover:bg-[#1248cc] transition-colors"
                       >
                         Clear Filters
@@ -576,7 +810,6 @@ export default function Products() {
           padding: "clamp(48px, 7vw, 88px) 0",
         }}
       >
-        {/* decorative glow */}
         <div
           className="absolute pointer-events-none"
           style={{
@@ -586,7 +819,6 @@ export default function Products() {
           }}
         />
         <div className="relative z-[1] max-w-[1200px] mx-auto px-[24px] flex items-center justify-between gap-[40px] flex-wrap">
-          {/* Text */}
           <div className="flex-1 min-w-[280px]">
             <span className="inline-block bg-[rgba(77,123,101,0.25)] text-[#4d7b65] text-[11px] font-bold tracking-[3px] uppercase px-[14px] py-[5px] rounded-full mb-[14px]">
               Health &amp; Wellness
@@ -604,7 +836,6 @@ export default function Products() {
             </p>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-[14px] flex-wrap">
             <button
               className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-[#4d7b65] text-white rounded-[10px] font-semibold text-[15px] shadow-[0_4px_16px_rgba(77,123,101,0.35)] transition-all duration-200 hover:bg-[#3a5e4e] hover:-translate-y-[2px]"
@@ -613,8 +844,10 @@ export default function Products() {
                   (c.name ?? c.category_name ?? "").toLowerCase().includes("wellness") ||
                   (c.name ?? c.category_name ?? "").toLowerCase().includes("health")
                 );
-                if (wellnessCat) setActiveCategory(String(wellnessCat.id ?? wellnessCat.category_id));
-                setSearchQuery("");
+                if (wellnessCat) {
+                  const label = wellnessCat.name ?? wellnessCat.category_name ?? "";
+                  switchCategory(String(wellnessCat.id ?? wellnessCat.category_id), label);
+                }
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
             >
