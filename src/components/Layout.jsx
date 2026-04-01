@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import Logo from '../assets/Logo — Jem 8 Circle Trading Co (1).png';
 import axios from "axios";
+import api from "../api/axios";
 
 /* ══════════════════════════════════
    HEADER
@@ -31,38 +32,48 @@ export function Header() {
   }, []);
 
   // Function to check login status
-  const checkLogin = async () => {
-    try {
-      const res = await axios.get("http://127.0.0.1:8000/api/me", { withCredentials: true });
-      setIsLog(true);
-      // Pull the image and role from the same response
-      setProfileImage(res.data?.profile_image ?? res.data?.data?.profile_image ?? null);
-      setUserRole(res.data?.role ?? res.data?.data?.role ?? null);
-    } catch {
+const checkLogin = async () => {
+  console.log("checkLogin called");
+  console.log("token in localStorage:", localStorage.getItem("token"));
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.log("NO TOKEN — bailing out");
       setIsLog(false);
-      setProfileImage(null);
-      setUserRole(null);
-    } finally {
       setLoading(false);
+      return;
     }
-  };
+    const res = await api.get("/me");
+    console.log("=== /me response ===", res.data);
+    
+    setIsLog(true);
+    // handle both response shapes: { data: {...} } or flat { role, profile_image }
+    const userData = res.data?.data ?? res.data;
+    setProfileImage(userData?.profile_image ?? null);
+    setUserRole(userData?.role ?? null);
+  } catch (err) {
+    console.log("/me error:", err);
+    setIsLog(false);
+    setProfileImage(null);
+    setUserRole(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     checkLogin();
 
-    // Listen for logout event
     const handleLogout = () => {
       setIsLog(false);
       setProfileImage(null);
       setUserRole(null);
     };
 
-    // Listen for login event
     const handleLogin = () => {
       checkLogin();
     };
 
-    // Listen for profile photo updates
     const handlePhotoUpdate = (e) => {
       setProfileImage(e.detail.url);
     };
@@ -76,7 +87,7 @@ export function Header() {
       window.removeEventListener("auth-login", handleLogin);
       window.removeEventListener("profile-photo-updated", handlePhotoUpdate);
     };
-  }, []);
+   }, []);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {

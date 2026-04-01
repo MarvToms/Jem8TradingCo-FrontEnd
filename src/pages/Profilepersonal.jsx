@@ -122,7 +122,6 @@ const PersonIcon2 = () => (
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
-// ── Camera icon for photo upload ───────────────────────────────────────────────
 const CameraIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
     <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
@@ -227,6 +226,83 @@ const MODAL_STYLES = `
   .addr-btn-primary:active { transform: scale(0.98); }
   .addr-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 
+  /* ── Complete profile modal ── */
+  @keyframes completeModalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .complete-profile-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .complete-profile-box {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%; max-width: 440px;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.25);
+    overflow: hidden;
+    animation: completeModalIn 0.3s cubic-bezier(0.34,1.26,0.64,1);
+  }
+  .complete-profile-header {
+    padding: 28px 28px 20px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .complete-profile-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0faf4; color: #2f9e44;
+    font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+    margin-bottom: 12px; letter-spacing: 0.04em;
+  }
+  .complete-profile-title {
+    font-size: 20px; font-weight: 700; color: #111; margin-bottom: 6px;
+  }
+  .complete-profile-subtitle {
+    font-size: 13px; color: #888; line-height: 1.5;
+  }
+  .complete-profile-body {
+    padding: 20px 28px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .complete-profile-field { display: flex; flex-direction: column; gap: 6px; }
+  .complete-profile-label {
+    font-size: 11px; font-weight: 700; color: #555;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .complete-profile-input {
+    border: 1.5px solid #e8e8e8; border-radius: 10px;
+    padding: 11px 14px; font-size: 14px; color: #111;
+    background: #fafafa; outline: none; width: 100%;
+    box-sizing: border-box; font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .complete-profile-input:focus {
+    border-color: #1a1a1a; background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.07);
+  }
+  .complete-profile-input::placeholder { color: #bbb; }
+  .complete-profile-input.error { border-color: #e03131; }
+  .complete-profile-footer {
+    padding: 16px 28px 24px;
+    display: flex; justify-content: flex-end;
+  }
+  .complete-profile-btn {
+    background: #1a1a1a; color: #fff; border: none;
+    border-radius: 10px; padding: 12px 28px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s, transform 0.1s, opacity 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .complete-profile-btn:hover { background: #333; }
+  .complete-profile-btn:active { transform: scale(0.98); }
+  .complete-profile-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
   /* ── Profile photo styles ── */
   .profile-photo-wrap {
     position: relative;
@@ -297,6 +373,84 @@ const MODAL_STYLES = `
     color: #888; font-size: 20px; font-weight: 600;
   }
 `;
+
+// ─── Complete Profile Modal ───────────────────────────────────────────────────
+function CompleteProfileModal({ form, onChange, onSubmit, completing }) {
+  const isValid = form.first_name.trim() && form.last_name.trim() && form.phone_number.trim();
+
+  return (
+    <div className="complete-profile-overlay">
+      <div className="complete-profile-box">
+        <div className="complete-profile-header">
+          <div className="complete-profile-badge">
+            ✦ Edit Profile
+          </div>
+          <div className="complete-profile-title">Complete your profile</div>
+          <div className="complete-profile-subtitle">
+            You signed in with Google. Please fill in the missing details to continue using your account.
+          </div>
+        </div>
+
+        <div className="complete-profile-body">
+          <div className="complete-profile-field">
+            <label className="complete-profile-label">
+              First Name <span style={{ color: "#e03131" }}>*</span>
+            </label>
+            <input
+              className={`complete-profile-input${!form.first_name && completing ? " error" : ""}`}
+              value={form.first_name}
+              onChange={(e) => onChange({ ...form, first_name: e.target.value })}
+              placeholder="Juan"
+            />
+          </div>
+
+          <div className="complete-profile-field">
+            <label className="complete-profile-label">
+              Last Name <span style={{ color: "#e03131" }}>*</span>
+            </label>
+            <input
+              className={`complete-profile-input${!form.last_name && completing ? " error" : ""}`}
+              value={form.last_name}
+              onChange={(e) => onChange({ ...form, last_name: e.target.value })}
+              placeholder="Dela Cruz"
+            />
+          </div>
+
+          <div className="complete-profile-field">
+            <label className="complete-profile-label">
+              Phone Number <span style={{ color: "#e03131" }}>*</span>
+            </label>
+            <input
+              className={`complete-profile-input${!form.phone_number && completing ? " error" : ""}`}
+              value={form.phone_number}
+              onChange={(e) => onChange({ ...form, phone_number: e.target.value })}
+              placeholder="+63 912 345 6789"
+            />
+          </div>
+        </div>
+
+        <div className="complete-profile-footer">
+          <button
+            className="complete-profile-btn"
+            onClick={onSubmit}
+            disabled={completing || !isValid}
+          >
+            {completing ? (
+              <>
+                <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckIcon /> Save & Continue
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Address Modal ────────────────────────────────────────────────────────────
 function AddressModal({ onClose, onSave, editingAddress }) {
@@ -411,20 +565,16 @@ function AddressModal({ onClose, onSave, editingAddress }) {
 
 // ─── Profile Photo Component ──────────────────────────────────────────────────
 function ProfilePhoto({ user, onUploadSuccess }) {
-  const fileInputRef  = useRef(null);
+  const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
-  // Build initials fallback
   const initials = [user?.first_name?.[0], user?.last_name?.[0]]
     .filter(Boolean).join("").toUpperCase() || "?";
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
-    
-
     if (!file) return;
 
-    // Client-side guard: max 2 MB, jpg/png only
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Image must be under 2 MB.");
       return;
@@ -445,21 +595,18 @@ function ProfilePhoto({ user, onUploadSuccess }) {
       const newUrl = res.data?.profile_image_url ?? res.data?.data?.profile_image ?? null;
       toast.success("Profile photo updated!");
       if (onUploadSuccess) onUploadSuccess(newUrl);
-      // Dispatch event for Header and other components
       window.dispatchEvent(new CustomEvent("profile-photo-updated", { detail: { url: newUrl } }));
     } catch (err) {
       console.error(err);
       toast.error("Failed to upload photo. Please try again.");
     } finally {
       setUploading(false);
-      // Reset so same file can be re-selected
       e.target.value = "";
     }
   };
 
   return (
     <div className="profile-photo-wrap">
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -467,26 +614,16 @@ function ProfilePhoto({ user, onUploadSuccess }) {
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
-
-      {/* Avatar */}
       {user?.profile_image ? (
-        <img
-          src={user.profile_image}
-          alt="Profile"
-          className="profile-photo-img"
-        />
+        <img src={user.profile_image} alt="Profile" className="profile-photo-img" />
       ) : (
         <div className="profile-photo-placeholder">{initials}</div>
       )}
-
-      {/* Upload overlay while uploading */}
       {uploading && (
         <div className="profile-photo-uploading">
           <div className="profile-photo-spinner" />
         </div>
       )}
-
-      {/* Camera button */}
       <button
         className="profile-photo-btn"
         onClick={() => !uploading && fileInputRef.current?.click()}
@@ -643,7 +780,6 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
         Personal Information &nbsp;·&nbsp; Manage your profile and contact details
       </div>
 
-      {/* Profile Details Card */}
       <div className="profile-card">
         <div className="profile-card__header">
           <div className="profile-card__header-left">
@@ -671,11 +807,8 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
           </div>
         </div>
 
-        {/* ── User strip with profile photo ── */}
         <div className="profile-card__user-strip">
-          {/* Profile photo with upload */}
           <ProfilePhoto user={user} onUploadSuccess={onPhotoUpdate} />
-
           <div style={{ marginLeft: 14 }}>
             <div className="profile-card__user-name">{user?.first_name} {user?.last_name}</div>
             <div className="profile-card__user-meta">{user?.email}</div>
@@ -699,7 +832,6 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
         </div>
       </div>
 
-      {/* Addresses Card */}
       <div className="profile-card">
         <div className="profile-card__header">
           <div className="profile-card__header-left">
@@ -796,11 +928,14 @@ const MENU_ITEMS = [
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function ProfilePersonal() {
-  const [activeMenu, setActiveMenu] = useState("personal");
-  const [user, setUser]             = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [addresses, setAddresses]   = useState([]);
-  const [ordersCount, setOrdersCount] = useState(0);
+  const [activeMenu, setActiveMenu]         = useState("personal");
+  const [user, setUser]                     = useState(null);
+  const [loading, setLoading]               = useState(true);
+  const [addresses, setAddresses]           = useState([]);
+  const [ordersCount, setOrdersCount]       = useState(0);
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [completeForm, setCompleteForm]     = useState({ first_name: "", last_name: "", phone_number: "" });
+  const [completing, setCompleting]         = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -808,7 +943,19 @@ export default function ProfilePersonal() {
       try {
         const response = await me();
         if (response.status === 200 && response.data.status === "success") {
-          setUser(response.data.data);
+          const userData = response.data.data;
+          setUser(userData);
+
+          // Show complete profile modal if Google user with missing info
+          if (!userData.phone_number || !userData.first_name) {
+            setCompleteForm({
+              first_name:   userData.first_name   || "",
+              last_name:    userData.last_name    || "",
+              phone_number: userData.phone_number || "",
+            });
+            setShowCompleteProfile(true);
+          }
+
           try {
             const addrRes = await getUserAddresses();
             if (addrRes.status === 200) {
@@ -828,7 +975,6 @@ export default function ProfilePersonal() {
     loadUser();
   }, []);
 
-  // Fetch orders count for the sidebar badge
   useEffect(() => {
     const fetchOrdersCount = async () => {
       try {
@@ -843,9 +989,28 @@ export default function ProfilePersonal() {
         setOrdersCount(0);
       }
     };
-
     if (user) fetchOrdersCount();
   }, [user]);
+
+  // ── Handle complete profile submit ────────────────────────────────────────
+  const handleCompleteProfile = async () => {
+    if (!completeForm.first_name.trim() || !completeForm.last_name.trim() || !completeForm.phone_number.trim()) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    setCompleting(true);
+    try {
+      await updateProfile(completeForm);
+      setUser((prev) => ({ ...prev, ...completeForm }));
+      setShowCompleteProfile(false);
+      toast.success("Profile completed! Welcome to JEM 8 Circle 🎉");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save profile. Please try again.");
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   const handleUserUpdate = async (updatedFields) => {
     setUser((prev) => ({ ...prev, ...updatedFields }));
@@ -857,20 +1022,14 @@ export default function ProfilePersonal() {
     }
   };
 
-  // ── Called after a successful photo upload — updates the URL in state ──────
   const handlePhotoUpdate = (newUrl) => {
     setUser((prev) => ({ ...prev, profile_image: newUrl }));
-    // Dispatch event for Header and other components to update the avatar
-    window.dispatchEvent(new CustomEvent("profile-photo-updated", { 
-      detail: { url: newUrl } 
-    }));
+    window.dispatchEvent(new CustomEvent("profile-photo-updated", { detail: { url: newUrl } }));
   };
 
-  // ── Fix the Logout function to dispatch logout event ──
   const Logout = async () => {
     const data = await logout();
     if (data) {
-      // Dispatch logout event to notify all components
       window.dispatchEvent(new CustomEvent("auth-logout"));
       navigate("/login");
     }
@@ -879,18 +1038,14 @@ export default function ProfilePersonal() {
   if (loading) return <p>Loading...</p>;
   if (!user)   return <p>User not found or unauthenticated.</p>;
 
-  // Initials for sidebar fallback
   const initials = [user?.first_name?.[0], user?.last_name?.[0]]
     .filter(Boolean).join("").toUpperCase() || "?";
 
   const renderContent = () => {
     switch (activeMenu) {
-      case "orders":   
-        return <OrdersOverview userId={user?.id} />; // FIXED: Pass userId to OrdersOverview
-      case "password": 
-        return <PasswordSecurity />;
-      case "notif":    
-        return <Notification />;
+      case "orders":   return <OrdersOverview userId={user?.id} />;
+      case "password": return <PasswordSecurity />;
+      case "notif":    return <Notification />;
       default:
         return (
           <PersonalInformation
@@ -905,53 +1060,65 @@ export default function ProfilePersonal() {
   };
 
   return (
-    <div className="profile-page">
+    <>
       <style>{MODAL_STYLES}</style>
-      <div className="profile-page__inner">
 
-        {/* Sidebar */}
-        <aside className="profile-sidebar">
-          <div className="profile-sidebar__avatar-wrap">
-            {/* ── Sidebar shows the real photo too ── */}
-            {user.profile_image ? (
-              <img src={user.profile_image} alt="Profile" className="profile-sidebar__avatar-img" />
-            ) : (
-              <div className="profile-sidebar__avatar-placeholder">{initials}</div>
-            )}
-            <span className="profile-sidebar__name">{user.first_name} {user.last_name}</span>
-            <span className="profile-sidebar__email">{user.email}</span>
-            <span className="profile-sidebar__phone">{user.phone_number || "—"}</span>
-          </div>
+      {/* ── Complete Profile Modal — blocks everything until filled ── */}
+      {showCompleteProfile && (
+        <CompleteProfileModal
+          form={completeForm}
+          onChange={setCompleteForm}
+          onSubmit={handleCompleteProfile}
+          completing={completing}
+        />
+      )}
 
-          <nav className="profile-sidebar__nav">
-            <span className="profile-sidebar__nav-label">Overview</span>
-            {MENU_ITEMS.map(({ key, label, Icon, badge }) => {
-              const badgeValue = key === "orders" ? ordersCount : badge;
-              return (
-                <button
-                  key={key}
-                  className={`profile-sidebar__item${activeMenu === key ? " active" : ""}`}
-                  onClick={() => setActiveMenu(key)}
-                >
-                  <Icon />{label}
-                  {badgeValue > 0 && <span className="profile-sidebar__badge">{badgeValue}</span>}
-                </button>
-              );
-            })}
-          </nav>
+      <div className="profile-page">
+        <div className="profile-page__inner">
 
-          <div className="profile-sidebar__divider" />
+          {/* Sidebar */}
+          <aside className="profile-sidebar">
+            <div className="profile-sidebar__avatar-wrap">
+              {user.profile_image ? (
+                <img src={user.profile_image} alt="Profile" className="profile-sidebar__avatar-img" />
+              ) : (
+                <div className="profile-sidebar__avatar-placeholder">{initials}</div>
+              )}
+              <span className="profile-sidebar__name">{user.first_name} {user.last_name}</span>
+              <span className="profile-sidebar__email">{user.email}</span>
+              <span className="profile-sidebar__phone">{user.phone_number || "—"}</span>
+            </div>
 
-          <div className="profile-sidebar__logout-wrap">
-            <button className="profile-sidebar__item danger" onClick={Logout}>
-              <LogoutIcon /> Logout
-            </button>
-          </div>
-        </aside>
+            <nav className="profile-sidebar__nav">
+              <span className="profile-sidebar__nav-label">Overview</span>
+              {MENU_ITEMS.map(({ key, label, Icon, badge }) => {
+                const badgeValue = key === "orders" ? ordersCount : badge;
+                return (
+                  <button
+                    key={key}
+                    className={`profile-sidebar__item${activeMenu === key ? " active" : ""}`}
+                    onClick={() => setActiveMenu(key)}
+                  >
+                    <Icon />{label}
+                    {badgeValue > 0 && <span className="profile-sidebar__badge">{badgeValue}</span>}
+                  </button>
+                );
+              })}
+            </nav>
 
-        {/* Tab Content */}
-        {renderContent()}
+            <div className="profile-sidebar__divider" />
+
+            <div className="profile-sidebar__logout-wrap">
+              <button className="profile-sidebar__item danger" onClick={Logout}>
+                <LogoutIcon /> Logout
+              </button>
+            </div>
+          </aside>
+
+          {/* Tab Content */}
+          {renderContent()}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

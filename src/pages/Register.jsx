@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { registerUser } from "../api/auth";
+import { registerUser, getGoogleAuthUrl } from "../api/auth";
 import { useNavigate } from "react-router-dom";
 import Logo from "../assets/Logo — Jem 8 Circle Trading Co (1).png";
 
@@ -36,7 +36,14 @@ export default function Register() {
       setLoading(false);
     }
   };
-
+        const handleGoogleRegister = async () => {
+        try {
+          const { url } = await getGoogleAuthUrl();
+          window.location.href = url;
+        } catch (error) {
+          console.log(error);
+        }
+      };
   return (
     <div
       className="min-h-screen flex items-center justify-center relative overflow-hidden px-[16px]"
@@ -236,16 +243,17 @@ export default function Register() {
           </div>
 
           <button
-            type="button"
-            className="w-full flex items-center justify-center gap-[9px] py-[10px] px-[16px] bg-white border-[1.5px] border-[#e2e8f0] rounded-[9px] text-[13.5px] font-semibold text-[#374151] transition-all duration-200 hover:border-[#b8d9c8] hover:bg-[#f9fdf9] hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)] hover:-translate-y-[1px] cursor-pointer"
-          >
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="google"
-              className="w-[17px] h-[17px]"
-            />
-            Continue with Google
-          </button>
+          type="button"
+          onClick={handleGoogleRegister}
+          className="w-full flex items-center justify-center gap-[9px] py-[10px] px-[16px] bg-white border-[1.5px] border-[#e2e8f0] rounded-[9px] text-[13.5px] font-semibold text-[#374151] transition-all duration-200 hover:border-[#b8d9c8] hover:bg-[#f9fdf9] hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)] hover:-translate-y-[1px] cursor-pointer"
+        >
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
+            alt="google"
+            className="w-[17px] h-[17px]"
+          />
+          Continue with Google
+        </button>
         </div>
 
         {/* Brand footer */}

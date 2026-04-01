@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Header, Footer } from "./components/Layout";
+import { me } from "./api/auth";
 
 const img = (w, h, label = "") =>
   `https://placehold.co/${w}x${h}/edf4f0/4d7b65?text=${encodeURIComponent(label)}`;
@@ -407,8 +409,85 @@ function CtaBanner() {
 
 /* ── Page ── */
 export default function Jem8HomePage() {
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+  const checkProfile = async () => {
+    try {
+      const res = await me();
+      if (res.status === 200 && res.data.status === "success") {
+        const user = res.data.data;
+        if (!user.first_name || !user.phone_number) {
+          setShowModal(true);
+        }
+      }
+    } catch (err) {
+      
+    }
+  };
+  checkProfile();
+}, []);
+
   return (
     <>
+      {/* ── Complete Profile Pop-up ── */}
+      {showModal && (
+        <div style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.55)", // solid, hindi blur
+          zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16,
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          <div style={{
+            background: "#fff",
+            borderRadius: 20,
+            width: "100%", maxWidth: 420,
+            boxShadow: "0 40px 100px rgba(0,0,0,0.25)",
+            overflow: "hidden",
+          }}>
+            {/* Header */}
+            <div style={{ padding: "28px 28px 20px", borderBottom: "1px solid #f0f0f0" }}>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: "#f0faf4", color: "#2f9e44",
+                fontSize: 11, fontWeight: 700,
+                padding: "4px 10px", borderRadius: 20,
+                marginBottom: 12,
+              }}>
+                ✦ Complete Profile
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 6 }}>
+                Complete your profile
+              </div>
+              <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
+                You signed in with Google. Please complete your profile details to continue using your account.
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: "20px 28px 24px",
+              display: "flex", flexDirection: "column", gap: 10,
+            }}>
+              <button
+                onClick={() => { setShowModal(false); navigate("/Profilepersonal"); }}
+                style={{
+                  background: "#1a1a1a", color: "#fff", border: "none",
+                  borderRadius: 10, padding: "13px 28px",
+                  fontSize: 14, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif", width: "100%",
+                }}
+              >
+                Go to Profile →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Header />
       <main>
         <Hero />
