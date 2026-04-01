@@ -388,6 +388,11 @@ export default function ProductView() {
 
   const handleAdd = async () => {
     if (cartLoading || stock === 0) return;
+    if (qty > stock) {
+      setCartError(`Insufficient stock. Only ${stock} left.`);
+      setTimeout(() => setCartError(null), 4500);
+      return;
+    }
     setCartLoading(true);
     setCartError(null);
     try {
@@ -407,6 +412,11 @@ export default function ProductView() {
 
   const handleBuyNow = async () => {
     if (cartLoading || stock === 0) return;
+    if (qty > stock) {
+      setCartError(`Insufficient stock. Only ${stock} left.`);
+      setTimeout(() => setCartError(null), 4500);
+      return;
+    }
     setCartLoading(true);
     setCartError(null);
     try {
@@ -551,8 +561,10 @@ export default function ProductView() {
                 >−</button>
                 <span className="min-w-[40px] text-center text-sm font-bold text-[#0F172A] bg-white">{qty}</span>
                 <button
-                  onClick={() => setQty(q => q+1)}
+                  onClick={() => setQty(q => Math.min(stock, q+1))}
+                  disabled={qty >= stock}
                   className="w-[38px] h-[38px] border-none bg-[#f0faf5] text-[#4d7b65] text-lg font-bold cursor-pointer flex items-center justify-center"
+                  title={qty >= stock ? `Max available: ${stock}` : "Increase quantity"}
                 >+</button>
               </div>
             </div>
@@ -571,12 +583,14 @@ export default function ProductView() {
                 }}
                 onMouseEnter={e => { if(stock>0 && !added) e.currentTarget.style.transform="translateY(-1px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; }}
+                aria-disabled={stock === 0}
+                title={stock === 0 ? "Out of stock" : "Add to cart"}
               >
                 {cartLoading
                   ? <span style={{ display:"inline-block", width:"18px", height:"18px", border:"2.5px solid rgba(255,255,255,0.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />
-                  : <span className="text-lg">{added ? "✓" : "🛒"}</span>
+                  : <span className="text-lg">{added ? "✓" : (stock === 0 ? "🚫" : "🛒")}</span>
                 }
-                {cartLoading ? "Adding..." : added ? "Added to Cart!" : "Add to Cart"}
+                {stock === 0 ? "Out of Stock" : (cartLoading ? "Adding..." : added ? "Added to Cart!" : "Add to Cart")}
               </button>
 
               <button
@@ -591,9 +605,11 @@ export default function ProductView() {
                 }}
                 onMouseEnter={e => { if(stock>0) e.currentTarget.style.transform="translateY(-1px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; }}
+                aria-disabled={stock === 0}
+                title={stock === 0 ? "Out of stock" : "Buy now"}
               >
                 <span className="text-lg">⚡</span>
-                Buy Now
+                {stock === 0 ? "Out of Stock" : "Buy Now"}
               </button>
             </div>
 
