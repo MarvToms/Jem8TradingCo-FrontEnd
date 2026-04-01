@@ -98,7 +98,7 @@ export default function AdminReviews() {
   const [deletingId, setDeletingId]   = useState(null);
   const [toasts, setToasts]           = useState([]);
 
-  // ── toast helper ─────────────────────────────────────────────────────────────
+  // ── toast helper ──────────────────────────────────────────────────────────────
   const toast = useCallback((message, type = "success") => {
     const id = Date.now();
     setToasts((p) => [...p, { id, message, type }]);
@@ -179,6 +179,23 @@ export default function AdminReviews() {
     }
   };
 
+  // ── update status (approve / unpublish) ───────────────────────────────────────
+  const updateStatus = async (reviewId, status) => {
+    try {
+      await api.patch(`/reviews/${reviewId}`, { status });
+      toast(
+        status === "approved"
+          ? "Review approved and published."
+          : "Review unpublished."
+      );
+      setReviews((p) =>
+        p.map((r) => (r.review_id ?? r.id) === reviewId ? { ...r, status } : r)
+      );
+    } catch (err) {
+      toast(err.response?.data?.message ?? "Failed to update status.", "error");
+    }
+  };
+
   // ── delete review ─────────────────────────────────────────────────────────────
   const deleteReview = async (reviewId) => {
     setDeletingId(null);
@@ -244,20 +261,19 @@ export default function AdminReviews() {
         </div>
 
         {/* Filter Tabs */}
- <div className="flex gap-2 mb-5 flex-nowrap">
-  {tabs.map((tab) => {
-    const isActive = activeTab === tab;
-    return (
-      <button
-        key={tab}
-        onClick={() => setActiveTab(tab)}
-        className={`px-5 py-2 rounded-lg border-none text-sm font-medium cursor-pointer transition-all whitespace-nowrap shrink-0
-          ${isActive
-            ? "bg-gray-900 text-white shadow-none"
-            : "bg-white text-gray-700 shadow-sm hover:bg-gray-50"
-          }`}
-      >
-        
+        <div className="flex gap-2 mb-5 flex-nowrap">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-5 py-2 rounded-lg border-none text-sm font-medium cursor-pointer transition-all whitespace-nowrap shrink-0
+                  ${isActive
+                    ? "bg-gray-900 text-white shadow-none"
+                    : "bg-white text-gray-700 shadow-sm hover:bg-gray-50"
+                  }`}
+              >
                 {tab}
               </button>
             );
@@ -277,11 +293,14 @@ export default function AdminReviews() {
         {!loading && (
           <div className="flex flex-col gap-4">
             {filtered.map((review) => {
-              const rid       = review.review_id ?? review.id;
-              const cfg       = getStatusCfg(review.status);
+              const rid        = review.review_id ?? review.id;
+              const cfg        = getStatusCfg(review.status);
               const isReplying = replyingTo === rid;
-              const userName  = review.user?.name  ?? review.name  ?? "Unknown";
-              const userEmail = review.user?.email ?? review.email ?? "";
+              const isPublished =
+                review.status?.toLowerCase() === "approved" ||
+                review.status?.toLowerCase() === "published";
+              const userName   = review.user?.name  ?? review.name  ?? "Unknown";
+              const userEmail  = review.user?.email ?? review.email ?? "";
               const productName =
                 typeof review.product === "object"
                   ? (review.product?.product_name ?? review.product?.name ?? null)
@@ -372,6 +391,28 @@ export default function AdminReviews() {
 
                   {/* Action row */}
                   <div className="flex flex-wrap items-center gap-2">
+
+                    {/* Approve button — shown only when NOT published */}
+                    {!isPublished && (
+                      <button
+                        onClick={() => updateStatus(rid, "approved")}
+                        className="px-3.5 py-1 rounded-md border border-emerald-400 bg-white text-emerald-700 text-xs cursor-pointer hover:bg-emerald-50 transition-colors font-medium"
+                      >
+                        ✓ Approve
+                      </button>
+                    )}
+
+                    {/* Unpublish button — shown only when published */}
+                    {isPublished && (
+                      <button
+                        onClick={() => updateStatus(rid, "pending")}
+                        className="px-3.5 py-1 rounded-md border border-gray-400 bg-white text-gray-600 text-xs cursor-pointer hover:bg-gray-50 transition-colors font-medium"
+                      >
+                        Unpublish
+                      </button>
+                    )}
+
+                    {/* Reply button */}
                     {!isReplying && (
                       <button
                         onClick={() => openReply(review)}
@@ -381,6 +422,7 @@ export default function AdminReviews() {
                       </button>
                     )}
 
+                    {/* Delete Reply button */}
                     {review.admin_reply && !isReplying && (
                       <button
                         onClick={() => deleteReply(rid)}
@@ -390,6 +432,7 @@ export default function AdminReviews() {
                       </button>
                     )}
 
+                    {/* Delete review button */}
                     <button
                       onClick={() => setDeletingId(rid)}
                       className="px-3.5 py-1 rounded-md border border-[#C90000] bg-white text-[#9F0712] text-xs cursor-pointer hover:bg-red-50 transition-colors"

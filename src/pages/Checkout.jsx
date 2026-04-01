@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { Header, Footer } from "../components/Layout";
 import { getUserAddresses } from "../api/address";
@@ -82,12 +82,17 @@ const PAYMENT_METHODS = [
 
 const STEPS = ["Delivery", "Payment", "Review"];
 
-// ── Shared input class ────────────────────────────────────────
 const inputCls = "w-full px-3.5 py-2.5 border-[1.5px] border-[#d1e8da] rounded-xl text-sm text-[#1a2e22] bg-[#fafcfb] outline-none transition-colors focus:border-[#4d7b65] focus:bg-white placeholder-[#9ca3af] font-[inherit]";
 const labelCls = "text-[13px] font-semibold text-slate-700";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ── Selected item IDs passed from Cart ───────────────────────────────────
+  const selectedItemIds = new Set(
+    (location.state?.selectedItems ?? []).map((i) => i.id)
+  );
 
   const [items, setItems]             = useState([]);
   const [loadingCart, setLoadingCart] = useState(true);
@@ -114,7 +119,13 @@ export default function Checkout() {
           qty:      c.quantity,
           cat:      c.product?.category_id || "Product",
         }));
-        setItems(formatted);
+
+        // ── Only keep items the user selected in Cart ──────────────────────
+        const finalItems = selectedItemIds.size > 0
+          ? formatted.filter((i) => selectedItemIds.has(i.id))
+          : formatted;
+
+        setItems(finalItems);
       } catch (err) {
         setCartError(err.response?.data?.message || "Failed to load cart.");
       } finally {
@@ -162,9 +173,11 @@ export default function Checkout() {
     ? contactValid && !!selectedAddrId
     : contactValid && delivery.address && delivery.city && delivery.province;
 
+  // ── Derived totals (same logic as Cart) ──────────────────────────────────
   const subtotal    = items.reduce((sum, i) => sum + i.rawPrice * i.qty, 0);
   const shippingFee = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
   const total       = subtotal + shippingFee;
+  const remaining   = FREE_SHIPPING_MIN - subtotal;
 
   const handleDeliveryChange = (e) => setDelivery((d) => ({ ...d, [e.target.name]: e.target.value }));
   const handlePayFieldChange = (e) => setPayFields((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -225,15 +238,15 @@ export default function Checkout() {
     }
   };
 
-  // ── Empty / loading states ────────────────────────────────────
+  // ── Empty / loading states ────────────────────────────────────────────────
   const EmptyShell = ({ icon, title, desc, action }) => (
     <div className="min-h-screen bg-white">
       <Header />
       <div className="min-h-[50vh] flex items-center justify-center px-4">
         <div className="text-center">
-          <div className="text-5xl mb-4">{icon}</div>
+          <div className="mb-4 text-5xl">{icon}</div>
           <h2 className="text-xl font-bold text-[#1a2e22] mb-2">{title}</h2>
-          {desc && <p className="text-sm text-slate-500 mb-5">{desc}</p>}
+          {desc && <p className="mb-5 text-sm text-slate-500">{desc}</p>}
           {action}
         </div>
       </div>
@@ -270,7 +283,7 @@ export default function Checkout() {
 
       {/* ── Progress ── */}
       <div className="bg-white border-b border-[#e8f0eb] py-5">
-        <div className="container mx-auto px-4 flex items-center justify-center gap-0">
+        <div className="container flex items-center justify-center gap-0 px-4 mx-auto">
           {STEPS.map((s, i) => {
             const isDone   = i < step;
             const isActive = i <= step;
@@ -330,7 +343,7 @@ export default function Checkout() {
 
                 {/* Mode toggle */}
                 {savedAddresses.length > 0 && (
-                  <div className="flex gap-2 mb-4.5">
+                  <div className="flex gap-2 mb-4">
                     <button
                       type="button"
                       onClick={() => setAddrMode("saved")}
@@ -411,7 +424,7 @@ export default function Checkout() {
 
                 {/* New address form */}
                 {addrMode === "new" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2 flex flex-col gap-1.5">
                       <label className={labelCls}>Street Address / Building / Unit *</label>
                       <input name="address" value={delivery.address} onChange={handleDeliveryChange} placeholder="e.g. Unit 202, Cityland Tower, HV Dela Costa St." className={inputCls} />
@@ -421,7 +434,7 @@ export default function Checkout() {
                       <input name="barangay" value={delivery.barangay} onChange={handleDeliveryChange} placeholder="Barangay name" className={inputCls} />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelCls}>City / Municipality *</label> 
+                      <label className={labelCls}>City / Municipality *</label>
                       <input name="city" value={delivery.city} onChange={handleDeliveryChange} placeholder="Makati City" className={inputCls} />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -469,12 +482,11 @@ export default function Checkout() {
                             : "border-[#e8f0eb] bg-[#fafcfb] hover:border-[#4d7b65] hover:bg-[#f3f8f5]"
                           }`}
                       >
-                        {/* Radio dot */}
                         <div className={`w-[18px] h-[18px] rounded-full border-2 flex-shrink-0 transition-all
                           ${isActive ? "border-[#4d7b65]" : "border-[#d1e8da]"}`}
                           style={isActive ? { background: "radial-gradient(circle at center, #4d7b65 6px, transparent 6px)" } : {}}
                         />
-                        <span className="text-2xl flex-shrink-0">{m.icon}</span>
+                        <span className="flex-shrink-0 text-2xl">{m.icon}</span>
                         <div className="flex-1 min-w-0">
                           <span className="block text-[15px] font-bold text-[#1a2e22]">{m.label}</span>
                           <span className="block text-xs text-[#6b7c70] mt-0.5">{m.desc}</span>
@@ -531,8 +543,7 @@ export default function Checkout() {
                   />
                 </div>
 
-                {/* Nav buttons */}
-                <div className="flex justify-between items-center mt-6 gap-3">
+                <div className="flex items-center justify-between gap-3 mt-6">
                   <button
                     onClick={() => setStep(0)}
                     className="px-6 py-3 bg-transparent border-[1.5px] border-[#e8f0eb] rounded-xl text-sm font-semibold text-slate-600 cursor-pointer hover:border-[#4d7b65] hover:text-[#4d7b65] transition-all"
@@ -560,7 +571,7 @@ export default function Checkout() {
                     <span>📦 Delivery Address</span>
                     <button onClick={() => setStep(0)} className="bg-transparent border-none text-[13px] text-[#4d7b65] font-bold cursor-pointer p-0 hover:underline">Edit</button>
                   </div>
-                  <div className="px-4 py-4 text-sm text-slate-600 leading-relaxed">
+                  <div className="px-4 py-4 text-sm leading-relaxed text-slate-600">
                     <strong>{user?.first_name} {user?.last_name}</strong><br />
                     {user?.phone_number && <>{user.phone_number} · </>}{user?.email}<br />
                     {addrMode === "saved" && selectedAddr ? (
@@ -626,8 +637,7 @@ export default function Checkout() {
                   </div>
                 )}
 
-                {/* Nav buttons */}
-                <div className="flex justify-between items-center mt-6 gap-3">
+                <div className="flex items-center justify-between gap-3 mt-6">
                   <button
                     onClick={() => setStep(1)}
                     disabled={placing}
@@ -651,38 +661,65 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* ── RIGHT — ORDER SUMMARY ── */}
+          {/* ── RIGHT — ORDER SUMMARY (mirrors Cart) ── */}
           <div className="lg:sticky lg:top-24">
             <div className="bg-white border-[1.5px] border-[#e8f0eb] rounded-2xl p-6">
               <h2 className="text-lg font-bold text-[#1a2e22] mb-4">Order Summary</h2>
 
-              {/* Items */}
-              <div className="mb-4">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 py-2 border-b border-[#f3f8f5] last:border-b-0">
-                    <div className="relative flex-shrink-0">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-12 h-12 rounded-lg object-cover bg-[#f3f8f5]"
-                        onError={(e) => { e.target.src = ph(50, 50, item.name); }}
-                      />
-                      <span className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] bg-[#4d7b65] text-white rounded-full text-[10px] font-bold flex items-center justify-center">
-                        {item.qty}
+              {/* Free shipping progress bar */}
+              {subtotal > 0 && subtotal < FREE_SHIPPING_MIN ? (
+                <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl px-4 py-3 mb-4 text-sm text-[#166534] flex flex-col gap-2">
+                  <span>
+                    🚚 Add <strong>₱{remaining.toLocaleString()}</strong> more for FREE shipping!
+                  </span>
+                  <div className="h-1.5 bg-[#d1fae5] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#16a34a] rounded-full transition-all duration-400"
+                      style={{ width: `${Math.min(100, (subtotal / FREE_SHIPPING_MIN) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ) : subtotal >= FREE_SHIPPING_MIN ? (
+                <div className="bg-[#f0fdf4] border border-[#86efac] rounded-xl px-4 py-3 mb-4 text-sm text-[#166534]">
+                  🎉 You qualify for <strong>FREE shipping!</strong>
+                </div>
+              ) : null}
+
+              {/* Selected items breakdown */}
+              <div className="mb-4 bg-[#f8faf9] border border-[#e8f0eb] rounded-xl p-4">
+                <p className="text-xs font-bold text-[#4d7b65] uppercase tracking-wide mb-3 m-0">
+                  Items ({items.length})
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2.5">
+                      <div className="relative flex-shrink-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-12 h-12 rounded-lg object-cover bg-[#f3f8f5]"
+                          onError={(e) => { e.target.src = ph(48, 48, item.name); }}
+                        />
+                        <span className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] bg-[#4d7b65] text-white rounded-full text-[10px] font-bold flex items-center justify-center">
+                          {item.qty}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-[#1a2e22] m-0 truncate">{item.name}</p>
+                        <p className="text-[11px] text-gray-400 m-0">x{item.qty} · {item.price} each</p>
+                      </div>
+                      <span className="text-xs font-bold text-[#4d7b65] flex-shrink-0">
+                        ₱{(item.rawPrice * item.qty).toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex-1 text-[13px] text-slate-700 leading-snug line-clamp-2 min-w-0">{item.name}</div>
-                    <div className="text-[13px] font-bold text-[#1a2e22] flex-shrink-0">
-                      ₱{(item.rawPrice * item.qty).toLocaleString()}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               {/* Totals */}
               <div className="flex flex-col gap-2.5 mb-4">
                 <div className="flex justify-between text-sm text-slate-600">
-                  <span>Subtotal</span>
+                  <span>Subtotal ({items.reduce((s, i) => s + i.qty, 0)} items)</span>
                   <span>₱{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm text-slate-600">
@@ -691,14 +728,26 @@ export default function Checkout() {
                     {shippingFee === 0 ? "FREE" : `₱${shippingFee.toLocaleString()}`}
                   </span>
                 </div>
-                <hr className="border-none border-t border-[#e8f0eb]" />
+                <hr className="border-none border-t border-[#e8f0eb] my-0" />
                 <div className="flex justify-between text-[17px] font-bold text-[#1a2e22]">
                   <span>Total</span>
                   <span>₱{total.toLocaleString()}</span>
                 </div>
               </div>
 
-              <div className="text-center text-xs text-slate-400 pt-3 border-t border-[#f0f4f1] mt-2">
+              {/* Payment badges */}
+              <div className="flex flex-wrap gap-1.5 justify-center mb-3">
+                {["GCash", "Maya", "BPI", "COD", "Check"].map((p) => (
+                  <span
+                    key={p}
+                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#f3f8f5] text-[#4d7b65] border border-[#d1e8da]"
+                  >
+                    {p}
+                  </span>
+                ))}
+              </div>
+
+              <div className="text-center text-xs text-slate-400 pt-3 border-t border-[#f0f4f1]">
                 🔒 Secure & Encrypted Checkout
               </div>
             </div>
@@ -706,7 +755,6 @@ export default function Checkout() {
 
         </div>
       </section>
-
     </div>
   );
 }

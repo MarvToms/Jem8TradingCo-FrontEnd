@@ -16,7 +16,6 @@ const mainNavItems = [
   { label: "Activity Log", icon: "📋", href: "/adminActivitylogs" },
 ];
 
-// Settings
 const settingsItems = [
   { label: "Settings", icon: "⚙️", href: "/adminSettings" },
   { label: "Main Page", icon: "⬅️", href: "/" },
@@ -43,22 +42,6 @@ export default function AdminNav({ sidebarOpen, setSidebarOpen }) {
     fetchUser();
   }, []);
 
-  const linkStyle = (active) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    marginBottom: "2px",
-    cursor: "pointer",
-    background: active ? "#155DFC" : "transparent",
-    color: active ? "#fff" : "#374151",
-    fontSize: "13px",
-    fontWeight: active ? 600 : 500,
-    transition: "all 0.15s ease",
-    textDecoration: "none",
-  });
-
   const getInitials = () => {
     if (!user) return "AD";
     const firstInitial = user.first_name?.[0] || "";
@@ -66,120 +49,81 @@ export default function AdminNav({ sidebarOpen, setSidebarOpen }) {
     return `${firstInitial}${lastInitial}`.toUpperCase() || "AD";
   };
 
+  const NavLink = ({ item }) => {
+    const isActive = location.pathname === item.href;
+    return (
+      <Link
+        to={item.href}
+        onClick={() => setSidebarOpen(false)}
+        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-0.5 text-[13px] font-medium transition-all duration-150 no-underline
+          ${isActive
+            ? "bg-[#155DFC] text-white font-semibold"
+            : "text-gray-700 hover:bg-gray-100"
+          }`}
+      >
+        <span className="text-[15px] w-5 text-center">{item.icon}</span>
+        <span>{item.label}</span>
+      </Link>
+    );
+  };
+
   const NavContent = () => (
     <>
       {/* Logo Area */}
-      <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #F3F4F6" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between">
           <img
             src="/src/assets/Logo — Jem 8 Circle Trading Co (1).png"
             alt="JEM 8 CIRCLE"
-            style={{ height: "56px", width: "auto", objectFit: "contain" }}
+            className="object-contain w-auto h-14"
           />
           <button
             onClick={() => setSidebarOpen(false)}
-            className="admin-close-btn"
-            style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#6B7280" }}
-          >✕</button>
+            className="text-lg text-gray-500 transition-colors bg-transparent border-none cursor-pointer md:hidden hover:text-gray-700"
+          >
+            ✕
+          </button>
         </div>
-        <div style={{ fontWeight: 700, fontSize: "16px", color: "#111827", marginTop: "12px" }}>
-          Admin Panel
-        </div>
-        <div style={{ fontSize: "11px", color: "#9CA3AF", marginTop: "2px" }}>
-          Account Management System
-        </div>
+        <div className="mt-3 text-base font-bold text-gray-900">Admin Panel</div>
+        <div className="text-[11px] text-gray-400 mt-0.5">Account Management System</div>
       </div>
 
       {/* Navigation Links */}
-      <nav style={{ padding: "12px", flex: 1, overflowY: "auto" }}>
-        {/* Lahat ng mainNavItems, kasama na ang Reviews */}
-        {mainNavItems.map((item) => {
-          const isActive = location.pathname === item.href;
-          return (
-            <Link
-              key={item.label}
-              to={item.href}
-              style={linkStyle(isActive)}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span style={{ fontSize: "15px", width: "20px", textAlign: "center" }}>
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+      <nav className="flex-1 p-3 overflow-y-auto">
+        {mainNavItems.map((item) => (
+          <NavLink key={item.label} item={item} />
+        ))}
 
-        {/* Divider before Settings */}
-        <div style={{ 
-          height: "1px", 
-          background: "#E5E7EB", 
-          margin: "12px 0 8px 0",
-        }} />
+        {/* Divider */}
+        <div className="h-px my-3 bg-gray-200" />
 
         {/* Settings */}
-        {settingsItems.map((item) => {
-          const isActive = location.pathname === item.href;
-          return (
-            <Link
-              key={item.label}
-              to={item.href}
-              style={linkStyle(isActive)}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span style={{ fontSize: "15px", width: "20px", textAlign: "center" }}>
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+        {settingsItems.map((item) => (
+          <NavLink key={item.label} item={item} />
+        ))}
       </nav>
 
       {/* Profile */}
-      <div style={{
-        padding: "16px",
-        borderTop: "1px solid #E5E7EB",
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-      }}>
-        {/* Profile Picture or Initials */}
+      <div className="p-4 border-t border-gray-200 flex items-center gap-2.5">
         {!loading && user?.profile_image ? (
-          <img 
+          <img
             src={user.profile_image}
             alt="Profile"
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              objectFit: "cover",
-              flexShrink: 0,
-            }}
+            className="flex-shrink-0 object-cover rounded-full w-9 h-9"
           />
         ) : (
-          <div style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #2B7FFF, #9810FA)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: "13px",
-            flexShrink: 0,
-          }}>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2B7FFF] to-[#9810FA] flex items-center justify-center text-white font-bold text-[13px] flex-shrink-0">
             {!loading && user ? getInitials() : "AD"}
           </div>
         )}
-        
+
         <div>
-          <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>
-            {!loading && user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Admin User" : "Admin User"}
+          <div className="text-[13px] font-semibold text-gray-900">
+            {!loading && user
+              ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Admin User"
+              : "Admin User"}
           </div>
-          <div style={{ fontSize: "11px", color: "#9CA3AF" }}>
+          <div className="text-[11px] text-gray-400">
             {!loading && user ? user.email : "admin@company.com"}
           </div>
         </div>
@@ -189,75 +133,25 @@ export default function AdminNav({ sidebarOpen, setSidebarOpen }) {
 
   return (
     <>
-      <style>{`
-        * { box-sizing: border-box; }
-
-        .admin-desktop-sidebar {
-          width: 242px;
-          min-width: 242px;
-          background: #fff;
-          border-right: 1px solid #E5E7EB;
-          display: flex;
-          flex-direction: column;
-          position: sticky;
-          top: 0;
-          height: 100vh;
-          overflow-y: auto;
-        }
-
-        .admin-overlay {
-          display: none;
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.4);
-          z-index: 40;
-        }
-
-        .admin-mobile-sidebar {
-          display: none;
-          position: fixed;
-          top: 0;
-          left: -260px;
-          width: 242px;
-          height: 100vh;
-          background: #fff;
-          border-right: 1px solid #E5E7EB;
-          flex-direction: column;
-          z-index: 50;
-          transition: left 0.3s ease;
-          overflow-y: auto;
-        }
-
-        .admin-mobile-sidebar.open {
-          left: 0;
-          box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-        }
-
-        @media (max-width: 767px) {
-          .admin-desktop-sidebar { display: none !important; }
-          .admin-mobile-sidebar { display: flex !important; }
-          .admin-overlay { display: ${sidebarOpen ? "block" : "none"} !important; }
-          .admin-close-btn { display: inline !important; }
-        }
-
-        @media (min-width: 768px) {
-          .admin-desktop-sidebar { display: flex !important; }
-          .admin-mobile-sidebar { display: none !important; }
-          .admin-overlay { display: none !important; }
-          .admin-close-btn { display: none !important; }
-        }
-      `}</style>
-
       {/* Mobile overlay */}
-      <div className="admin-overlay" onClick={() => setSidebarOpen(false)} />
+      <div
+        className={`md:hidden fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ${
+          sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setSidebarOpen(false)}
+      />
 
       {/* Mobile sidebar */}
-      <aside className={`admin-mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside
+        className={`md:hidden fixed top-0 left-0 w-[242px] h-screen bg-white border-r border-gray-200 flex flex-col z-50 overflow-y-auto transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0 shadow-[4px_0_20px_rgba(0,0,0,0.15)]" : "-translate-x-full"
+        }`}
+      >
         <NavContent />
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="admin-desktop-sidebar">
+      <aside className="hidden md:flex w-[242px] min-w-[242px] bg-white border-r border-gray-200 flex-col sticky top-0 h-screen overflow-y-auto">
         <NavContent />
       </aside>
     </>
