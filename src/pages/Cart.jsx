@@ -306,6 +306,11 @@ export default function Cart() {
                       {item.name}
                     </Link>
                     <div className="text-xs text-gray-400">{item.price} each</div>
+                    {item.backorder && (
+                      <div className="mt-1 inline-block text-[11px] font-semibold text-[#92400e] bg-[#fff4e6] border border-[#fde3b9] px-2 py-1 rounded-full">
+                        ⏳ Backorder — may take longer
+                      </div>
+                    )}
                   </div>
 
                   {/* Qty control */}

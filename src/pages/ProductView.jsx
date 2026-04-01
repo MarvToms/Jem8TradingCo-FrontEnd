@@ -387,48 +387,75 @@ export default function ProductView() {
     axios.post(`${BASE}/api/cart/add`, { product_id: productId, quantity: qty }, { withCredentials: true });
 
   const handleAdd = async () => {
-    if (cartLoading || stock === 0) return;
-    if (qty > stock) {
+    if (cartLoading) return;
+    const isBackorder = stock === 0;
+    if (!isBackorder && qty > stock) {
       setCartError(`Insufficient stock. Only ${stock} left.`);
       setTimeout(() => setCartError(null), 4500);
       return;
     }
     setCartLoading(true);
     setCartError(null);
+    const productToAdd = isBackorder ? { ...product, backorder: true } : product;
     try {
+      // attempt server add; if it fails we'll still add locally for backorders
       await callAddToCart();
-      addToCart(product, qty);
+      addToCart(productToAdd, qty);
       setAdded(true);
       setTimeout(() => setAdded(false), 2500);
+      if (isBackorder) {
+        setCartError("Note: This item is out of stock and will be backordered; delivery may take longer.");
+        setTimeout(() => setCartError(null), 6000);
+      }
     } catch (err) {
-      const status = err.response?.status;
-      const msg    = err.response?.data?.message ?? err.response?.data?.error ?? "Failed to add to cart.";
-      setCartError(status === 401 ? "You must be logged in to add items to cart." : msg);
-      setTimeout(() => setCartError(null), 4000);
+      if (isBackorder) {
+        // server likely rejected due to stock, but allow user to place backorder locally
+        addToCart(productToAdd, qty);
+        setCartError("Added as backorder — delivery may take longer.");
+        setTimeout(() => setCartError(null), 6000);
+      } else {
+        const status = err.response?.status;
+        const msg    = err.response?.data?.message ?? err.response?.data?.error ?? "Failed to add to cart.";
+        setCartError(status === 401 ? "You must be logged in to add items to cart." : msg);
+        setTimeout(() => setCartError(null), 4000);
+      }
     } finally {
       setCartLoading(false);
     }
   };
 
   const handleBuyNow = async () => {
-    if (cartLoading || stock === 0) return;
-    if (qty > stock) {
+    if (cartLoading) return;
+    const isBackorder = stock === 0;
+    if (!isBackorder && qty > stock) {
       setCartError(`Insufficient stock. Only ${stock} left.`);
       setTimeout(() => setCartError(null), 4500);
       return;
     }
     setCartLoading(true);
     setCartError(null);
+    const productToAdd = isBackorder ? { ...product, backorder: true } : product;
     try {
       await callAddToCart();
-      addToCart(product, qty);
+      addToCart(productToAdd, qty);
+      if (isBackorder) {
+        setCartError("Note: This item is out of stock and will be backordered; delivery may take longer.");
+        setTimeout(() => setCartError(null), 6000);
+      }
       navigate("/cart");
     } catch (err) {
-      const status = err.response?.status;
-      const msg    = err.response?.data?.message ?? err.response?.data?.error ?? "Failed to add to cart.";
-      setCartError(status === 401 ? "You must be logged in to add items to cart." : msg);
-      setTimeout(() => setCartError(null), 4000);
-      setCartLoading(false);
+      if (isBackorder) {
+        addToCart(productToAdd, qty);
+        setCartError("Added as backorder — delivery may take longer.");
+        setTimeout(() => setCartError(null), 6000);
+        navigate("/cart");
+      } else {
+        const status = err.response?.status;
+        const msg    = err.response?.data?.message ?? err.response?.data?.error ?? "Failed to add to cart.";
+        setCartError(status === 401 ? "You must be logged in to add items to cart." : msg);
+        setTimeout(() => setCartError(null), 4000);
+        setCartLoading(false);
+      }
     }
   };
 
@@ -561,10 +588,10 @@ export default function ProductView() {
                 >−</button>
                 <span className="min-w-[40px] text-center text-sm font-bold text-[#0F172A] bg-white">{qty}</span>
                 <button
-                  onClick={() => setQty(q => Math.min(stock, q+1))}
-                  disabled={qty >= stock}
+                  onClick={() => setQty(q => (stock > 0 ? Math.min(stock, q+1) : q+1))}
+                  disabled={stock > 0 ? qty >= stock : false}
                   className="w-[38px] h-[38px] border-none bg-[#f0faf5] text-[#4d7b65] text-lg font-bold cursor-pointer flex items-center justify-center"
-                  title={qty >= stock ? `Max available: ${stock}` : "Increase quantity"}
+                  title={stock > 0 ? (qty >= stock ? `Max available: ${stock}` : "Increase quantity") : "Increase quantity"}
                 >+</button>
               </div>
             </div>
@@ -573,43 +600,43 @@ export default function ProductView() {
             <div className="flex gap-3 mt-2 flex-wrap">
               <button
                 onClick={handleAdd}
-                disabled={stock === 0 || cartLoading}
+                disabled={cartLoading}
                 className="flex-1 min-w-[160px] py-3.5 px-6 text-white border-none rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
                 style={{
                   background: added ? "#059669" : "linear-gradient(135deg,#4d7b65,#2d5a42)",
-                  cursor: stock === 0 ? "not-allowed" : "pointer",
-                  opacity: stock === 0 ? 0.5 : 1,
+                  cursor: cartLoading ? "not-allowed" : "pointer",
+                  opacity: cartLoading ? 0.7 : 1,
                   boxShadow: added ? "none" : "0 4px 14px rgba(77,123,101,0.35)",
                 }}
-                onMouseEnter={e => { if(stock>0 && !added) e.currentTarget.style.transform="translateY(-1px)"; }}
+                onMouseEnter={e => { if(!cartLoading && !added) e.currentTarget.style.transform="translateY(-1px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; }}
-                aria-disabled={stock === 0}
-                title={stock === 0 ? "Out of stock" : "Add to cart"}
+                aria-disabled={cartLoading}
+                title={stock === 0 ? "Out of stock — you can still order; delivery may take longer" : "Add to cart"}
               >
                 {cartLoading
                   ? <span style={{ display:"inline-block", width:"18px", height:"18px", border:"2.5px solid rgba(255,255,255,0.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />
-                  : <span className="text-lg">{added ? "✓" : (stock === 0 ? "🚫" : "🛒")}</span>
+                  : <span className="text-lg">{added ? "✓" : (stock === 0 ? "⏳" : "🛒")}</span>
                 }
-                {stock === 0 ? "Out of Stock" : (cartLoading ? "Adding..." : added ? "Added to Cart!" : "Add to Cart")}
+                {stock === 0 ? "Order (may take longer)" : (cartLoading ? "Adding..." : added ? "Added to Cart!" : "Add to Cart")}
               </button>
 
               <button
                 onClick={handleBuyNow}
-                disabled={stock === 0 || cartLoading}
+                disabled={cartLoading}
                 className="flex-1 min-w-[160px] py-3.5 px-6 text-white border-none rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
                 style={{
                   background: "linear-gradient(135deg,#1e40af,#1d4ed8)",
-                  cursor: stock === 0 ? "not-allowed" : "pointer",
-                  opacity: stock === 0 ? 0.5 : 1,
+                  cursor: cartLoading ? "not-allowed" : "pointer",
+                  opacity: cartLoading ? 0.7 : 1,
                   boxShadow: "0 4px 14px rgba(29,78,216,0.35)",
                 }}
-                onMouseEnter={e => { if(stock>0) e.currentTarget.style.transform="translateY(-1px)"; }}
+                onMouseEnter={e => { if(!cartLoading) e.currentTarget.style.transform="translateY(-1px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; }}
-                aria-disabled={stock === 0}
-                title={stock === 0 ? "Out of stock" : "Buy now"}
+                aria-disabled={cartLoading}
+                title={stock === 0 ? "Out of stock — you can still order; delivery may take longer" : "Buy now"}
               >
                 <span className="text-lg">⚡</span>
-                {stock === 0 ? "Out of Stock" : "Buy Now"}
+                {stock === 0 ? "Order (may take longer)" : "Buy Now"}
               </button>
             </div>
 
