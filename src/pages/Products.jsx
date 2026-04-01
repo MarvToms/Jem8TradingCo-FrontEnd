@@ -1,66 +1,54 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Header, Footer } from "../components/Layout";
 import { useCart } from "../context/CartContext";
 import axios from "axios";
 
 // ── CATEGORY THEME MAP ──────────────────────────────────────────────────────
-// Keys match keywords in category names (lowercase).
-// logo: put your image file in src/assets/ and update the path here.
-// bg: the hero background gradient when this category is active.
-// accent: used for text, borders, buttons in that theme.
-// ───────────────────────────────────────────────────────────────────────────
 const CATEGORY_THEMES = {
   all: {
-    logo: null, // default — no category logo, shows normal hero
+    logo: null,
     bg: "linear-gradient(135deg, #edf4f0 0%, #fff 55%, #f9fdf9 100%)",
     accent: "#4d7b65",
     label: "All Products",
   },
   office: {
-    // Red — Office Supplies and Equipments
     logo: new URL("../assets/logo-office.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #fdf0f0 0%, #fff 55%, #fff5f5 100%)",
     accent: "#e03131",
     label: "Office Supplies",
   },
   pantry: {
-    // Orange — Pantry Supplies
     logo: new URL("../assets/logo-pantry.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #fff7ed 0%, #fff 55%, #fffbf5 100%)",
     accent: "#ea6c00",
     label: "Pantry Supplies",
   },
   janitor: {
-    // Shade of green — Janitorial Supplies
     logo: new URL("../assets/logo-janitorial.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #edfaf0 0%, #fff 55%, #f4fdf6 100%)",
     accent: "#2e8b57",
     label: "Janitorial Supplies",
   },
   personal: {
-    // Teal — Personal/Home Care & Wellness
     logo: new URL("../assets/logo-personal.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #e6fafa 0%, #fff 55%, #f0fafa 100%)",
     accent: "#0d9488",
     label: "Personal/Home Care",
   },
   wellness: {
-    // Teal — same family as personal/home care
     logo: new URL("../assets/logo-wellness.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #e6fafa 0%, #fff 55%, #f0fafa 100%)",
     accent: "#0d9488",
     label: "Wellness Supplies",
   },
   giveaway: {
-    // Purple — Promotional Items & Giveaways
     logo: new URL("../assets/logo-giveaway.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #f8f0ff 0%, #fff 55%, #faf5ff 100%)",
     accent: "#7c3aed",
     label: "Promotional Items",
   },
   promo: {
-    // Purple — same as giveaway
     logo: new URL("../assets/logo-giveaway.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #f8f0ff 0%, #fff 55%, #faf5ff 100%)",
     accent: "#7c3aed",
@@ -68,7 +56,6 @@ const CATEGORY_THEMES = {
   },
 };
 
-// Map a category label to its theme key
 function resolveThemeKey(label = "") {
   const l = label.toLowerCase();
   if (l.includes("office"))                          return "office";
@@ -84,13 +71,6 @@ const BASE = "http://127.0.0.1:8000";
 
 const ph = (w, h, label = "") =>
   `https://placehold.co/${w}x${h}/edf4f0/4d7b65?text=${encodeURIComponent(label)}`;
-
-const HERO_STATS = [
-  { icon: "📦", num: "250+", label: "Products Listed" },
-  { icon: "🏷️", num: "6",   label: "Categories"      },
-  { icon: "👥", num: "250+", label: "Happy Clients"   },
-  { icon: "🚚", num: "Fast", label: "Direct Delivery" },
-];
 
 /* ── Star Rating ── */
 function StarRating({ rating }) {
@@ -288,13 +268,20 @@ export default function Products() {
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState(null);
   const [activeCategory, setActiveCategory] = useState("all");
-  const [activeCatName, setActiveCatName]   = useState("all");  // label string for theme lookup
+  const [activeCatName, setActiveCatName]   = useState("all");
   const [searchQuery, setSearchQuery]       = useState("");
   const [sortBy, setSortBy]                 = useState("default");
   const [toasts, setToasts]                 = useState([]);
   const [logoVisible, setLogoVisible]       = useState(true);
+  const [heroStats, setHeroStats]           = useState({
+    productCount:  0,
+    categoryCount: 0,
+    happyClients:  0,
+  });
 
-  // Resolve current theme based on active category label
+  // ── NEW: read ?category= param from URL ──
+  const [searchParams] = useSearchParams();
+
   const themeKey    = resolveThemeKey(activeCatName);
   const theme       = CATEGORY_THEMES[themeKey] ?? CATEGORY_THEMES.all;
   const isAllActive = activeCatName === "all";
@@ -305,7 +292,6 @@ export default function Products() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   };
 
-  // Animated logo swap: fade out → swap → fade in
   const switchCategory = (catId, catName) => {
     setLogoVisible(false);
     setTimeout(() => {
@@ -316,21 +302,38 @@ export default function Products() {
     }, 220);
   };
 
+  // ── Fetch products, categories, and reviews ──
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
       setError(null);
       try {
-        const [prodRes, catRes] = await Promise.all([
+        const [prodRes, catRes, reviewRes] = await Promise.all([
           axios.get(`${BASE}/api/admin/products`, { withCredentials: true }),
-          axios.get(`${BASE}/api/categories`, { withCredentials: true }),
+          axios.get(`${BASE}/api/categories`,     { withCredentials: true }),
+          axios.get(`${BASE}/api/reviews`,         { withCredentials: true }),
         ]);
 
-        const prodData = prodRes.data?.data ?? prodRes.data?.products ?? prodRes.data;
-        const catData  = catRes.data?.categories ?? catRes.data?.data ?? catRes.data;
+        const prodData   = prodRes.data?.data ?? prodRes.data?.products ?? prodRes.data;
+        const catData    = catRes.data?.categories ?? catRes.data?.data ?? catRes.data;
+        const reviewData = reviewRes.data?.data ?? reviewRes.data?.reviews ?? reviewRes.data;
 
-        setProducts(Array.isArray(prodData) ? prodData : []);
-        setCategories(Array.isArray(catData) ? catData : []);
+        const prodArray   = Array.isArray(prodData)  ? prodData  : [];
+        const catArray    = Array.isArray(catData)   ? catData   : [];
+        const reviewArray = Array.isArray(reviewData) ? reviewData : [];
+
+        // Happy clients = reviews with rating >= 3
+        const happyClients = reviewArray.filter(
+          r => parseFloat(r.rating ?? r.stars ?? 0) >= 3
+        ).length;
+
+        setProducts(prodArray);
+        setCategories(catArray);
+        setHeroStats({
+          productCount:  prodArray.length,
+          categoryCount: catArray.length,
+          happyClients,
+        });
       } catch (err) {
         console.error("Failed to fetch:", err);
         setError("Failed to load products. Please try again.");
@@ -340,6 +343,23 @@ export default function Products() {
     };
     fetchAll();
   }, []);
+
+  // ── NEW: auto-select category from URL param once categories are loaded ──
+  useEffect(() => {
+    const param = searchParams.get("category"); // e.g. "office", "pantry"
+    if (!param || categories.length === 0) return;
+
+    const match = categories.find(cat => {
+      const label = (cat.name ?? cat.category_name ?? "").toLowerCase();
+      return label.includes(param.toLowerCase());
+    });
+
+    if (match) {
+      const id    = String(match.id ?? match.category_id);
+      const label = match.name ?? match.category_name ?? "";
+      switchCategory(id, label);
+    }
+  }, [searchParams, categories]);
 
   const categoryTabs = useMemo(() => {
     const all = { id: "all", label: "All Products", icon: "🛒", count: products.length };
@@ -375,6 +395,14 @@ export default function Products() {
 
   const activeCatLabel = categoryTabs.find(c => c.id === activeCategory)?.label ?? "All Products";
 
+  // ── Dynamic hero stats array ──
+  const HERO_STATS = [
+    { icon: "📦", num: heroStats.productCount,  label: "Products Listed" },
+    { icon: "🏷️", num: heroStats.categoryCount, label: "Categories"      },
+    { icon: "👥", num: heroStats.happyClients,  label: "Happy Clients"   },
+    { icon: "🚚", num: "Fast",                  label: "Direct Delivery" },
+  ];
+
   return (
     <div className="bg-white">
       <Header />
@@ -396,25 +424,10 @@ export default function Products() {
           0%   { opacity: 0; transform: scale(0.7) rotate(-8deg); }
           100% { opacity: 1; transform: scale(1)   rotate(0deg);  }
         }
-        @keyframes hero-bg-shift {
-          0%   { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        .hero-bg-layer {
-          transition: background 0.5s ease;
-        }
-        .category-logo {
-          transition: opacity 0.22s ease, transform 0.22s ease;
-        }
-        .category-logo.hidden {
-          opacity: 0;
-          transform: scale(0.8) rotate(-6deg);
-        }
-        .category-logo.visible {
-          opacity: 1;
-          transform: scale(1) rotate(0deg);
-          animation: logo-spin-in 0.35s cubic-bezier(0.34,1.56,0.64,1);
-        }
+        .hero-bg-layer { transition: background 0.5s ease; }
+        .category-logo { transition: opacity 0.22s ease, transform 0.22s ease; }
+        .category-logo.hidden  { opacity: 0; transform: scale(0.8) rotate(-6deg); }
+        .category-logo.visible { opacity: 1; transform: scale(1) rotate(0deg); animation: logo-spin-in 0.35s cubic-bezier(0.34,1.56,0.64,1); }
       `}</style>
 
       <ToastContainer toasts={toasts} />
@@ -429,7 +442,6 @@ export default function Products() {
           transition: "background 0.5s ease",
         }}
       >
-        {/* decorative circles — color follows theme accent */}
         <div
           className="absolute pointer-events-none"
           style={{
@@ -453,9 +465,7 @@ export default function Products() {
         >
           {/* Left: text + logo swap */}
           <div>
-            {/* ── LOGO / BADGE AREA ── */}
             {isAllActive ? (
-              /* Default badge when "All Products" is selected */
               <div
                 className={`inline-flex items-center gap-[9px] bg-white border rounded-full px-[18px] py-[7px] text-[13px] font-medium mb-[20px] category-logo ${logoVisible ? "visible" : "hidden"}`}
                 style={{ borderColor: `${theme.accent}55`, color: theme.accent, transition: "border-color 0.4s, color 0.4s" }}
@@ -467,19 +477,16 @@ export default function Products() {
                 JEM 8 Product Catalog
               </div>
             ) : (
-              /* Category logo image */
               <div className={`mb-[20px] category-logo ${logoVisible ? "visible" : "hidden"}`}>
                 <img
                   src={theme.logo}
                   alt={theme.label}
                   className="w-[160px] h-[160px] object-contain drop-shadow-lg"
                   onError={(e) => {
-                    // Fallback to a pill badge if image isn't placed yet
                     e.currentTarget.style.display = "none";
                     e.currentTarget.nextSibling.style.display = "inline-flex";
                   }}
                 />
-                {/* Fallback pill — hidden unless image fails */}
                 <div
                   className="items-center gap-[9px] bg-white border rounded-full px-[18px] py-[7px] text-[13px] font-medium"
                   style={{ display: "none", borderColor: `${theme.accent}55`, color: theme.accent }}
@@ -537,13 +544,12 @@ export default function Products() {
             </div>
           </div>
 
-          {/* Right: stats grid */}
+          {/* Right: stats grid — now dynamic */}
           <div className="grid grid-cols-2 gap-[16px]">
             {HERO_STATS.map((s) => (
               <div
                 key={s.label}
                 className="bg-white border border-[#e2e8f0] rounded-[16px] p-[24px_20px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 text-center hover:shadow-[0_8px_28px_rgba(0,0,0,0.1)] hover:-translate-y-[3px]"
-                style={{ "--hover-border": theme.accent }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = theme.accent + "66"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "#e2e8f0"}
               >
@@ -569,8 +575,6 @@ export default function Products() {
         style={{ top: "var(--header-h)" }}
       >
         <div className="max-w-[1200px] mx-auto px-[24px] relative">
-
-          {/* Left fade + arrow */}
           <div
             className="absolute left-0 top-0 bottom-0 w-[56px] z-[10] pointer-events-none flex items-center justify-start pl-[6px]"
             style={{ background: "linear-gradient(to right, white 60%, transparent 100%)" }}
@@ -587,7 +591,6 @@ export default function Products() {
             </button>
           </div>
 
-          {/* Right fade + arrow */}
           <div
             className="absolute right-0 top-0 bottom-0 w-[56px] z-[10] pointer-events-none flex items-center justify-end pr-[6px]"
             style={{ background: "linear-gradient(to left, white 60%, transparent 100%)" }}
@@ -604,7 +607,6 @@ export default function Products() {
             </button>
           </div>
 
-          {/* Scrollable track */}
           <div
             className="filter-scroll-track flex items-center gap-[10px] py-[16px] overflow-x-auto px-[36px]"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
@@ -691,9 +693,6 @@ export default function Products() {
                   <input
                     type="text"
                     className="w-full h-[42px] pl-[36px] pr-[14px] bg-[#f1f5f9] border-[1.5px] border-transparent rounded-[10px] text-[14px] text-[#1e293b] outline-none transition-all duration-200 focus:bg-white placeholder:text-[#94a3b8]"
-                    style={{
-                      "--focus-border": theme.accent,
-                    }}
                     onFocus={e => {
                       e.target.style.borderColor = theme.accent;
                       e.target.style.boxShadow = `0 0 0 3px ${theme.accent}25`;
@@ -902,7 +901,7 @@ export default function Products() {
   );
 }
 
-/* ── Icon mapper based on category name keywords ── */
+/* ── Icon mapper ── */
 function resolveCatIcon(label = "") {
   const l = label.toLowerCase();
   if (l.includes("office"))     return "🖊️";
