@@ -2,10 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { logout, me, updateProfile } from "../api/auth";
-import '../style/Profilepersonal.css';
-import "../style/OrdersOverview.css";
-import '../style/PasswordSecurity.css';
-import '../style/Notification.css';
 import OrdersOverview from './OrdersOverview';
 import PasswordSecurity from './PasswordSecurity';
 import Notification from './Notification';
@@ -606,7 +602,7 @@ function ProfilePhoto({ user, onUploadSuccess }) {
   };
 
   return (
-    <div className="profile-photo-wrap">
+    <div className="parofile-photo-wrap">
       <input
         ref={fileInputRef}
         type="file"
