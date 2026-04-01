@@ -14,9 +14,9 @@ export function Header() {
   const [scrolled, setScrolled]     = useState(false);
   const { totalItems }              = useCart();
   const [isLog, setIsLog]           = useState(false);
-  const [profileImage, setProfileImage] = useState(null); 
+  const [profileImage, setProfileImage] = useState(null);
   const [loading, setLoading]       = useState(true);
-  const [userRole, setUserRole]     = useState(null); // Add state for user role
+  const [userRole, setUserRole]     = useState(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -30,12 +30,10 @@ export function Header() {
     return () => window.removeEventListener("profile-photo-updated", handler);
   }, []);
 
-  // Function to check login status
   const checkLogin = async () => {
     try {
       const res = await axios.get("http://127.0.0.1:8000/api/me", { withCredentials: true });
       setIsLog(true);
-      // Pull the image and role from the same response
       setProfileImage(res.data?.profile_image ?? res.data?.data?.profile_image ?? null);
       setUserRole(res.data?.role ?? res.data?.data?.role ?? null);
     } catch {
@@ -50,22 +48,15 @@ export function Header() {
   useEffect(() => {
     checkLogin();
 
-    // Listen for logout event
     const handleLogout = () => {
       setIsLog(false);
       setProfileImage(null);
       setUserRole(null);
     };
 
-    // Listen for login event
-    const handleLogin = () => {
-      checkLogin();
-    };
+    const handleLogin = () => { checkLogin(); };
 
-    // Listen for profile photo updates
-    const handlePhotoUpdate = (e) => {
-      setProfileImage(e.detail.url);
-    };
+    const handlePhotoUpdate = (e) => { setProfileImage(e.detail.url); };
 
     window.addEventListener("auth-logout", handleLogout);
     window.addEventListener("auth-login", handleLogin);
@@ -78,7 +69,6 @@ export function Header() {
     };
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -88,7 +78,6 @@ export function Header() {
 
   const isActive = (path) => location.pathname === path;
 
-  // Check if user is admin (you may need to adjust this based on your role structure)
   const isAdmin = userRole === "admin" || userRole === "administrator" || userRole === "Admin";
 
   const NAV_LINKS = [
@@ -100,7 +89,6 @@ export function Header() {
     { to: "/orders",   label: "My Orders" },
   ];
 
-  /* ── inline styles (no external CSS dependency for critical parts) ── */
   const S = {
     header: {
       position: "fixed",
@@ -245,9 +233,8 @@ export function Header() {
       fontWeight: 700,
       fontSize: 14,
     },
-    // ── Hamburger ──────────────────────────────────────────────────────
     hamburger: {
-      display: "none",          // shown via media query in <style> tag below
+      display: "none",
       flexDirection: "column",
       justifyContent: "center",
       gap: 5,
@@ -267,7 +254,6 @@ export function Header() {
       borderRadius: 2,
       transition: "transform .25s, opacity .25s",
     },
-    // ── Mobile overlay ─────────────────────────────────────────────────
     overlay: {
       position: "fixed",
       inset: 0,
@@ -345,7 +331,6 @@ export function Header() {
 
   return (
     <>
-      {/* Inject media-query CSS so hamburger shows on mobile */}
       <style>{`
         @media (max-width: 768px) {
           .jem-hamburger   { display: flex !important; }
@@ -417,7 +402,7 @@ export function Header() {
               )}
             </Link>
 
-            {/* Admin - Only show if user is admin */}
+            {/* Admin — only show if user is admin */}
             {isLog && isAdmin && (
               <Link to="/adminDashboard" style={S.iconBtn} className="jem-icon-btn" aria-label="Admin" title="Admin">
                 🛠️
@@ -458,7 +443,7 @@ export function Header() {
               </button>
             )}
 
-            {/* ── Hamburger (mobile only, shown via CSS) ── */}
+            {/* Hamburger (mobile only) */}
             <button
               className="jem-hamburger"
               style={S.hamburger}
@@ -474,10 +459,8 @@ export function Header() {
       </header>
 
       {/* ── MOBILE MENU ── */}
-      {/* Overlay backdrop */}
       <div style={S.overlay} onClick={() => setMobileOpen(false)} aria-hidden="true" />
 
-      {/* Slide-in panel */}
       <div style={S.panel} role="dialog" aria-modal="true" aria-label="Navigation menu">
         <button style={S.panelClose} onClick={() => setMobileOpen(false)} aria-label="Close menu">
           ✕
@@ -495,7 +478,7 @@ export function Header() {
           👤 My Profile
         </Link>
 
-        {/* Admin link in mobile menu - Only show if user is admin */}
+        {/* Admin link in mobile menu */}
         {isLog && isAdmin && (
           <Link to="/adminDashboard" style={S.panelLink(isActive("/adminDashboard"))}>
             🛠️ Admin Dashboard
@@ -523,13 +506,15 @@ export function Footer() {
     { to: "/contact",  label: "Contact"  },
   ];
 
+  // ── Each link now includes ?category= so clicking it auto-selects
+  //    the matching tab in Products.jsx via useSearchParams ──
   const PRODUCT_LINKS = [
-    { to: "/products", label: "Office Supplies"     },
-    { to: "/products", label: "Pantry Supplies"     },
-    { to: "/products", label: "Janitorial Supplies" },
-    { to: "/products", label: "Health & Wellness"   },
-    { to: "/products", label: "Giveaways & Merch"   },
-    { to: "/products", label: "Personal Care"       },
+    { to: "/products?category=office",   label: "Office Supplies, Stationery & Equipment" },
+    { to: "/products?category=pantry",   label: "Pantry Supplies"     },
+    { to: "/products?category=janitor",  label: "Janitorial Supplies" },
+    { to: "/products?category=wellness", label: "Health & Wellness"   },
+    { to: "/products?category=giveaway", label: "Giveaways & Merch"   },
+    { to: "/products?category=personal", label: "Personal & Home Care Products" },
   ];
 
   return (
