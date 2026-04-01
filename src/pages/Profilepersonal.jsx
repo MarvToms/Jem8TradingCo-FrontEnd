@@ -1,11 +1,8 @@
+// ─── ProfilePersonal.jsx (Full Tailwind — no CSS imports) ────────────────────
 import { useEffect, useState, useRef } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { logout, me, updateProfile } from "../api/auth";
-// import '../style/Profilepersonal.css';
-// import "../style/OrdersOverview.css";
-// import '../style/PasswordSecurity.css';
-// import '../style/Notification.css';
 import OrdersOverview from './OrdersOverview';
 import PasswordSecurity from './PasswordSecurity';
 import Notification from './Notification';
@@ -21,49 +18,37 @@ const api = axios.create({
 });
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
-const UserIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
 const PersonIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
   </svg>
 );
 const OrderIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
     <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
     <rect x="9" y="3" width="6" height="4" rx="1" />
-    <line x1="9" y1="12" x2="15" y2="12" />
-    <line x1="9" y1="16" x2="13" y2="16" />
+    <line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="16" x2="13" y2="16" />
   </svg>
 );
 const LockIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0110 0v4" />
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
   </svg>
 );
 const BellIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-    <path d="M13.73 21a2 2 0 01-3.46 0" />
+    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" />
   </svg>
 );
 const LogoutIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-    <polyline points="16 17 21 12 16 7" />
-    <line x1="21" y1="12" x2="9" y2="12" />
+    <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
   </svg>
 );
 const PlusIcon = () => (
   <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <line x1="7" y1="1" x2="7" y2="13" />
-    <line x1="1" y1="7" x2="13" y2="7" />
+    <line x1="7" y1="1" x2="7" y2="13" /><line x1="1" y1="7" x2="13" y2="7" />
   </svg>
 );
 const EditSmallIcon = () => (
@@ -74,21 +59,17 @@ const EditSmallIcon = () => (
 );
 const InfoIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="8" x2="12" y2="12" />
-    <line x1="12" y1="16" x2="12.01" y2="16" />
+    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
   </svg>
 );
 const MapPinIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <circle cx="12" cy="10" r="3" />
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
   </svg>
 );
 const MapPinSmIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <circle cx="12" cy="10" r="3" />
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
   </svg>
 );
 const CheckIcon = () => (
@@ -98,28 +79,23 @@ const CheckIcon = () => (
 );
 const XIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 const TrashIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14H6L5 6" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M9 6V4h6v2" />
+    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" />
+    <path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
   </svg>
 );
 const BuildingIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <path d="M3 9h18M9 21V9" />
+    <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
   </svg>
 );
 const PersonIcon2 = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
   </svg>
 );
 const CameraIcon = () => (
@@ -129,321 +105,86 @@ const CameraIcon = () => (
   </svg>
 );
 
-// ─── Modal Styles ─────────────────────────────────────────────────────────────
-const MODAL_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
-
-  @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+// ─── Keyframe animations ──────────────────────────────────────────────────────
+const KEYFRAMES = `
+  @keyframes modalBackdropIn { from{opacity:0} to{opacity:1} }
   @keyframes modalSlideUp {
-    from { opacity: 0; transform: translateY(24px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from{opacity:0;transform:translateY(24px) scale(0.97)}
+    to{opacity:1;transform:translateY(0) scale(1)}
   }
-
-  .addr-modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(10,10,10,0.55);
-    backdrop-filter: blur(6px);
-    z-index: 1000;
-    display: flex; align-items: center; justify-content: center;
-    animation: modalBackdropIn 0.2s ease;
-    font-family: 'DM Sans', sans-serif;
-    padding: 16px;
-  }
-  .addr-modal-box {
-    background: #fff;
-    border-radius: 18px;
-    width: 100%; max-width: 500px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
-    overflow: hidden;
-    animation: modalSlideUp 0.26s cubic-bezier(0.34,1.26,0.64,1);
-    max-height: 90vh;
-    display: flex; flex-direction: column;
-  }
-  .addr-modal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 24px 16px;
-    border-bottom: 1px solid #f0f0f0;
-    flex-shrink: 0;
-  }
-  .addr-modal-icon-wrap {
-    width: 36px; height: 36px; background: #f4f4f4;
-    border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1a1a1a;
-  }
-  .addr-modal-title { font-size: 15px; font-weight: 600; color: #111; line-height: 1.2; }
-  .addr-modal-subtitle { font-size: 12px; color: #999; margin-top: 1px; }
-  .addr-modal-close {
-    width: 32px; height: 32px; background: #f5f5f5; border: none; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: #666; transition: background 0.15s, color 0.15s;
-  }
-  .addr-modal-close:hover { background: #efefef; color: #111; }
-  .addr-type-toggle { display: flex; gap: 8px; padding: 16px 24px 4px; flex-shrink: 0; }
-  .addr-type-btn {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-    padding: 9px 14px; border-radius: 10px; border: 1.5px solid #e8e8e8;
-    background: #fafafa; font-size: 13px; font-weight: 500; color: #666;
-    cursor: pointer; transition: all 0.15s ease; font-family: 'DM Sans', sans-serif;
-  }
-  .addr-type-btn:hover { border-color: #ccc; color: #333; }
-  .addr-type-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
-  .addr-modal-body {
-    padding: 16px 24px; display: flex; flex-direction: column; gap: 12px;
-    overflow-y: auto; flex: 1;
-  }
-  .addr-section-label {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.08em; color: #aaa; margin-top: 4px; margin-bottom: -4px;
-  }
-  .addr-field-row { display: flex; gap: 10px; }
-  .addr-field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
-  .addr-label { font-size: 11px; font-weight: 600; color: #555; letter-spacing: 0.04em; }
-  .addr-input {
-    border: 1.5px solid #e8e8e8; border-radius: 9px; padding: 9px 12px;
-    font-size: 14px; color: #111; background: #fafafa; outline: none;
-    width: 100%; box-sizing: border-box; font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  .addr-input:focus { border-color: #1a1a1a; background: #fff; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
-  .addr-input::placeholder { color: #bbb; }
-  .addr-divider { height: 1px; background: #f0f0f0; margin: 4px 0; }
-  .addr-modal-footer {
-    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
-    padding: 14px 24px; border-top: 1px solid #f0f0f0; background: #fafafa; flex-shrink: 0;
-  }
-  .addr-btn-ghost {
-    background: none; border: 1.5px solid #e0e0e0; border-radius: 9px;
-    padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; color: #666;
-    font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, color 0.15s;
-  }
-  .addr-btn-ghost:hover { border-color: #bbb; color: #333; }
-  .addr-btn-primary {
-    background: #1a1a1a; color: #fff; border: none; border-radius: 9px;
-    padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
-    display: flex; align-items: center; gap: 7px; font-family: 'DM Sans', sans-serif;
-    transition: background 0.15s, transform 0.1s;
-  }
-  .addr-btn-primary:hover { background: #333; }
-  .addr-btn-primary:active { transform: scale(0.98); }
-  .addr-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-
-  /* ── Complete profile modal ── */
   @keyframes completeModalIn {
-    from { opacity: 0; transform: translateY(20px) scale(0.96); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from{opacity:0;transform:translateY(20px) scale(0.96)}
+    to{opacity:1;transform:translateY(0) scale(1)}
   }
-  .complete-profile-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(8px);
-    z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    padding: 16px;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .complete-profile-box {
-    background: #fff;
-    border-radius: 20px;
-    width: 100%; max-width: 440px;
-    box-shadow: 0 40px 100px rgba(0,0,0,0.25);
-    overflow: hidden;
-    animation: completeModalIn 0.3s cubic-bezier(0.34,1.26,0.64,1);
-  }
-  .complete-profile-header {
-    padding: 28px 28px 20px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  .complete-profile-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #f0faf4; color: #2f9e44;
-    font-size: 11px; font-weight: 700;
-    padding: 4px 10px; border-radius: 20px;
-    margin-bottom: 12px; letter-spacing: 0.04em;
-  }
-  .complete-profile-title {
-    font-size: 20px; font-weight: 700; color: #111; margin-bottom: 6px;
-  }
-  .complete-profile-subtitle {
-    font-size: 13px; color: #888; line-height: 1.5;
-  }
-  .complete-profile-body {
-    padding: 20px 28px;
-    display: flex; flex-direction: column; gap: 16px;
-  }
-  .complete-profile-field { display: flex; flex-direction: column; gap: 6px; }
-  .complete-profile-label {
-    font-size: 11px; font-weight: 700; color: #555;
-    text-transform: uppercase; letter-spacing: 0.06em;
-  }
-  .complete-profile-input {
-    border: 1.5px solid #e8e8e8; border-radius: 10px;
-    padding: 11px 14px; font-size: 14px; color: #111;
-    background: #fafafa; outline: none; width: 100%;
-    box-sizing: border-box; font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-  }
-  .complete-profile-input:focus {
-    border-color: #1a1a1a; background: #fff;
-    box-shadow: 0 0 0 3px rgba(0,0,0,0.07);
-  }
-  .complete-profile-input::placeholder { color: #bbb; }
-  .complete-profile-input.error { border-color: #e03131; }
-  .complete-profile-footer {
-    padding: 16px 28px 24px;
-    display: flex; justify-content: flex-end;
-  }
-  .complete-profile-btn {
-    background: #1a1a1a; color: #fff; border: none;
-    border-radius: 10px; padding: 12px 28px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: background 0.15s, transform 0.1s, opacity 0.15s;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .complete-profile-btn:hover { background: #333; }
-  .complete-profile-btn:active { transform: scale(0.98); }
-  .complete-profile-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-  /* ── Profile photo styles ── */
-  .profile-photo-wrap {
-    position: relative;
-    width: 80px; height: 80px;
-    flex-shrink: 0;
-  }
-  .profile-photo-img {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2.5px solid #e8e8e8;
-    display: block;
-  }
-  .profile-photo-placeholder {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    background: #f0f0f0;
-    border: 2.5px solid #e8e8e8;
-    display: flex; align-items: center; justify-content: center;
-    color: #aaa;
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -1px;
-    user-select: none;
-  }
-  .profile-photo-btn {
-    position: absolute;
-    bottom: 0; right: 0;
-    width: 26px; height: 26px;
-    background: #1a1a1a;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    color: #fff;
-    transition: background 0.15s, transform 0.15s;
-    z-index: 2;
-  }
-  .profile-photo-btn:hover { background: #333; transform: scale(1.08); }
-  .profile-photo-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-  .profile-photo-uploading {
-    position: absolute; inset: 0;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.45);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 11px; font-weight: 600;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .profile-photo-spinner {
-    width: 18px; height: 18px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-
-  /* sidebar avatar upgrade */
-  .profile-sidebar__avatar-img {
-    width: 52px; height: 52px;
-    border-radius: 50%; object-fit: cover;
-    border: 2px solid #e8e8e8;
-  }
-  .profile-sidebar__avatar-placeholder {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    background: #f0f0f0;
-    display: flex; align-items: center; justify-content: center;
-    color: #888; font-size: 20px; font-weight: 600;
-  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .modal-backdrop-in { animation: modalBackdropIn 0.2s ease; }
+  .modal-slide-up    { animation: modalSlideUp 0.26s cubic-bezier(0.34,1.26,0.64,1); }
+  .complete-modal-in { animation: completeModalIn 0.3s cubic-bezier(0.34,1.26,0.64,1); }
+  .spin-anim         { animation: spin 0.7s linear infinite; }
 `;
 
 // ─── Complete Profile Modal ───────────────────────────────────────────────────
 function CompleteProfileModal({ form, onChange, onSubmit, completing }) {
   const isValid = form.first_name.trim() && form.last_name.trim() && form.phone_number.trim();
 
+  const fieldCls = (hasError) =>
+    `w-full border rounded-[10px] px-3.5 py-[11px] text-sm text-gray-900 bg-gray-50 outline-none box-border
+     placeholder:text-gray-300 transition-all duration-150
+     focus:border-gray-900 focus:bg-white focus:ring-2 focus:ring-black/5
+     ${hasError ? "border-red-400" : "border-gray-200"}`;
+
   return (
-    <div className="complete-profile-overlay">
-      <div className="complete-profile-box">
-        <div className="complete-profile-header">
-          <div className="complete-profile-badge">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
+    >
+      <div
+        className="complete-modal-in bg-white rounded-[20px] w-full max-w-[440px] overflow-hidden"
+        style={{ boxShadow: "0 40px 100px rgba(0,0,0,0.25)" }}
+      >
+        {/* Header */}
+        <div className="pb-5 border-b border-gray-100 px-7 pt-7">
+          <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 text-[11px] font-bold px-2.5 py-1 rounded-full mb-3 tracking-wide">
             ✦ Edit Profile
           </div>
-          <div className="complete-profile-title">Complete your profile</div>
-          <div className="complete-profile-subtitle">
+          <div className="text-xl font-bold text-gray-900 mb-1.5">Complete your profile</div>
+          <div className="text-[13px] text-gray-400 leading-relaxed">
             You signed in with Google. Please fill in the missing details to continue using your account.
           </div>
         </div>
 
-        <div className="complete-profile-body">
-          <div className="complete-profile-field">
-            <label className="complete-profile-label">
-              First Name <span style={{ color: "#e03131" }}>*</span>
-            </label>
-            <input
-              className={`complete-profile-input${!form.first_name && completing ? " error" : ""}`}
-              value={form.first_name}
-              onChange={(e) => onChange({ ...form, first_name: e.target.value })}
-              placeholder="Juan"
-            />
-          </div>
-
-          <div className="complete-profile-field">
-            <label className="complete-profile-label">
-              Last Name <span style={{ color: "#e03131" }}>*</span>
-            </label>
-            <input
-              className={`complete-profile-input${!form.last_name && completing ? " error" : ""}`}
-              value={form.last_name}
-              onChange={(e) => onChange({ ...form, last_name: e.target.value })}
-              placeholder="Dela Cruz"
-            />
-          </div>
-
-          <div className="complete-profile-field">
-            <label className="complete-profile-label">
-              Phone Number <span style={{ color: "#e03131" }}>*</span>
-            </label>
-            <input
-              className={`complete-profile-input${!form.phone_number && completing ? " error" : ""}`}
-              value={form.phone_number}
-              onChange={(e) => onChange({ ...form, phone_number: e.target.value })}
-              placeholder="+63 912 345 6789"
-            />
-          </div>
+        {/* Body */}
+        <div className="flex flex-col gap-4 py-5 px-7">
+          {[
+            { label: "First Name",    key: "first_name",    placeholder: "Juan" },
+            { label: "Last Name",     key: "last_name",     placeholder: "Dela Cruz" },
+            { label: "Phone Number",  key: "phone_number",  placeholder: "+63 912 345 6789" },
+          ].map(({ label, key, placeholder }) => (
+            <div key={key} className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em]">
+                {label} <span className="text-red-500">*</span>
+              </label>
+              <input
+                className={fieldCls(!form[key] && completing)}
+                value={form[key]}
+                onChange={(e) => onChange({ ...form, [key]: e.target.value })}
+                placeholder={placeholder}
+              />
+            </div>
+          ))}
         </div>
 
-        <div className="complete-profile-footer">
+        {/* Footer */}
+        <div className="flex justify-end pb-6 px-7">
           <button
-            className="complete-profile-btn"
             onClick={onSubmit}
             disabled={completing || !isValid}
+            className="bg-gray-900 text-white border-none rounded-[10px] px-7 py-3 text-sm font-bold cursor-pointer flex items-center gap-2 hover:bg-gray-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
           >
             {completing ? (
-              <>
-                <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-                Saving...
-              </>
+              <><div className="spin-anim w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full" /> Saving...</>
             ) : (
-              <>
-                <CheckIcon /> Save & Continue
-              </>
+              <><CheckIcon /> Save & Continue</>
             )}
           </button>
         </div>
@@ -454,182 +195,164 @@ function CompleteProfileModal({ form, onChange, onSubmit, completing }) {
 
 // ─── Address Modal ────────────────────────────────────────────────────────────
 function AddressModal({ onClose, onSave, editingAddress }) {
-  const [form, setForm] = useState(
-    editingAddress || {
-      type: "personal",
-      company_name: "", company_role: "", company_number: "", company_email: "",
-      street: "", barangay: "", city: "", province: "", postal_code: "",
-      country: "Philippines", status: "active",
-    }
-  );
+  const [form, setForm] = useState(editingAddress || {
+    type: "personal", company_name: "", company_role: "", company_number: "", company_email: "",
+    street: "", barangay: "", city: "", province: "", postal_code: "", country: "Philippines", status: "active",
+  });
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const setType = (type) => setForm({ ...form, type });
+  const handleSubmit = () => { if (!form.street || !form.city) return; onSave(form); onClose(); };
 
-  const handleSubmit = () => {
-    if (!form.street || !form.city) return;
-    onSave(form);
-    onClose();
-  };
+  const inp = `border border-gray-200 rounded-[9px] px-3 py-2 text-sm text-gray-900 bg-gray-50 outline-none w-full box-border
+    placeholder:text-gray-300 focus:border-gray-900 focus:bg-white focus:ring-2 focus:ring-black/5 transition-all duration-150`;
 
   return (
-    <>
-      <style>{MODAL_STYLES}</style>
-      <div className="addr-modal-overlay" onClick={onClose}>
-        <div className="addr-modal-box" onClick={(e) => e.stopPropagation()}>
-          <div className="addr-modal-header">
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div className="addr-modal-icon-wrap"><MapPinSmIcon /></div>
-              <div>
-                <div className="addr-modal-title">{editingAddress ? "Edit Address" : "Add New Address"}</div>
-                <div className="addr-modal-subtitle">{editingAddress ? "Update your saved location" : "Save a delivery location"}</div>
-              </div>
-            </div>
-            <button className="addr-modal-close" onClick={onClose}><XIcon /></button>
-          </div>
-          <div className="addr-type-toggle">
-            <button className={`addr-type-btn${form.type === "personal" ? " active" : ""}`} onClick={() => setType("personal")}>
-              <PersonIcon2 /> Personal
-            </button>
-            <button className={`addr-type-btn${form.type === "company" ? " active" : ""}`} onClick={() => setType("company")}>
-              <BuildingIcon /> Company
-            </button>
-          </div>
-          <div className="addr-modal-body">
-            {form.type === "company" && (
-              <>
-                <div className="addr-section-label">Company Details</div>
-                <div className="addr-field">
-                  <label className="addr-label">Company Name</label>
-                  <input className="addr-input" name="company_name" value={form.company_name} onChange={handleChange} placeholder="ABC Corporation" />
-                </div>
-                <div className="addr-field-row">
-                  <div className="addr-field">
-                    <label className="addr-label">Role / Position</label>
-                    <input className="addr-input" name="company_role" value={form.company_role} onChange={handleChange} placeholder="Manager" />
-                  </div>
-                  <div className="addr-field">
-                    <label className="addr-label">Company Phone</label>
-                    <input className="addr-input" name="company_number" value={form.company_number} onChange={handleChange} placeholder="+63 912 345 6789" />
-                  </div>
-                </div>
-                <div className="addr-field">
-                  <label className="addr-label">Company Email</label>
-                  <input className="addr-input" name="company_email" value={form.company_email} onChange={handleChange} placeholder="company@email.com" />
-                </div>
-                <div className="addr-divider" />
-              </>
-            )}
-            <div className="addr-section-label">Location</div>
-            <div className="addr-field">
-              <label className="addr-label">Street Address <span style={{ color: "#e05" }}>*</span></label>
-              <input className="addr-input" name="street" value={form.street} onChange={handleChange} placeholder="123 Rizal Street" />
-            </div>
-            <div className="addr-field-row">
-              <div className="addr-field">
-                <label className="addr-label">Barangay</label>
-                <input className="addr-input" name="barangay" value={form.barangay} onChange={handleChange} placeholder="Barangay 1" />
-              </div>
-              <div className="addr-field">
-                <label className="addr-label">City <span style={{ color: "#e05" }}>*</span></label>
-                <input className="addr-input" name="city" value={form.city} onChange={handleChange} placeholder="Manila" />
-              </div>
-            </div>
-            <div className="addr-field-row">
-              <div className="addr-field">
-                <label className="addr-label">Province</label>
-                <input className="addr-input" name="province" value={form.province} onChange={handleChange} placeholder="Metro Manila" />
-              </div>
-              <div className="addr-field">
-                <label className="addr-label">Postal Code</label>
-                <input className="addr-input" name="postal_code" value={form.postal_code} onChange={handleChange} placeholder="1000" />
-              </div>
-            </div>
-            <div className="addr-field">
-              <label className="addr-label">Country</label>
-              <input className="addr-input" name="country" value={form.country} onChange={handleChange} />
+    <div
+      className="modal-backdrop-in fixed inset-0 z-[1000] flex items-center justify-center p-4"
+      style={{ background: "rgba(10,10,10,0.55)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="modal-slide-up bg-white rounded-[18px] w-full max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden"
+        style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between flex-shrink-0 px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gray-100 rounded-[10px] flex items-center justify-center text-gray-800"><MapPinSmIcon /></div>
+            <div>
+              <div className="text-[15px] font-semibold text-gray-900 leading-tight">{editingAddress ? "Edit Address" : "Add New Address"}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{editingAddress ? "Update your saved location" : "Save a delivery location"}</div>
             </div>
           </div>
-          <div className="addr-modal-footer">
-            <button className="addr-btn-ghost" onClick={onClose}>Cancel</button>
-            <button className="addr-btn-primary" onClick={handleSubmit} disabled={!form.street || !form.city}>
-              <CheckIcon />
-              {editingAddress ? "Save Changes" : "Add Address"}
+          <button onClick={onClose} className="flex items-center justify-center w-8 h-8 text-gray-500 transition-colors bg-gray-100 border-none rounded-lg cursor-pointer hover:bg-gray-200 hover:text-gray-900">
+            <XIcon />
+          </button>
+        </div>
+
+        {/* Type toggle */}
+        <div className="flex flex-shrink-0 gap-2 px-6 pt-4 pb-1">
+          {["personal", "company"].map((t) => (
+            <button key={t} onClick={() => setType(t)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-[10px] border text-sm font-medium cursor-pointer transition-all duration-150
+                ${form.type === t ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 hover:text-gray-800"}`}>
+              {t === "personal" ? <PersonIcon2 /> : <BuildingIcon />}
+              {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col flex-1 gap-3 px-6 py-4 overflow-y-auto">
+          {form.type === "company" && (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Company Details</p>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold text-gray-500">Company Name</label>
+                <input className={inp} name="company_name" value={form.company_name} onChange={handleChange} placeholder="ABC Corporation" />
+              </div>
+              <div className="flex gap-2.5">
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-[11px] font-semibold text-gray-500">Role / Position</label>
+                  <input className={inp} name="company_role" value={form.company_role} onChange={handleChange} placeholder="Manager" />
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-[11px] font-semibold text-gray-500">Company Phone</label>
+                  <input className={inp} name="company_number" value={form.company_number} onChange={handleChange} placeholder="+63 912 345 6789" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold text-gray-500">Company Email</label>
+                <input className={inp} name="company_email" value={form.company_email} onChange={handleChange} placeholder="company@email.com" />
+              </div>
+              <hr className="my-1 border-gray-100" />
+            </>
+          )}
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Location</p>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-semibold text-gray-500">Street Address <span className="text-red-500">*</span></label>
+            <input className={inp} name="street" value={form.street} onChange={handleChange} placeholder="123 Rizal Street" />
+          </div>
+          <div className="flex gap-2.5">
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label className="text-[11px] font-semibold text-gray-500">Barangay</label>
+              <input className={inp} name="barangay" value={form.barangay} onChange={handleChange} placeholder="Barangay 1" />
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label className="text-[11px] font-semibold text-gray-500">City <span className="text-red-500">*</span></label>
+              <input className={inp} name="city" value={form.city} onChange={handleChange} placeholder="Manila" />
+            </div>
+          </div>
+          <div className="flex gap-2.5">
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label className="text-[11px] font-semibold text-gray-500">Province</label>
+              <input className={inp} name="province" value={form.province} onChange={handleChange} placeholder="Metro Manila" />
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label className="text-[11px] font-semibold text-gray-500">Postal Code</label>
+              <input className={inp} name="postal_code" value={form.postal_code} onChange={handleChange} placeholder="1000" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-semibold text-gray-500">Country</label>
+            <input className={inp} name="country" value={form.country} onChange={handleChange} />
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+          <button onClick={onClose} className="bg-transparent border border-gray-200 rounded-[9px] px-[18px] py-2 text-sm font-medium cursor-pointer text-gray-500 hover:border-gray-400 hover:text-gray-800 transition-colors">Cancel</button>
+          <button onClick={handleSubmit} disabled={!form.street || !form.city}
+            className="bg-gray-900 text-white border-none rounded-[9px] px-5 py-2 text-sm font-semibold cursor-pointer flex items-center gap-1.5 hover:bg-gray-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150">
+            <CheckIcon />{editingAddress ? "Save Changes" : "Add Address"}
+          </button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
-// ─── Profile Photo Component ──────────────────────────────────────────────────
+// ─── Profile Photo ────────────────────────────────────────────────────────────
 function ProfilePhoto({ user, onUploadSuccess }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
-
-  const initials = [user?.first_name?.[0], user?.last_name?.[0]]
-    .filter(Boolean).join("").toUpperCase() || "?";
+  const initials = [user?.first_name?.[0], user?.last_name?.[0]].filter(Boolean).join("").toUpperCase() || "?";
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be under 2 MB.");
-      return;
-    }
-    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
-      toast.error("Only JPG and PNG images are allowed.");
-      return;
-    }
-
+    if (file.size > 2 * 1024 * 1024) { toast.error("Image must be under 2 MB."); return; }
+    if (!["image/jpeg","image/png","image/jpg"].includes(file.type)) { toast.error("Only JPG and PNG images are allowed."); return; }
     const formData = new FormData();
     formData.append("profile_image", file);
-
     setUploading(true);
     try {
-      const res = await api.post("/profile/update-image", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await api.post("/profile/update-image", formData, { headers: { "Content-Type": "multipart/form-data" } });
       const newUrl = res.data?.profile_image_url ?? res.data?.data?.profile_image ?? null;
       toast.success("Profile photo updated!");
       if (onUploadSuccess) onUploadSuccess(newUrl);
       window.dispatchEvent(new CustomEvent("profile-photo-updated", { detail: { url: newUrl } }));
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to upload photo. Please try again.");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
+    } catch (err) { console.error(err); toast.error("Failed to upload photo. Please try again."); }
+    finally { setUploading(false); e.target.value = ""; }
   };
 
   return (
-    <div className="profile-photo-wrap">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpg,image/jpeg,image/png"
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
+    <div className="relative flex-shrink-0 w-20 h-20">
+      <input ref={fileInputRef} type="file" accept="image/jpg,image/jpeg,image/png" className="hidden" onChange={handleFileChange} />
       {user?.profile_image ? (
-        <img src={user.profile_image} alt="Profile" className="profile-photo-img" />
+        <img src={user.profile_image} alt="Profile" className="w-20 h-20 rounded-full object-cover border-[2.5px] border-gray-200 block" />
       ) : (
-        <div className="profile-photo-placeholder">{initials}</div>
+        <div className="w-20 h-20 rounded-full bg-gray-100 border-[2.5px] border-gray-200 flex items-center justify-center text-gray-400 text-2xl font-semibold select-none tracking-tight">{initials}</div>
       )}
       {uploading && (
-        <div className="profile-photo-uploading">
-          <div className="profile-photo-spinner" />
+        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45">
+          <div className="spin-anim w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full" />
         </div>
       )}
-      <button
-        className="profile-photo-btn"
-        onClick={() => !uploading && fileInputRef.current?.click()}
-        disabled={uploading}
-        title="Change profile photo"
-      >
+      <button onClick={() => !uploading && fileInputRef.current?.click()} disabled={uploading} title="Change profile photo"
+        className="absolute bottom-0 right-0 w-[26px] h-[26px] bg-gray-900 border-2 border-white rounded-full flex items-center justify-center cursor-pointer text-white z-10 hover:bg-gray-700 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-150">
         <CameraIcon />
       </button>
     </div>
@@ -639,13 +362,14 @@ function ProfilePhoto({ user, onUploadSuccess }) {
 // ─── Editable Field ───────────────────────────────────────────────────────────
 function EditableField({ label, value, name, isEditing, onChange }) {
   return (
-    <div className="profile-field">
-      <span className="profile-field__label">{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.06em]">{label}</span>
       {isEditing ? (
-        <input style={editableStyles.input} name={name} value={value || ""} onChange={onChange} placeholder={label} />
+        <input name={name} value={value || ""} onChange={onChange} placeholder={label}
+          className="border border-gray-900 rounded-lg px-3 py-2.5 text-sm text-gray-900 outline-none bg-gray-50 w-full box-border" />
       ) : (
-        <div className="profile-field__input" style={editableStyles.display}>
-          {value || <span style={{ color: "#bbb" }}>—</span>}
+        <div className="text-sm text-gray-900 py-2.5 border-b border-gray-100 min-h-[36px]">
+          {value || <span className="text-gray-300">—</span>}
         </div>
       )}
     </div>
@@ -656,36 +380,54 @@ function EditableField({ label, value, name, isEditing, onChange }) {
 function AddressCard({ addr, onEdit, onDelete }) {
   const isCompany = addr.type === "company";
   return (
-    <div style={addressStyles.card}>
-      <div style={addressStyles.cardHeader}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{
-            ...addressStyles.typeBadge,
-            background: isCompany ? "#f0f4ff" : "#f0faf4",
-            color: isCompany ? "#3b5bdb" : "#2f9e44",
-          }}>
-            {isCompany ? <BuildingIcon /> : <PersonIcon2 />}
-            {isCompany ? "Company" : "Personal"}
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          <button style={addressStyles.actionBtn} onClick={onEdit} title="Edit"><EditSmallIcon /></button>
-          <button style={{ ...addressStyles.actionBtn, color: "#e57373" }} onClick={onDelete} title="Delete"><TrashIcon /></button>
+    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 flex flex-col gap-1.5">
+      <div className="flex items-center justify-between mb-1">
+        <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${isCompany ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"}`}>
+          {isCompany ? <BuildingIcon /> : <PersonIcon2 />}{isCompany ? "Company" : "Personal"}
+        </span>
+        <div className="flex gap-1.5">
+          <button onClick={onEdit} className="w-[26px] h-[26px] bg-gray-100 border-none rounded-md flex items-center justify-center cursor-pointer text-gray-500 hover:bg-gray-200 transition-colors"><EditSmallIcon /></button>
+          <button onClick={onDelete} className="w-[26px] h-[26px] bg-gray-100 border-none rounded-md flex items-center justify-center cursor-pointer text-red-400 hover:bg-red-50 transition-colors"><TrashIcon /></button>
         </div>
       </div>
-      {isCompany && addr.company_name && <div style={addressStyles.companyName}>{addr.company_name}</div>}
-      <div style={addressStyles.addressBlock}>
-        {addr.street && <div style={addressStyles.line}>{addr.street}</div>}
-        {(addr.barangay || addr.city) && <div style={addressStyles.line}>{[addr.barangay, addr.city].filter(Boolean).join(", ")}</div>}
-        {(addr.province || addr.postal_code) && <div style={addressStyles.line}>{[addr.province, addr.postal_code].filter(Boolean).join(" ")}</div>}
-        {addr.country && <div style={{ ...addressStyles.line, color: "#999" }}>{addr.country}</div>}
+      {isCompany && addr.company_name && <div className="text-[13px] font-semibold text-gray-900">{addr.company_name}</div>}
+      <div className="flex flex-col gap-0.5">
+        {addr.street && <div className="text-[13px] text-gray-600 leading-relaxed">{addr.street}</div>}
+        {(addr.barangay || addr.city) && <div className="text-[13px] text-gray-600 leading-relaxed">{[addr.barangay,addr.city].filter(Boolean).join(", ")}</div>}
+        {(addr.province || addr.postal_code) && <div className="text-[13px] text-gray-600 leading-relaxed">{[addr.province,addr.postal_code].filter(Boolean).join(" ")}</div>}
+        {addr.country && <div className="text-[13px] text-gray-400 leading-relaxed">{addr.country}</div>}
       </div>
       {isCompany && (addr.company_number || addr.company_email) && (
-        <div style={addressStyles.contactBlock}>
-          {addr.company_number && <span style={addressStyles.contact}>📞 {addr.company_number}</span>}
-          {addr.company_email && <span style={addressStyles.contact}>✉ {addr.company_email}</span>}
+        <div className="flex flex-col gap-0.5 pt-1.5 border-t border-gray-100 mt-1">
+          {addr.company_number && <span className="text-xs text-gray-400">📞 {addr.company_number}</span>}
+          {addr.company_email && <span className="text-xs text-gray-400">✉ {addr.company_email}</span>}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Card Header ──────────────────────────────────────────────────────────────
+function CardHeader({ icon, title, subtitle, action }) {
+  return (
+    <div className="flex items-start justify-between gap-3 px-7 py-[22px] border-b border-gray-100">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 border bg-emerald-50 border-emerald-100 rounded-xl text-emerald-600">{icon}</div>
+        <div>
+          <div className="font-bold text-[15px] text-gray-800">{title}</div>
+          <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+// ─── Breadcrumb ───────────────────────────────────────────────────────────────
+function Breadcrumb({ label }) {
+  return (
+    <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-[18px] py-[7px] text-[13px] font-medium text-emerald-600 mb-5 self-start">
+      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />{label}
     </div>
   );
 }
@@ -694,186 +436,120 @@ function AddressCard({ addr, onEdit, onDelete }) {
 function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, setAddresses }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
-    first_name:    user?.first_name    || "",
-    last_name:     user?.last_name     || "",
-    email:         user?.email         || "",
-    phone_number:  user?.phone_number  || "",
-    company_name:  user?.company_name  || "",
-    position:      user?.position      || "",
+    first_name: user?.first_name || "", last_name: user?.last_name || "",
+    email: user?.email || "", phone_number: user?.phone_number || "",
+    company_name: user?.company_name || "", position: user?.position || "",
     business_type: user?.business_type || "",
   });
-
-  const [showModal, setShowModal]           = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
-  const [editingIndex, setEditingIndex]     = useState(null);
+  const [editingIndex, setEditingIndex] = useState(null);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSave = () => {
-    if (onUserUpdate) onUserUpdate(form);
-    setIsEditing(false);
-  };
-
+  const handleSave = () => { if (onUserUpdate) onUserUpdate(form); setIsEditing(false); };
   const handleCancel = () => {
-    setForm({
-      first_name:    user?.first_name    || "",
-      last_name:     user?.last_name     || "",
-      email:         user?.email         || "",
-      phone_number:  user?.phone_number  || "",
-      company_name:  user?.company_name  || "",
-      position:      user?.position      || "",
-      business_type: user?.business_type || "",
-    });
+    setForm({ first_name: user?.first_name||"", last_name: user?.last_name||"", email: user?.email||"",
+      phone_number: user?.phone_number||"", company_name: user?.company_name||"",
+      position: user?.position||"", business_type: user?.business_type||"" });
     setIsEditing(false);
   };
 
   const handleSaveAddress = async (addr) => {
     try {
       if (editingIndex !== null) {
-        const addrId = addresses[editingIndex].id;
-        const res = await apiUpdateAddress(addrId, addr);
-        const updated = [...addresses];
-        updated[editingIndex] = res.data;
-        setAddresses(updated);
+        const res = await apiUpdateAddress(addresses[editingIndex].id, addr);
+        const updated = [...addresses]; updated[editingIndex] = res.data; setAddresses(updated);
         toast.success("Address updated successfully");
       } else {
         const res = await apiAddAddress(addr);
         setAddresses([...addresses, res.data]);
         toast.success("Address added successfully");
       }
-    } catch (error) {
-      console.error("Address save failed:", error);
-      toast.error("Failed to save address");
-    } finally {
-      setEditingAddress(null);
-      setEditingIndex(null);
-      setShowModal(false);
-    }
+    } catch { toast.error("Failed to save address"); }
+    finally { setEditingAddress(null); setEditingIndex(null); setShowModal(false); }
   };
 
-  const handleEditAddress   = (idx) => { setEditingAddress(addresses[idx]); setEditingIndex(idx); setShowModal(true); };
+  const handleEditAddress = (idx) => { setEditingAddress(addresses[idx]); setEditingIndex(idx); setShowModal(true); };
   const handleDeleteAddress = async (idx) => {
-    try {
-      await apiDeleteAddress(addresses[idx].id);
-      setAddresses(addresses.filter((_, i) => i !== idx));
-      toast.success("Address removed");
-    } catch {
-      toast.error("Failed to delete address");
-    }
+    try { await apiDeleteAddress(addresses[idx].id); setAddresses(addresses.filter((_,i)=>i!==idx)); toast.success("Address removed"); }
+    catch { toast.error("Failed to delete address"); }
   };
   const openAddModal = () => { setEditingAddress(null); setEditingIndex(null); setShowModal(true); };
 
-  return (
-    <div className="profile-main">
-      <style>{MODAL_STYLES}</style>
+  const btnOutline = "inline-flex items-center gap-1.5 px-5 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg text-[13px] font-semibold cursor-pointer hover:border-emerald-200 hover:text-emerald-600 transition-all duration-150";
+  const btnDark    = "inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer hover:bg-gray-700 transition-colors duration-150";
+  const btnPrimary = "inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer transition-colors duration-150 shadow-[0_4px_20px_rgba(16,185,129,0.25)]";
+  const btnGhost   = "inline-flex items-center gap-1.5 px-4 py-1.5 bg-transparent text-emerald-600 border border-emerald-200 rounded-lg text-xs font-semibold cursor-pointer hover:bg-emerald-50 transition-colors duration-150";
 
+  const EmptySlot = ({ label }) => (
+    <div className="border-2 border-dashed border-emerald-100 rounded-xl min-h-[150px] flex flex-col items-center justify-center gap-2.5 text-gray-400 cursor-pointer px-6 py-6 text-center text-[13px] hover:border-emerald-400 hover:bg-emerald-50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      <div className="w-[42px] h-[42px] rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500"><PlusIcon /></div>
+      <span>{label}</span>
+      <button className={btnGhost} onClick={openAddModal}><PlusIcon /> Add Address</button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
       {showModal && (
         <AddressModal
           onClose={() => { setShowModal(false); setEditingAddress(null); setEditingIndex(null); }}
-          onSave={handleSaveAddress}
-          editingAddress={editingAddress}
+          onSave={handleSaveAddress} editingAddress={editingAddress}
         />
       )}
 
-      <div className="profile-breadcrumb">
-        <span className="profile-breadcrumb__dot" />
-        Personal Information &nbsp;·&nbsp; Manage your profile and contact details
-      </div>
+      <Breadcrumb label="Personal Information · Manage your profile and contact details" />
 
-      <div className="profile-card">
-        <div className="profile-card__header">
-          <div className="profile-card__header-left">
-            <div className="profile-card__icon-box"><InfoIcon /></div>
-            <div>
-              <div className="profile-card__title">Profile Details</div>
-              <div className="profile-card__subtitle">Your personal and business information</div>
+      {/* Profile Details Card */}
+      <div className="overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md hover:border-emerald-100">
+        <CardHeader icon={<InfoIcon />} title="Profile Details" subtitle="Your personal and business information"
+          action={
+            <div className="flex gap-2">
+              {isEditing ? (
+                <><button className={btnOutline} onClick={handleCancel}><XIcon /> Cancel</button>
+                  <button className={btnDark} onClick={handleSave}><CheckIcon /> Save</button></>
+              ) : (
+                <button className={btnOutline} onClick={() => setIsEditing(true)}><EditSmallIcon /> Edit</button>
+              )}
             </div>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {isEditing ? (
-              <>
-                <button className="btn-profile-outline" onClick={handleCancel} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <XIcon /> Cancel
-                </button>
-                <button onClick={handleSave} style={{ display: "flex", alignItems: "center", gap: 5, background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  <CheckIcon /> Save
-                </button>
-              </>
-            ) : (
-              <button className="btn-profile-outline" onClick={() => setIsEditing(true)}>
-                <EditSmallIcon /> Edit
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="profile-card__user-strip">
+          }
+        />
+        <div className="flex items-center gap-4 py-5 border-b border-gray-100 px-7">
           <ProfilePhoto user={user} onUploadSuccess={onPhotoUpdate} />
-          <div style={{ marginLeft: 14 }}>
-            <div className="profile-card__user-name">{user?.first_name} {user?.last_name}</div>
-            <div className="profile-card__user-meta">{user?.email}</div>
-            <div className="profile-card__user-meta">{user?.phone_number || "No phone number"}</div>
-            <div style={{ fontSize: 11, color: "#bbb", marginTop: 4 }}>
-              Click the camera icon to change your photo
-            </div>
+          <div className="ml-3.5">
+            <div className="text-sm font-bold text-gray-800">{user?.first_name} {user?.last_name}</div>
+            <div className="text-xs text-gray-400 mt-0.5">{user?.email}</div>
+            <div className="text-xs text-gray-400 mt-0.5">{user?.phone_number || "No phone number"}</div>
+            <div className="text-[11px] text-gray-300 mt-1">Click the camera icon to change your photo</div>
           </div>
         </div>
-
-        <div className="profile-card__fields">
+        <div className="px-7 py-7 grid grid-cols-2 gap-x-7 gap-y-[22px] max-sm:grid-cols-1">
           <EditableField label="First Name"                  name="first_name"    value={form.first_name}    isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Last Name"                   name="last_name"     value={form.last_name}     isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Email Address"               name="email"         value={form.email}         isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Phone / Mobile Number"       name="phone_number"  value={form.phone_number}  isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Company Name (Optional)"     name="company_name"  value={form.company_name}  isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Position / Title (Optional)" name="position"      value={form.position}      isEditing={isEditing} onChange={handleChange} />
-          <div className="profile-field--full">
+          <div className="col-span-1">
             <EditableField label="Business Type (Optional)"  name="business_type" value={form.business_type} isEditing={isEditing} onChange={handleChange} />
           </div>
         </div>
       </div>
 
-      <div className="profile-card">
-        <div className="profile-card__header">
-          <div className="profile-card__header-left">
-            <div className="profile-card__icon-box"><MapPinIcon /></div>
-            <div>
-              <div className="profile-card__title">Addresses</div>
-              <div className="profile-card__subtitle">Manage your saved delivery addresses</div>
-            </div>
-          </div>
-          <button className="btn-profile-primary" onClick={openAddModal}>
-            <PlusIcon /> Add New
-          </button>
-        </div>
-        <div className="profile-addresses__grid">
+      {/* Addresses Card */}
+      <div className="overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md hover:border-emerald-100">
+        <CardHeader icon={<MapPinIcon />} title="Addresses" subtitle="Manage your saved delivery addresses"
+          action={<button className={btnPrimary} onClick={openAddModal}><PlusIcon /> Add New</button>}
+        />
+        <div className="grid grid-cols-2 gap-5 py-6 px-7 max-sm:grid-cols-1">
           {addresses.length === 0 ? (
-            <>
-              <div className="profile-address-empty">
-                <div className="profile-address-empty__icon"><PlusIcon /></div>
-                <span>No address saved yet</span>
-                <button className="btn-profile-ghost" onClick={openAddModal}><PlusIcon /> Add Address</button>
-              </div>
-              <div className="profile-address-empty">
-                <div className="profile-address-empty__icon"><PlusIcon /></div>
-                <span>No address saved yet</span>
-                <button className="btn-profile-ghost" onClick={openAddModal}><PlusIcon /> Add Address</button>
-              </div>
-            </>
+            <><EmptySlot label="No address saved yet" /><EmptySlot label="No address saved yet" /></>
           ) : (
             <>
               {addresses.map((addr, idx) => (
-                <AddressCard
-                  key={addr.id ?? idx}
-                  addr={addr}
-                  onEdit={() => handleEditAddress(idx)}
-                  onDelete={() => handleDeleteAddress(idx)}
-                />
+                <AddressCard key={addr.id ?? idx} addr={addr} onEdit={() => handleEditAddress(idx)} onDelete={() => handleDeleteAddress(idx)} />
               ))}
-              <div className="profile-address-empty">
-                <div className="profile-address-empty__icon"><PlusIcon /></div>
-                <span>Add another address</span>
-                <button className="btn-profile-ghost" onClick={openAddModal}><PlusIcon /> Add Address</button>
-              </div>
+              <EmptySlot label="Add another address" />
             </>
           )}
         </div>
@@ -881,42 +557,6 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
     </div>
   );
 }
-
-// ─── Style Objects ────────────────────────────────────────────────────────────
-const editableStyles = {
-  input: {
-    border: "1.5px solid #1a1a1a", borderRadius: 8, padding: "9px 12px",
-    fontSize: 14, color: "#1a1a1a", outline: "none", background: "#f9f9f9",
-    width: "100%", boxSizing: "border-box",
-  },
-  display: {
-    fontSize: 14, color: "#1a1a1a", padding: "9px 0",
-    borderBottom: "1px solid #f0f0f0", minHeight: 36,
-  },
-};
-
-const addressStyles = {
-  card: {
-    border: "1.5px solid #e8e8e8", borderRadius: 12, padding: "14px 16px",
-    background: "#fafafa", display: "flex", flexDirection: "column", gap: 6,
-  },
-  cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
-  typeBadge: {
-    display: "inline-flex", alignItems: "center", gap: 5,
-    fontSize: 11, fontWeight: 700, padding: "3px 8px",
-    borderRadius: 20, letterSpacing: "0.03em",
-  },
-  companyName: { fontSize: 13, fontWeight: 600, color: "#1a1a1a" },
-  addressBlock: { display: "flex", flexDirection: "column", gap: 1 },
-  line: { fontSize: 13, color: "#444", lineHeight: 1.7 },
-  contactBlock: { display: "flex", flexDirection: "column", gap: 2, paddingTop: 6, borderTop: "1px solid #f0f0f0", marginTop: 4 },
-  contact: { fontSize: 12, color: "#888" },
-  actionBtn: {
-    background: "#f0f0f0", border: "none", borderRadius: 6,
-    width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", color: "#444",
-  },
-};
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────
 const MENU_ITEMS = [
@@ -928,14 +568,14 @@ const MENU_ITEMS = [
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function ProfilePersonal() {
-  const [activeMenu, setActiveMenu]         = useState("personal");
-  const [user, setUser]                     = useState(null);
-  const [loading, setLoading]               = useState(true);
-  const [addresses, setAddresses]           = useState([]);
-  const [ordersCount, setOrdersCount]       = useState(0);
+  const [activeMenu, setActiveMenu]                   = useState("personal");
+  const [user, setUser]                               = useState(null);
+  const [loading, setLoading]                         = useState(true);
+  const [addresses, setAddresses]                     = useState([]);
+  const [ordersCount, setOrdersCount]                 = useState(0);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
-  const [completeForm, setCompleteForm]     = useState({ first_name: "", last_name: "", phone_number: "" });
-  const [completing, setCompleting]         = useState(false);
+  const [completeForm, setCompleteForm]               = useState({ first_name: "", last_name: "", phone_number: "" });
+  const [completing, setCompleting]                   = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -945,32 +585,20 @@ export default function ProfilePersonal() {
         if (response.status === 200 && response.data.status === "success") {
           const userData = response.data.data;
           setUser(userData);
-
-          // Show complete profile modal if Google user with missing info
           if (!userData.phone_number || !userData.first_name) {
-            setCompleteForm({
-              first_name:   userData.first_name   || "",
-              last_name:    userData.last_name    || "",
-              phone_number: userData.phone_number || "",
-            });
+            setCompleteForm({ first_name: userData.first_name||"", last_name: userData.last_name||"", phone_number: userData.phone_number||"" });
             setShowCompleteProfile(true);
           }
-
           try {
             const addrRes = await getUserAddresses();
             if (addrRes.status === 200) {
               const addrData = addrRes.data?.data ?? addrRes.data ?? [];
               setAddresses(Array.isArray(addrData) ? addrData : []);
             }
-          } catch (addrErr) {
-            console.error("Failed to fetch addresses:", addrErr);
-          }
+          } catch (addrErr) { console.error("Failed to fetch addresses:", addrErr); }
         }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
+      } catch (error) { console.error(error); }
+      finally { setLoading(false); }
     };
     loadUser();
   }, []);
@@ -984,19 +612,14 @@ export default function ProfilePersonal() {
           if (!Array.isArray(data)) data = [data];
           setOrdersCount(Array.isArray(data) ? data.length : 0);
         }
-      } catch (err) {
-        console.error("Failed to fetch orders count:", err);
-        setOrdersCount(0);
-      }
+      } catch { setOrdersCount(0); }
     };
     if (user) fetchOrdersCount();
   }, [user]);
 
-  // ── Handle complete profile submit ────────────────────────────────────────
   const handleCompleteProfile = async () => {
     if (!completeForm.first_name.trim() || !completeForm.last_name.trim() || !completeForm.phone_number.trim()) {
-      toast.error("Please fill in all required fields.");
-      return;
+      toast.error("Please fill in all required fields."); return;
     }
     setCompleting(true);
     try {
@@ -1004,22 +627,14 @@ export default function ProfilePersonal() {
       setUser((prev) => ({ ...prev, ...completeForm }));
       setShowCompleteProfile(false);
       toast.success("Profile completed! Welcome to JEM 8 Circle 🎉");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to save profile. Please try again.");
-    } finally {
-      setCompleting(false);
-    }
+    } catch (err) { console.error(err); toast.error("Failed to save profile. Please try again."); }
+    finally { setCompleting(false); }
   };
 
   const handleUserUpdate = async (updatedFields) => {
     setUser((prev) => ({ ...prev, ...updatedFields }));
-    try {
-      const res = await updateProfile(updatedFields);
-      if (res.user) setUser(res.user);
-    } catch (error) {
-      console.error("Update failed:", error);
-    }
+    try { const res = await updateProfile(updatedFields); if (res.user) setUser(res.user); }
+    catch (error) { console.error("Update failed:", error); }
   };
 
   const handlePhotoUpdate = (newUrl) => {
@@ -1029,87 +644,86 @@ export default function ProfilePersonal() {
 
   const Logout = async () => {
     const data = await logout();
-    if (data) {
-      window.dispatchEvent(new CustomEvent("auth-logout"));
-      navigate("/login");
-    }
+    if (data) { window.dispatchEvent(new CustomEvent("auth-logout")); navigate("/login"); }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (!user)   return <p>User not found or unauthenticated.</p>;
+  if (loading) return <p className="p-8 text-gray-400">Loading...</p>;
+  if (!user)   return <p className="p-8 text-gray-400">User not found or unauthenticated.</p>;
 
-  const initials = [user?.first_name?.[0], user?.last_name?.[0]]
-    .filter(Boolean).join("").toUpperCase() || "?";
+  const initials = [user?.first_name?.[0], user?.last_name?.[0]].filter(Boolean).join("").toUpperCase() || "?";
 
   const renderContent = () => {
     switch (activeMenu) {
       case "orders":   return <OrdersOverview userId={user?.id} />;
       case "password": return <PasswordSecurity />;
       case "notif":    return <Notification />;
-      default:
-        return (
-          <PersonalInformation
-            user={user}
-            onUserUpdate={handleUserUpdate}
-            onPhotoUpdate={handlePhotoUpdate}
-            addresses={addresses}
-            setAddresses={setAddresses}
-          />
-        );
+      default: return (
+        <PersonalInformation user={user} onUserUpdate={handleUserUpdate} onPhotoUpdate={handlePhotoUpdate}
+          addresses={addresses} setAddresses={setAddresses} />
+      );
     }
   };
 
   return (
     <>
-      <style>{MODAL_STYLES}</style>
+      <style>{KEYFRAMES}</style>
 
-      {/* ── Complete Profile Modal — blocks everything until filled ── */}
+      {/* Complete Profile Modal — blocks until filled */}
       {showCompleteProfile && (
-        <CompleteProfileModal
-          form={completeForm}
-          onChange={setCompleteForm}
-          onSubmit={handleCompleteProfile}
-          completing={completing}
-        />
+        <CompleteProfileModal form={completeForm} onChange={setCompleteForm}
+          onSubmit={handleCompleteProfile} completing={completing} />
       )}
 
-      <div className="profile-page">
-        <div className="profile-page__inner">
+      {/* Page — pt-[108px] = 68px header + 40px breathing room */}
+      <div className="relative min-h-screen pt-[108px] pb-20 overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #f9fdf9 0%, #fff 50%, #f0faf4 100%)" }}>
+
+        <div className="fixed top-[-160px] right-[-160px] w-[560px] h-[560px] pointer-events-none z-0"
+          style={{ background: "radial-gradient(circle, rgba(77,123,101,0.09) 0%, transparent 70%)" }} />
+
+        <div className="max-w-[1300px] mx-auto px-10 grid grid-cols-[280px_1fr] gap-7 items-start relative z-10
+          max-[1024px]:grid-cols-[240px_1fr] max-[1024px]:gap-5 max-[1024px]:px-6
+          max-[768px]:grid-cols-1 max-[768px]:px-4">
 
           {/* Sidebar */}
-          <aside className="profile-sidebar">
-            <div className="profile-sidebar__avatar-wrap">
+          <aside className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-[88px] hover:shadow-lg transition-shadow duration-200 max-[768px]:static">
+
+            <div className="px-5 pt-8 pb-6 flex flex-col items-center gap-1.5 border-b border-gray-100"
+              style={{ background: "linear-gradient(180deg, #f0faf4 0%, #fff 100%)" }}>
               {user.profile_image ? (
-                <img src={user.profile_image} alt="Profile" className="profile-sidebar__avatar-img" />
+                <img src={user.profile_image} alt="Profile" className="w-[52px] h-[52px] rounded-full object-cover border-2 border-gray-200" />
               ) : (
-                <div className="profile-sidebar__avatar-placeholder">{initials}</div>
+                <div className="w-[52px] h-[52px] rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold">{initials}</div>
               )}
-              <span className="profile-sidebar__name">{user.first_name} {user.last_name}</span>
-              <span className="profile-sidebar__email">{user.email}</span>
-              <span className="profile-sidebar__phone">{user.phone_number || "—"}</span>
+              <span className="font-bold text-[15px] text-gray-800 mt-2">{user.first_name} {user.last_name}</span>
+              <span className="text-xs text-gray-400">{user.email}</span>
+              <span className="text-xs text-gray-400">{user.phone_number || "—"}</span>
             </div>
 
-            <nav className="profile-sidebar__nav">
-              <span className="profile-sidebar__nav-label">Overview</span>
-              {MENU_ITEMS.map(({ key, label, Icon, badge }) => {
-                const badgeValue = key === "orders" ? ordersCount : badge;
+            <nav className="px-3 pt-4 pb-2">
+              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.08em] px-2 pb-2.5">Overview</span>
+              {MENU_ITEMS.map(({ key, label, Icon }) => {
+                const badgeValue = key === "orders" ? ordersCount : 0;
+                const isActive = activeMenu === key;
                 return (
-                  <button
-                    key={key}
-                    className={`profile-sidebar__item${activeMenu === key ? " active" : ""}`}
-                    onClick={() => setActiveMenu(key)}
-                  >
+                  <button key={key} onClick={() => setActiveMenu(key)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-l-[3px] cursor-pointer text-[13px] text-left transition-all duration-150
+                      ${isActive
+                        ? "bg-emerald-50 border-l-emerald-500 text-emerald-700 font-semibold [&_svg]:stroke-emerald-500"
+                        : "bg-transparent border-l-transparent text-gray-500 font-normal hover:bg-gray-50 hover:text-gray-800 hover:translate-x-0.5"
+                      }`}>
                     <Icon />{label}
-                    {badgeValue > 0 && <span className="profile-sidebar__badge">{badgeValue}</span>}
+                    {badgeValue > 0 && <span className="ml-auto bg-gray-900 text-white rounded-full text-[10px] font-bold px-2 py-px">{badgeValue}</span>}
                   </button>
                 );
               })}
             </nav>
 
-            <div className="profile-sidebar__divider" />
+            <hr className="mx-5 my-2 border-gray-100" />
 
-            <div className="profile-sidebar__logout-wrap">
-              <button className="profile-sidebar__item danger" onClick={Logout}>
+            <div className="px-3 pb-4">
+              <button onClick={Logout}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-l-[3px] border-l-transparent cursor-pointer text-[13px] text-left text-red-500 font-normal hover:bg-red-50 hover:translate-x-0.5 transition-all duration-150 [&_svg]:stroke-red-500">
                 <LogoutIcon /> Logout
               </button>
             </div>
