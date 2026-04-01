@@ -24,7 +24,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import AccountVerification from './pages/AccountVerification'
 import PasswordReset from './pages/PasswordReset';
 import ForgotPasswordCode from './pages/ForgotPasswordCode';
-
+import GoogleCallback from "./pages/GoogleCallback";
 // ── ADMIN PAGES ──
 import AdminProducts from "./pages/adminProducts";
 import AdminDashboard from "./pages/adminDashboard";
@@ -82,7 +82,7 @@ export default function App() {
           <Route path="/account-verification" element={<AccountVerification />} />
           <Route path="/password-reset" element={<PasswordReset />} />
           <Route path="/forgot-password-code" element={<ForgotPasswordCode />} />
-
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
           
         </Route>
 

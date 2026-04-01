@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Header, Footer } from "./components/Layout";
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { me } from "./api/auth";
 
 const img = (w, h, label = "") =>
   `https://placehold.co/${w}x${h}/edf4f0/4d7b65?text=${encodeURIComponent(label)}`;
@@ -51,42 +51,39 @@ const WHY_ITEMS = [
   { num: "3", title: "Dedicated & Professional Team", desc: "Every order, big or small, gets the same level of care and commitment." },
 ];
 
-const FALLBACK_TESTIMONIALS = [
-  { name: "Sarah Johnson",   review_text: "Absolutely fantastic service! The team went above and beyond to ensure everything was perfect. Highly recommend to anyone looking for a reliable supplier.", rating: 5 },
-  { name: "Michael Chen",    review_text: "Great experience from start to finish. The product quality exceeded my expectations and delivery was super fast. Will definitely order again.", rating: 5 },
-  { name: "Emily Rodriguez", review_text: "Outstanding quality and customer care. This is exactly what I was looking for. Will definitely be a returning customer — the giveaways were a hit!", rating: 5 },
+const TESTIMONIALS = [
+  { name: "Sarah Johnson",   role: "Business Owner", review: "Absolutely fantastic service! The team went above and beyond to ensure everything was perfect. Highly recommend to anyone looking for a reliable supplier." },
+  { name: "Michael Chen",    role: "Office Manager", review: "Great experience from start to finish. The product quality exceeded my expectations and delivery was super fast. Will definitely order again." },
+  { name: "Emily Rodriguez", role: "HR Director",    review: "Outstanding quality and customer care. This is exactly what I was looking for. Will definitely be a returning customer — the giveaways were a hit!" },
 ];
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api",
-  withCredentials: true,
-  headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
-});
 
 /* ── Product Card ── */
 function ProductCard({ imgSrc, title, desc }) {
   return (
     <Link
       to="/products"
-      className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col no-underline text-inherit transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5 hover:border-[#b8d9c8]"
+      className="group bg-white rounded-[16px] overflow-hidden border border-[#e2e8f0] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[6px] hover:border-[#b8d9c8] no-underline text-inherit"
     >
-      <div className="w-full overflow-hidden bg-slate-100 aspect-[16/10]">
+      {/* Image */}
+      <div className="w-full overflow-hidden bg-[#f1f5f9]" style={{ aspectRatio: "16/10" }}>
         <img
           src={imgSrc}
           alt={title}
-          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-[400ms] ease-in-out group-hover:scale-[1.06]"
         />
       </div>
-      <div className="flex flex-col flex-1 px-6 py-5">
-        <h3 className="text-[15px] font-bold text-slate-800 mb-2.5 leading-snug">
+
+      {/* Body */}
+      <div className="px-[24px] py-[22px] flex-1 flex flex-col">
+        <h3 className="text-[15px] font-bold text-[#1e293b] mb-[10px] leading-[1.4]">
           {title}
         </h3>
-        <p className="flex-1 mb-4 text-sm leading-relaxed text-slate-500">
+        <p className="text-[14px] text-[#64748b] leading-[1.65] flex-1 mb-[18px]">
           {desc}
         </p>
-        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#4d7b65] self-start transition-all duration-200 group-hover:gap-3 group-hover:text-[#3a5e4e]">
+        <span className="inline-flex items-center gap-[7px] text-[14px] font-semibold text-[#4d7b65] transition-all duration-200 self-start group-hover:text-[#3a5e4e] group-hover:gap-[12px]">
           Shop Now
-          <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+          <span className="transition-transform duration-200 group-hover:translate-x-[4px]">→</span>
         </span>
       </div>
     </Link>
@@ -96,63 +93,97 @@ function ProductCard({ imgSrc, title, desc }) {
 /* ── Hero ── */
 function Hero() {
   return (
-    <section className="relative flex items-center min-h-screen overflow-hidden bg-gradient-to-br from-[#f9fdf9] via-white to-[#edf4f0]" style={{ paddingTop: "var(--header-h, 80px)" }}>
+    <section
+      className="relative overflow-hidden flex items-center min-h-screen"
+      style={{
+        paddingTop: "var(--header-h)",
+        background: "linear-gradient(135deg, #f9fdf9 0%, #fff 50%, #edf4f0 100%)",
+      }}
+    >
       {/* Decorative blob */}
-      <div className="absolute -top-40 -right-40 w-[560px] h-[560px] rounded-full bg-[#4d7b65]/5 pointer-events-none" />
-      <div className="absolute -bottom-20 -left-20 w-[320px] h-[320px] rounded-full bg-[#4d7b65]/4 pointer-events-none" />
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: "-160px", right: "-160px",
+          width: "560px", height: "560px",
+          background: "radial-gradient(circle, rgba(77,123,101,0.09) 0%, transparent 70%)",
+        }}
+      />
 
-      <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 items-center gap-14 pt-16 pb-20">
-        {/* Left */}
+      <div
+        className="relative z-[1] max-w-[1200px] w-full mx-auto px-[24px] grid items-center gap-[60px] pt-[60px] pb-[80px]"
+        style={{ gridTemplateColumns: "1fr 1fr" }}
+      >
+        {/* Left: content */}
         <div>
-          <div className="inline-flex items-center gap-2 bg-white border border-[#b8d9c8] rounded-full px-4 py-1.5 text-[13px] font-medium text-[#4d7b65] mb-6 shadow-sm">
-            <span className="w-1.5 h-1.5 bg-[#4d7b65] rounded-full animate-pulse" />
+          {/* Badge */}
+          <div className="inline-flex items-center gap-[9px] bg-white border border-[#b8d9c8] rounded-full px-[18px] py-[7px] text-[13px] font-medium text-[#4d7b65] mb-[24px]">
+            <span
+              className="w-[6px] h-[6px] bg-[#4d7b65] rounded-full"
+              style={{ animation: "pulse-dot 2s infinite" }}
+            />
             Premium Business Supplies
           </div>
 
-          <h1 className="mb-5 text-4xl font-bold leading-tight text-slate-800 sm:text-5xl lg:text-6xl">
-            Everything Your{" "}
-            <span className="text-[#4d7b65]">Business</span> Needs
+          <h1
+            className="font-bold text-[#1e293b] leading-[1.15] mb-[20px]"
+            style={{ fontSize: "clamp(36px, 4.5vw, 60px)", fontFamily: "var(--font-heading)" }}
+          >
+            Everything Your <span className="text-[#4d7b65]">Business</span> Needs
           </h1>
 
-          <p className="text-slate-500 leading-[1.8] mb-10 max-w-lg text-base lg:text-lg">
+          <p
+            className="text-[#64748b] leading-[1.8] mb-[40px] max-w-[480px]"
+            style={{ fontSize: "clamp(14px, 1.5vw, 17px)" }}
+          >
             Discover premium essentials, everyday must-haves, and exclusive finds — all in one
             place. JEM 8 brings quality, convenience, and curated products together for a smarter
             way to shop.
           </p>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-[16px] flex-wrap">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#4d7b65] text-white rounded-xl font-semibold text-[15px] shadow-lg shadow-[#4d7b65]/30 transition-all duration-300 hover:bg-[#3a5e4e] hover:-translate-y-0.5 no-underline"
+              className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-[#4d7b65] text-white rounded-[10px] font-semibold text-[15px] shadow-[0_4px_16px_rgba(77,123,101,0.35)] transition-all duration-300 hover:bg-[#3a5e4e] hover:-translate-y-[2px] no-underline"
             >
               🛒 Shop Now
             </Link>
             <Link
               to="/about"
-              className="inline-flex items-center gap-2 px-7 py-3.5 bg-transparent border-2 border-[#4d7b65] text-[#4d7b65] rounded-xl font-semibold text-[15px] transition-all duration-300 hover:bg-[#edf4f0] hover:-translate-y-0.5 no-underline"
+              className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-transparent border-2 border-[#4d7b65] text-[#4d7b65] rounded-[10px] font-semibold text-[15px] transition-all duration-300 hover:bg-[#edf4f0] hover:-translate-y-[2px] no-underline"
             >
               Learn More →
             </Link>
           </div>
         </div>
 
-        {/* Right */}
-        <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[16/14]">
+        {/* Right: image */}
+        <div
+          className="relative rounded-[20px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.12)]"
+          style={{ aspectRatio: "1 / 0.88" }}
+        >
           <img
             src={img(693, 612, "JEM 8 Products")}
             alt="JEM 8 Circle Trading products showcase"
-            className="object-cover w-full h-full"
+            className="w-full h-full object-cover"
           />
-          {/* Badge overlay */}
-          <div className="absolute flex items-center gap-3 px-4 py-3 shadow-lg bottom-6 left-6 bg-white/95 backdrop-blur-md rounded-xl">
-            <span className="text-2xl">🏆</span>
+          {/* Float badge */}
+          <div className="absolute bottom-[24px] left-[24px] flex items-center gap-[12px] bg-white/95 backdrop-blur-[8px] rounded-[10px] px-[18px] py-[12px] shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
+            <span className="text-[24px]">🏆</span>
             <div>
-              <strong className="block text-sm font-bold text-slate-800">Trusted Supplier</strong>
-              <span className="text-xs text-slate-500">6 product categories</span>
+              <strong className="block text-[14px] font-bold text-[#1e293b]">Trusted Supplier</strong>
+              <span className="text-[12px] text-[#64748b]">6 product categories</span>
             </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.4); }
+        }
+      `}</style>
     </section>
   );
 }
@@ -160,26 +191,36 @@ function Hero() {
 /* ── Products Section ── */
 function ProductsSection() {
   return (
-    <section className="py-20 bg-white lg:py-28">
-      <div className="max-w-[1200px] mx-auto px-6">
+    <section
+      className="bg-white"
+      style={{ padding: "clamp(64px, 8vw, 120px) 0" }}
+    >
+      <div className="max-w-[1200px] mx-auto px-[24px]">
         {/* Header */}
-        <div className="flex flex-col gap-3 mb-14">
-          <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-3.5 py-1 self-start">
+        <div
+          className="flex flex-col gap-[12px]"
+          style={{ marginBottom: "clamp(40px, 6vw, 72px)" }}
+        >
+          <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-[14px] py-[5px] self-start">
             What We Offer
           </span>
-          <h2 className="text-3xl font-bold leading-tight text-slate-800 lg:text-4xl">
+          <h2
+            className="font-bold text-[#1e293b] leading-[1.2]"
+            style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.5vw, 42px)" }}
+          >
             Products We Offer
           </h2>
-          <p className="text-base text-slate-500">
+          <p className="text-[16px] text-[#64748b]">
             Everything your office and home needs — sourced from one trusted supplier.
           </p>
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
-          {PRODUCT_CARDS.map((card) => (
-            <ProductCard key={card.id} {...card} />
-          ))}
+        <div
+          className="grid gap-[28px]"
+          style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+        >
+          {PRODUCT_CARDS.map((card) => <ProductCard key={card.id} {...card} />)}
         </div>
       </div>
     </section>
@@ -189,32 +230,51 @@ function ProductsSection() {
 /* ── Why Choose Us ── */
 function WhyChooseUs() {
   return (
-    <section className="py-20 lg:py-28 bg-gradient-to-b from-[#edf4f0] to-white">
-      <div className="max-w-[1200px] mx-auto px-6">
+    <section
+      className=""
+      style={{
+        padding: "clamp(64px, 8vw, 120px) 0",
+        background: "linear-gradient(180deg, #edf4f0 0%, #fff 100%)",
+      }}
+    >
+      <div className="max-w-[1200px] mx-auto px-[24px]">
         {/* Header */}
-        <div className="flex flex-col gap-3 mb-14">
-          <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-3.5 py-1 self-start">
+        <div
+          className="flex flex-col gap-[12px]"
+          style={{ marginBottom: "clamp(40px, 6vw, 72px)" }}
+        >
+          <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-[14px] py-[5px] self-start">
             Why JEM 8
           </span>
-          <h2 className="text-3xl font-bold leading-tight text-slate-800 lg:text-4xl">
+          <h2
+            className="font-bold text-[#1e293b] leading-[1.2]"
+            style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.5vw, 42px)" }}
+          >
             Why Choose JEM 8 Circle Co.?
           </h2>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-7">
+        {/* Grid */}
+        <div
+          className="grid gap-[28px]"
+          style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+        >
           {WHY_ITEMS.map((item) => (
             <div
               key={item.num}
-              className="group bg-white rounded-2xl border border-slate-200 shadow-sm text-center px-8 py-10 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5 hover:border-[#b8d9c8]"
+              className="group bg-white rounded-[16px] border border-[#e2e8f0] shadow-sm transition-all duration-300 text-center hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[5px] hover:border-[#b8d9c8]"
+              style={{ padding: "clamp(32px, 4vw, 48px) clamp(24px, 3vw, 36px)" }}
             >
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-[#edf4f0] border-2 border-[#b8d9c8] rounded-full text-2xl font-bold text-[#4d7b65] mx-auto mb-5">
+              {/* Number circle */}
+              <div className="inline-flex items-center justify-center w-[56px] h-[56px] bg-[#edf4f0] border-2 border-[#b8d9c8] rounded-full text-[24px] font-bold text-[#4d7b65] mx-auto mb-[20px]"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
                 {item.num}
               </div>
-              <h3 className="text-[17px] font-bold text-slate-800 mb-3">
+              <h3 className="text-[17px] font-bold text-[#1e293b] mb-[12px]">
                 {item.title}
               </h3>
-              <p className="text-[15px] text-slate-500 leading-relaxed">
+              <p className="text-[15px] text-[#64748b] leading-[1.7]">
                 {item.desc}
               </p>
             </div>
@@ -226,70 +286,62 @@ function WhyChooseUs() {
 }
 
 /* ── Testimonials ── */
-function Testimonials({ reviews }) {
-  const renderStars = (rating) => (
-    <div className="flex gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className={`text-base ${i < rating ? "text-amber-400" : "text-slate-200"}`}>★</span>
-      ))}
-    </div>
-  );
-
+function Testimonials() {
   return (
-    <section className="py-20 bg-slate-50 lg:py-28">
-      <div className="max-w-[1200px] mx-auto px-6">
+    <section
+      className="bg-[#f1f5f9]"
+      style={{ padding: "clamp(64px, 8vw, 120px) 0" }}
+    >
+      <div className="max-w-[1200px] mx-auto px-[24px]">
         {/* Header */}
-        <div className="flex flex-col gap-3 mb-14">
-          <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-3.5 py-1 self-start">
+        <div
+          className="flex flex-col gap-[12px]"
+          style={{ marginBottom: "clamp(40px, 6vw, 64px)" }}
+        >
+          <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-[14px] py-[5px] self-start">
             What Clients Say
           </span>
-          <h2 className="text-3xl font-bold leading-tight text-slate-800 lg:text-4xl">
+          <h2
+            className="font-bold text-[#1e293b] leading-[1.2]"
+            style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.5vw, 42px)" }}
+          >
             Customer Feedback
           </h2>
         </div>
 
-        {reviews.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="mb-5 text-5xl">📝</div>
-            <p className="text-base text-slate-500">No reviews yet. Be the first to leave a review!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {reviews.map((review, index) => (
-              <div
-                key={review.review_id || index}
-                className="bg-white rounded-2xl px-7 py-8 border border-slate-200 shadow-sm flex flex-col gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-[#b8d9c8]"
-              >
-                {/* Stars */}
-                {renderStars(review.rating)}
+        {/* Grid */}
+        <div
+          className="grid gap-[24px]"
+          style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+        >
+          {TESTIMONIALS.map((fb) => (
+            <div
+              key={fb.name}
+              className="bg-white rounded-[16px] px-[28px] py-[32px] border border-[#e2e8f0] shadow-sm transition-all duration-300 flex flex-col gap-[16px] hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-[4px] hover:border-[#b8d9c8]"
+            >
+              {/* Stars */}
+              <div className="text-[#f5a623] text-[16px] tracking-[2px]">★★★★★</div>
 
-                {/* Text */}
-                <p className="text-[15px] text-slate-600 leading-relaxed italic flex-1">
-                  "{review.review_text}"
-                </p>
+              {/* Review */}
+              <p className="text-[15px] text-[#555] leading-[1.75] italic flex-1">
+                "{fb.review}"
+              </p>
 
-                {/* Author */}
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-[#edf4f0] border-2 border-[#b8d9c8] flex items-center justify-center text-base font-bold text-[#4d7b65] flex-shrink-0">
-                    {review.user?.first_name?.[0] || review.name?.[0] || "C"}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-slate-800">
-                      {review.user
-                        ? `${review.user.first_name} ${review.user.last_name}`
-                        : review.name || "Customer"}
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      {review.created_at
-                        ? new Date(review.created_at).toLocaleDateString()
-                        : "Recent"}
-                    </div>
-                  </div>
+              {/* Author */}
+              <div className="flex items-center gap-[12px] pt-[16px] border-t border-[#e2e8f0]">
+                <div className="w-[40px] h-[40px] rounded-full bg-[#edf4f0] border-2 border-[#b8d9c8] flex items-center justify-center text-[16px] font-bold text-[#4d7b65] flex-shrink-0"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  {fb.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="text-[14px] font-semibold text-[#1e293b]">{fb.name}</div>
+                  <div className="text-[12px] text-[#64748b]">{fb.role}</div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -298,29 +350,54 @@ function Testimonials({ reviews }) {
 /* ── CTA Banner ── */
 function CtaBanner() {
   return (
-    <section className="relative py-20 overflow-hidden bg-slate-800 lg:py-28">
-      {/* Glows */}
-      <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#4d7b65]/20 pointer-events-none blur-3xl" />
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-[#4d7b65]/15 pointer-events-none blur-3xl" />
+    <section
+      className="relative overflow-hidden"
+      style={{
+        background: "#1e293b",
+        padding: "clamp(64px, 8vw, 110px) 0",
+      }}
+    >
+      {/* Decorative blobs */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: "-100px", left: "-100px", width: "400px", height: "400px",
+          background: "radial-gradient(circle, rgba(77,123,101,0.2) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          bottom: "-100px", right: "-100px", width: "400px", height: "400px",
+          background: "radial-gradient(circle, rgba(77,123,101,0.15) 0%, transparent 70%)",
+        }}
+      />
 
-      <div className="relative z-10 max-w-[1200px] mx-auto px-6 text-center">
-        <h2 className="max-w-2xl mx-auto mb-4 text-3xl font-bold leading-tight text-white lg:text-5xl">
+      <div className="relative z-[1] max-w-[1200px] mx-auto px-[24px] text-center">
+        <h2
+          className="font-bold text-white leading-[1.25] mb-[16px] mx-auto"
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "clamp(26px, 3.5vw, 46px)",
+            maxWidth: "680px",
+          }}
+        >
           From Office to Essentials — A Partner That Will Last
         </h2>
-        <p className="mb-10 text-base text-white/60">
+        <p className="text-[16px] text-white/60 mb-[40px]">
           From Product to Purpose. Quality you can count on, service you can trust.
         </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-[16px] flex-wrap">
           <Link
             to="/products"
-            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#4d7b65] text-white rounded-xl text-[15px] font-semibold border-2 border-[#4d7b65] shadow-lg shadow-[#4d7b65]/30 transition-all duration-300 hover:bg-[#3a5e4e] hover:border-[#3a5e4e] hover:-translate-y-0.5 no-underline"
+            className="inline-flex items-center gap-[10px] px-[32px] py-[14px] bg-[#4d7b65] text-white rounded-[10px] text-[15px] font-semibold border-2 border-[#4d7b65] shadow-[0_4px_16px_rgba(77,123,101,0.35)] transition-all duration-300 hover:bg-[#3a5e4e] hover:border-[#3a5e4e] hover:-translate-y-[2px] no-underline"
           >
             Start Shopping →
           </Link>
           <Link
             to="/about"
-            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-transparent text-white/85 rounded-xl text-[15px] font-semibold border-2 border-white/30 transition-all duration-300 hover:border-white/70 hover:text-white hover:-translate-y-0.5 no-underline"
+            className="inline-flex items-center gap-[10px] px-[32px] py-[14px] bg-transparent text-white/85 rounded-[10px] text-[15px] font-semibold border-2 border-white/30 transition-all duration-300 hover:border-white/70 hover:text-white hover:-translate-y-[2px] no-underline"
           >
             Learn About Us
           </Link>
@@ -330,49 +407,93 @@ function CtaBanner() {
   );
 }
 
-/* ── Loading Spinner ── */
-function ReviewsLoading() {
-  return (
-    <section className="py-20 bg-slate-50 lg:py-28">
-      <div className="max-w-[1200px] mx-auto px-6 text-center">
-        <div className="inline-block w-8 h-8 border-4 border-[#4d7b65] border-t-transparent rounded-full animate-spin" />
-        <p className="mt-4 text-sm text-slate-500">Loading reviews...</p>
-      </div>
-    </section>
-  );
-}
-
 /* ── Page ── */
 export default function Jem8HomePage() {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        const response = await api.get("/reviews/latest");
-        if (response.data.status === "success") {
-          setReviews(response.data.data);
+  const checkProfile = async () => {
+    try {
+      const res = await me();
+      if (res.status === 200 && res.data.status === "success") {
+        const user = res.data.data;
+        if (!user.first_name || !user.phone_number) {
+          setShowModal(true);
         }
-      } catch (error) {
-        console.error("Failed to fetch reviews:", error);
-        setReviews(FALLBACK_TESTIMONIALS);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchReviews();
-  }, []);
+    } catch (err) {
+      
+    }
+  };
+  checkProfile();
+}, []);
 
   return (
     <>
+      {/* ── Complete Profile Pop-up ── */}
+      {showModal && (
+        <div style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.55)", // solid, hindi blur
+          zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16,
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          <div style={{
+            background: "#fff",
+            borderRadius: 20,
+            width: "100%", maxWidth: 420,
+            boxShadow: "0 40px 100px rgba(0,0,0,0.25)",
+            overflow: "hidden",
+          }}>
+            {/* Header */}
+            <div style={{ padding: "28px 28px 20px", borderBottom: "1px solid #f0f0f0" }}>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: "#f0faf4", color: "#2f9e44",
+                fontSize: 11, fontWeight: 700,
+                padding: "4px 10px", borderRadius: 20,
+                marginBottom: 12,
+              }}>
+                ✦ Complete Profile
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 6 }}>
+                Complete your profile
+              </div>
+              <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
+                You signed in with Google. Please complete your profile details to continue using your account.
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: "20px 28px 24px",
+              display: "flex", flexDirection: "column", gap: 10,
+            }}>
+              <button
+                onClick={() => { setShowModal(false); navigate("/Profilepersonal"); }}
+                style={{
+                  background: "#1a1a1a", color: "#fff", border: "none",
+                  borderRadius: 10, padding: "13px 28px",
+                  fontSize: 14, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif", width: "100%",
+                }}
+              >
+                Go to Profile →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Header />
       <main>
         <Hero />
         <ProductsSection />
         <WhyChooseUs />
-        {loading ? <ReviewsLoading /> : <Testimonials reviews={reviews} />}
+        <Testimonials />
         <CtaBanner />
       </main>
     </>

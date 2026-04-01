@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import Logo from '../assets/Logo — Jem 8 Circle Trading Co (1).png';
 import axios from "axios";
+import api from "../api/axios";
 
 /* ══════════════════════════════════
    HEADER
@@ -30,6 +31,7 @@ export function Header() {
     return () => window.removeEventListener("profile-photo-updated", handler);
   }, []);
 
+<<<<<<< HEAD
   const checkLogin = async () => {
     try {
       const res = await axios.get("http://127.0.0.1:8000/api/me", { withCredentials: true });
@@ -37,13 +39,37 @@ export function Header() {
       setProfileImage(res.data?.profile_image ?? res.data?.data?.profile_image ?? null);
       setUserRole(res.data?.role ?? res.data?.data?.role ?? null);
     } catch {
+=======
+  // Function to check login status
+const checkLogin = async () => {
+  console.log("checkLogin called");
+  console.log("token in localStorage:", localStorage.getItem("token"));
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.log("NO TOKEN — bailing out");
+>>>>>>> 1874805e4635cf5e0040a0867db727c33bfc46f9
       setIsLog(false);
-      setProfileImage(null);
-      setUserRole(null);
-    } finally {
       setLoading(false);
+      return;
     }
-  };
+    const res = await api.get("/me");
+    console.log("=== /me response ===", res.data);
+    
+    setIsLog(true);
+    // handle both response shapes: { data: {...} } or flat { role, profile_image }
+    const userData = res.data?.data ?? res.data;
+    setProfileImage(userData?.profile_image ?? null);
+    setUserRole(userData?.role ?? null);
+  } catch (err) {
+    console.log("/me error:", err);
+    setIsLog(false);
+    setProfileImage(null);
+    setUserRole(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     checkLogin();
@@ -54,9 +80,19 @@ export function Header() {
       setUserRole(null);
     };
 
+<<<<<<< HEAD
     const handleLogin = () => { checkLogin(); };
 
     const handlePhotoUpdate = (e) => { setProfileImage(e.detail.url); };
+=======
+    const handleLogin = () => {
+      checkLogin();
+    };
+
+    const handlePhotoUpdate = (e) => {
+      setProfileImage(e.detail.url);
+    };
+>>>>>>> 1874805e4635cf5e0040a0867db727c33bfc46f9
 
     window.addEventListener("auth-logout", handleLogout);
     window.addEventListener("auth-login", handleLogin);
@@ -67,7 +103,7 @@ export function Header() {
       window.removeEventListener("auth-login", handleLogin);
       window.removeEventListener("profile-photo-updated", handlePhotoUpdate);
     };
-  }, []);
+   }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";

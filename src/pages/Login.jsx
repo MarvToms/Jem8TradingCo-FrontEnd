@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../api/auth";
+import { loginUser, getGoogleAuthUrl } from "../api/auth";
 import Logo from "../assets/Logo — Jem 8 Circle Trading Co (1).png";
 
 const Login = () => {
@@ -12,25 +12,35 @@ const Login = () => {
 
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+    const handleLogin = async () => {
     if (!emailOrPhone || !password) {
       setError("Email and password are required");
       return;
     }
     setLoading(true);
     setError("");
+
     try {
-      const data = await loginUser({
-        email: emailOrPhone,
-        password: password,
-      });
-      console.log("Login success:", data);
-      navigate("/");
-    } catch (err) {
-      console.log("Login error:", err);
-      setError(err?.message || "Login failed");
-    } finally {
-      setLoading(false);
+        const data = await loginUser({
+          email: emailOrPhone,
+          password: password,
+        });
+        console.log("Login success:", data);
+        window.location.href = "/";
+      } catch (err) {
+        console.log("Login error:", err);
+        setError(err?.message || "Login failed");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { url } = await getGoogleAuthUrl();
+      window.location.href = url;
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -97,7 +107,6 @@ const Login = () => {
 
         {/* Form block */}
         <div className="px-[32px] pt-[22px] pb-[0]">
-
           {/* Error */}
           {error && (
             <div className="flex items-center gap-[8px] bg-red-50 border border-red-200 text-red-600 text-[12.5px] rounded-[8px] px-[12px] py-[9px] mb-[14px]">
@@ -210,6 +219,7 @@ const Login = () => {
 
           <button
             type="button"
+            onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-[9px] py-[10px] px-[16px] bg-white border-[1.5px] border-[#e2e8f0] rounded-[9px] text-[13.5px] font-semibold text-[#374151] transition-all duration-200 hover:border-[#b8d9c8] hover:bg-[#f9fdf9] hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)] hover:-translate-y-[1px] cursor-pointer"
           >
             <img
