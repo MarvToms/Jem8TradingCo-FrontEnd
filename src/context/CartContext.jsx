@@ -29,6 +29,11 @@ export function CartProvider({ children }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  // Replace current items with provided array (used to sync server state)
+  const syncCart = useCallback((newItems) => {
+    setItems(Array.isArray(newItems) ? newItems : []);
+  }, []);
+
   const placeOrder = useCallback((orderData) => {
     const newOrder = {
       id: `JEM-${Date.now()}`,
@@ -46,7 +51,7 @@ export function CartProvider({ children }) {
   const subtotal   = items.reduce((s, i) => s + parseFloat(i.rawPrice || 0) * i.qty, 0);
 
   return (
-    <CartContext.Provider value={{ items, orders, addToCart, removeFromCart, updateQty, clearCart, placeOrder, totalItems, subtotal }}>
+    <CartContext.Provider value={{ items, orders, addToCart, removeFromCart, updateQty, clearCart, placeOrder, totalItems, subtotal, syncCart }}>
       {children}
     </CartContext.Provider>
   );

@@ -31,15 +31,6 @@ export function Header() {
     return () => window.removeEventListener("profile-photo-updated", handler);
   }, []);
 
-<<<<<<< HEAD
-  const checkLogin = async () => {
-    try {
-      const res = await axios.get("http://127.0.0.1:8000/api/me", { withCredentials: true });
-      setIsLog(true);
-      setProfileImage(res.data?.profile_image ?? res.data?.data?.profile_image ?? null);
-      setUserRole(res.data?.role ?? res.data?.data?.role ?? null);
-    } catch {
-=======
   // Function to check login status
 const checkLogin = async () => {
   console.log("checkLogin called");
@@ -48,7 +39,6 @@ const checkLogin = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.log("NO TOKEN — bailing out");
->>>>>>> 1874805e4635cf5e0040a0867db727c33bfc46f9
       setIsLog(false);
       setLoading(false);
       return;
@@ -80,11 +70,6 @@ const checkLogin = async () => {
       setUserRole(null);
     };
 
-<<<<<<< HEAD
-    const handleLogin = () => { checkLogin(); };
-
-    const handlePhotoUpdate = (e) => { setProfileImage(e.detail.url); };
-=======
     const handleLogin = () => {
       checkLogin();
     };
@@ -92,7 +77,6 @@ const checkLogin = async () => {
     const handlePhotoUpdate = (e) => {
       setProfileImage(e.detail.url);
     };
->>>>>>> 1874805e4635cf5e0040a0867db727c33bfc46f9
 
     window.addEventListener("auth-logout", handleLogout);
     window.addEventListener("auth-login", handleLogin);

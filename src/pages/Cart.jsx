@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Header, Footer } from "../components/Layout";
+import { useCart } from "../context/CartContext";
 
 const SHIPPING_FEE = 150;
 const FREE_SHIPPING_MIN = 2000;
@@ -12,6 +13,7 @@ const ph = (w, h, label = "") =>
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { syncCart } = useCart();
 
   const [items,      setItems]      = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -55,6 +57,8 @@ export default function Cart() {
         );
 
         setItems(merged);
+        // Keep global cart context in sync so header badge updates correctly
+        try { syncCart(merged); } catch (e) { /* ignore if not available */ }
         // Check all items by default
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load cart. Please try again.");
@@ -94,7 +98,11 @@ export default function Cart() {
       await Promise.all(
         idsToDelete.map((rid) => axios.delete(`${BASE}/cart/${rid}`, { withCredentials: true }))
       );
-      setItems((prev) => prev.filter((i) => i.id !== id));
+      setItems((prev) => {
+        const next = prev.filter((i) => i.id !== id);
+        try { syncCart(next); } catch (e) { /* ignore */ }
+        return next;
+      });
       setCheckedIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -118,9 +126,11 @@ export default function Cart() {
         dupes.map((rid) => axios.delete(`${BASE}/cart/${rid}`, { withCredentials: true }))
       );
       await axios.patch(`${BASE}/cart/${id}`, { quantity: qty }, { withCredentials: true });
-      setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, qty, allIds: [id] } : i))
-      );
+      setItems((prev) => {
+        const next = prev.map((i) => (i.id === id ? { ...i, qty, allIds: [id] } : i));
+        try { syncCart(next); } catch (e) { /* ignore */ }
+        return next;
+      });
     } catch (err) {
       console.error(err);
     }
