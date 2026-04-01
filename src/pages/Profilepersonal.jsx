@@ -1,8 +1,11 @@
-// ─── ProfilePersonal.jsx (Full Tailwind — no CSS imports) ────────────────────
 import { useEffect, useState, useRef } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { logout, me, updateProfile } from "../api/auth";
+import '../style/Profilepersonal.css';
+import "../style/OrdersOverview.css";
+import '../style/PasswordSecurity.css';
+import '../style/Notification.css';
 import OrdersOverview from './OrdersOverview';
 import PasswordSecurity from './PasswordSecurity';
 import Notification from './Notification';
@@ -18,6 +21,12 @@ const api = axios.create({
 });
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
+const UserIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
 const PersonIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
@@ -120,14 +129,15 @@ const CameraIcon = () => (
   </svg>
 );
 
-// ─── Modal keyframe styles (kept minimal — only animations needed) ─────────────
-const MODAL_KEYFRAMES = `
+// ─── Modal Styles ─────────────────────────────────────────────────────────────
+const MODAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+
   @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes modalSlideUp {
     from { opacity: 0; transform: translateY(24px) scale(0.97); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
-<<<<<<< HEAD
 
   .addr-modal-overlay {
     position: fixed; inset: 0;
@@ -340,12 +350,28 @@ const MODAL_KEYFRAMES = `
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 11px; font-weight: 600;
   }
-=======
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
   @keyframes spin { to { transform: rotate(360deg); } }
-  .modal-backdrop-in { animation: modalBackdropIn 0.2s ease; }
-  .modal-slide-up    { animation: modalSlideUp 0.26s cubic-bezier(0.34,1.26,0.64,1); }
-  .photo-spinner     { animation: spin 0.7s linear infinite; }
+  .profile-photo-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* sidebar avatar upgrade */
+  .profile-sidebar__avatar-img {
+    width: 52px; height: 52px;
+    border-radius: 50%; object-fit: cover;
+    border: 2px solid #e8e8e8;
+  }
+  .profile-sidebar__avatar-placeholder {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    color: #888; font-size: 20px; font-weight: 600;
+  }
 `;
 
 // ─── Complete Profile Modal ───────────────────────────────────────────────────
@@ -446,148 +472,87 @@ function AddressModal({ onClose, onSave, editingAddress }) {
     onClose();
   };
 
-  const inputCls = `
-    border border-gray-200 rounded-[9px] px-3 py-2
-    text-sm text-gray-900 bg-gray-50 outline-none w-full
-    placeholder:text-gray-300
-    focus:border-gray-900 focus:bg-white focus:ring-2 focus:ring-black/5
-    transition-all duration-150
-  `;
-
   return (
     <>
-      <style>{MODAL_KEYFRAMES}</style>
-      {/* Backdrop */}
-      <div
-        className="modal-backdrop-in fixed inset-0 z-[1000] flex items-center justify-center p-4"
-        style={{ background: "rgba(10,10,10,0.55)", backdropFilter: "blur(6px)" }}
-        onClick={onClose}
-      >
-        {/* Box */}
-        <div
-          className="modal-slide-up bg-white rounded-[18px] w-full max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden"
-          style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between flex-shrink-0 px-6 pt-5 pb-4 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gray-100 rounded-[10px] flex items-center justify-center text-gray-800">
-                <MapPinSmIcon />
-              </div>
+      <style>{MODAL_STYLES}</style>
+      <div className="addr-modal-overlay" onClick={onClose}>
+        <div className="addr-modal-box" onClick={(e) => e.stopPropagation()}>
+          <div className="addr-modal-header">
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="addr-modal-icon-wrap"><MapPinSmIcon /></div>
               <div>
-                <div className="text-[15px] font-semibold text-gray-900 leading-tight">
-                  {editingAddress ? "Edit Address" : "Add New Address"}
-                </div>
-                <div className="text-xs text-gray-400 mt-0.5">
-                  {editingAddress ? "Update your saved location" : "Save a delivery location"}
-                </div>
+                <div className="addr-modal-title">{editingAddress ? "Edit Address" : "Add New Address"}</div>
+                <div className="addr-modal-subtitle">{editingAddress ? "Update your saved location" : "Save a delivery location"}</div>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="flex items-center justify-center w-8 h-8 text-gray-500 transition-colors duration-150 bg-gray-100 border-none rounded-lg cursor-pointer hover:bg-gray-200 hover:text-gray-900"
-            >
-              <XIcon />
+            <button className="addr-modal-close" onClick={onClose}><XIcon /></button>
+          </div>
+          <div className="addr-type-toggle">
+            <button className={`addr-type-btn${form.type === "personal" ? " active" : ""}`} onClick={() => setType("personal")}>
+              <PersonIcon2 /> Personal
+            </button>
+            <button className={`addr-type-btn${form.type === "company" ? " active" : ""}`} onClick={() => setType("company")}>
+              <BuildingIcon /> Company
             </button>
           </div>
-
-          {/* Type Toggle */}
-          <div className="flex flex-shrink-0 gap-2 px-6 pt-4 pb-1">
-            {["personal", "company"].map((t) => (
-              <button
-                key={t}
-                onClick={() => setType(t)}
-                className={`
-                  flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-[10px]
-                  border text-sm font-medium cursor-pointer transition-all duration-150
-                  ${form.type === t
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 hover:text-gray-800"
-                  }
-                `}
-              >
-                {t === "personal" ? <PersonIcon2 /> : <BuildingIcon />}
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* Body */}
-          <div className="flex flex-col flex-1 gap-3 px-6 py-4 overflow-y-auto">
+          <div className="addr-modal-body">
             {form.type === "company" && (
               <>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Company Details</p>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Company Name</label>
-                  <input className={inputCls} name="company_name" value={form.company_name} onChange={handleChange} placeholder="ABC Corporation" />
+                <div className="addr-section-label">Company Details</div>
+                <div className="addr-field">
+                  <label className="addr-label">Company Name</label>
+                  <input className="addr-input" name="company_name" value={form.company_name} onChange={handleChange} placeholder="ABC Corporation" />
                 </div>
-                <div className="flex gap-2.5">
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Role / Position</label>
-                    <input className={inputCls} name="company_role" value={form.company_role} onChange={handleChange} placeholder="Manager" />
+                <div className="addr-field-row">
+                  <div className="addr-field">
+                    <label className="addr-label">Role / Position</label>
+                    <input className="addr-input" name="company_role" value={form.company_role} onChange={handleChange} placeholder="Manager" />
                   </div>
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Company Phone</label>
-                    <input className={inputCls} name="company_number" value={form.company_number} onChange={handleChange} placeholder="+63 912 345 6789" />
+                  <div className="addr-field">
+                    <label className="addr-label">Company Phone</label>
+                    <input className="addr-input" name="company_number" value={form.company_number} onChange={handleChange} placeholder="+63 912 345 6789" />
                   </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Company Email</label>
-                  <input className={inputCls} name="company_email" value={form.company_email} onChange={handleChange} placeholder="company@email.com" />
+                <div className="addr-field">
+                  <label className="addr-label">Company Email</label>
+                  <input className="addr-input" name="company_email" value={form.company_email} onChange={handleChange} placeholder="company@email.com" />
                 </div>
-                <hr className="my-1 border-gray-100" />
+                <div className="addr-divider" />
               </>
             )}
-
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Location</p>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                Street Address <span className="text-red-500">*</span>
-              </label>
-              <input className={inputCls} name="street" value={form.street} onChange={handleChange} placeholder="123 Rizal Street" />
+            <div className="addr-section-label">Location</div>
+            <div className="addr-field">
+              <label className="addr-label">Street Address <span style={{ color: "#e05" }}>*</span></label>
+              <input className="addr-input" name="street" value={form.street} onChange={handleChange} placeholder="123 Rizal Street" />
             </div>
-            <div className="flex gap-2.5">
-              <div className="flex flex-col gap-1.5 flex-1">
-                <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Barangay</label>
-                <input className={inputCls} name="barangay" value={form.barangay} onChange={handleChange} placeholder="Barangay 1" />
+            <div className="addr-field-row">
+              <div className="addr-field">
+                <label className="addr-label">Barangay</label>
+                <input className="addr-input" name="barangay" value={form.barangay} onChange={handleChange} placeholder="Barangay 1" />
               </div>
-              <div className="flex flex-col gap-1.5 flex-1">
-                <label className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <input className={inputCls} name="city" value={form.city} onChange={handleChange} placeholder="Manila" />
+              <div className="addr-field">
+                <label className="addr-label">City <span style={{ color: "#e05" }}>*</span></label>
+                <input className="addr-input" name="city" value={form.city} onChange={handleChange} placeholder="Manila" />
               </div>
             </div>
-            <div className="flex gap-2.5">
-              <div className="flex flex-col gap-1.5 flex-1">
-                <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Province</label>
-                <input className={inputCls} name="province" value={form.province} onChange={handleChange} placeholder="Metro Manila" />
+            <div className="addr-field-row">
+              <div className="addr-field">
+                <label className="addr-label">Province</label>
+                <input className="addr-input" name="province" value={form.province} onChange={handleChange} placeholder="Metro Manila" />
               </div>
-              <div className="flex flex-col gap-1.5 flex-1">
-                <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Postal Code</label>
-                <input className={inputCls} name="postal_code" value={form.postal_code} onChange={handleChange} placeholder="1000" />
+              <div className="addr-field">
+                <label className="addr-label">Postal Code</label>
+                <input className="addr-input" name="postal_code" value={form.postal_code} onChange={handleChange} placeholder="1000" />
               </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-semibold text-gray-500 tracking-wide">Country</label>
-              <input className={inputCls} name="country" value={form.country} onChange={handleChange} />
+            <div className="addr-field">
+              <label className="addr-label">Country</label>
+              <input className="addr-input" name="country" value={form.country} onChange={handleChange} />
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-            <button
-              onClick={onClose}
-              className="bg-transparent border border-gray-200 rounded-[9px] px-[18px] py-2 text-sm font-medium cursor-pointer text-gray-500 hover:border-gray-400 hover:text-gray-800 transition-colors duration-150"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={!form.street || !form.city}
-              className="bg-gray-900 text-white border-none rounded-[9px] px-5 py-2 text-sm font-semibold cursor-pointer flex items-center gap-1.5 hover:bg-gray-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150"
-            >
+          <div className="addr-modal-footer">
+            <button className="addr-btn-ghost" onClick={onClose}>Cancel</button>
+            <button className="addr-btn-primary" onClick={handleSubmit} disabled={!form.street || !form.city}>
               <CheckIcon />
               {editingAddress ? "Save Changes" : "Add Address"}
             </button>
@@ -609,7 +574,6 @@ function ProfilePhoto({ user, onUploadSuccess }) {
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-<<<<<<< HEAD
 
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Image must be under 2 MB.");
@@ -619,16 +583,15 @@ function ProfilePhoto({ user, onUploadSuccess }) {
       toast.error("Only JPG and PNG images are allowed.");
       return;
     }
-=======
-    if (file.size > 2 * 1024 * 1024) { toast.error("Image must be under 2 MB."); return; }
-    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) { toast.error("Only JPG and PNG images are allowed."); return; }
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
 
     const formData = new FormData();
     formData.append("profile_image", file);
+
     setUploading(true);
     try {
-      const res = await api.post("/profile/update-image", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await api.post("/profile/update-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       const newUrl = res.data?.profile_image_url ?? res.data?.data?.profile_image ?? null;
       toast.success("Profile photo updated!");
       if (onUploadSuccess) onUploadSuccess(newUrl);
@@ -643,7 +606,6 @@ function ProfilePhoto({ user, onUploadSuccess }) {
   };
 
   return (
-<<<<<<< HEAD
     <div className="profile-photo-wrap">
       <input
         ref={fileInputRef}
@@ -662,30 +624,11 @@ function ProfilePhoto({ user, onUploadSuccess }) {
           <div className="profile-photo-spinner" />
         </div>
       )}
-=======
-    <div className="relative flex-shrink-0 w-20 h-20">
-      <input ref={fileInputRef} type="file" accept="image/jpg,image/jpeg,image/png" className="hidden" onChange={handleFileChange} />
-
-      {user?.profile_image ? (
-        <img src={user.profile_image} alt="Profile" className="w-20 h-20 rounded-full object-cover border-[2.5px] border-gray-200 block" />
-      ) : (
-        <div className="w-20 h-20 rounded-full bg-gray-100 border-[2.5px] border-gray-200 flex items-center justify-center text-gray-400 text-2xl font-semibold select-none tracking-tight">
-          {initials}
-        </div>
-      )}
-
-      {uploading && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45">
-          <div className="photo-spinner w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full" />
-        </div>
-      )}
-
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
       <button
+        className="profile-photo-btn"
         onClick={() => !uploading && fileInputRef.current?.click()}
         disabled={uploading}
         title="Change profile photo"
-        className="absolute bottom-0 right-0 w-[26px] h-[26px] bg-gray-900 border-2 border-white rounded-full flex items-center justify-center cursor-pointer text-white z-10 hover:bg-gray-700 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-150"
       >
         <CameraIcon />
       </button>
@@ -696,19 +639,13 @@ function ProfilePhoto({ user, onUploadSuccess }) {
 // ─── Editable Field ───────────────────────────────────────────────────────────
 function EditableField({ label, value, name, isEditing, onChange }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.06em]">{label}</span>
+    <div className="profile-field">
+      <span className="profile-field__label">{label}</span>
       {isEditing ? (
-        <input
-          name={name}
-          value={value || ""}
-          onChange={onChange}
-          placeholder={label}
-          className="border border-gray-900 rounded-lg px-3 py-2.5 text-sm text-gray-900 outline-none bg-gray-50 w-full box-border"
-        />
+        <input style={editableStyles.input} name={name} value={value || ""} onChange={onChange} placeholder={label} />
       ) : (
-        <div className="text-sm text-gray-900 py-2.5 border-b border-gray-100 min-h-[36px]">
-          {value || <span className="text-gray-300">—</span>}
+        <div className="profile-field__input" style={editableStyles.display}>
+          {value || <span style={{ color: "#bbb" }}>—</span>}
         </div>
       )}
     </div>
@@ -719,62 +656,36 @@ function EditableField({ label, value, name, isEditing, onChange }) {
 function AddressCard({ addr, onEdit, onDelete }) {
   const isCompany = addr.type === "company";
   return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 flex flex-col gap-1.5">
-      <div className="flex items-center justify-between mb-1">
-        <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${isCompany ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"}`}>
-          {isCompany ? <BuildingIcon /> : <PersonIcon2 />}
-          {isCompany ? "Company" : "Personal"}
-        </span>
-        <div className="flex gap-1.5">
-          <button onClick={onEdit} title="Edit" className="w-[26px] h-[26px] bg-gray-100 border-none rounded-md flex items-center justify-center cursor-pointer text-gray-500 hover:bg-gray-200 transition-colors">
-            <EditSmallIcon />
-          </button>
-          <button onClick={onDelete} title="Delete" className="w-[26px] h-[26px] bg-gray-100 border-none rounded-md flex items-center justify-center cursor-pointer text-red-400 hover:bg-red-50 transition-colors">
-            <TrashIcon />
-          </button>
+    <div style={addressStyles.card}>
+      <div style={addressStyles.cardHeader}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            ...addressStyles.typeBadge,
+            background: isCompany ? "#f0f4ff" : "#f0faf4",
+            color: isCompany ? "#3b5bdb" : "#2f9e44",
+          }}>
+            {isCompany ? <BuildingIcon /> : <PersonIcon2 />}
+            {isCompany ? "Company" : "Personal"}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button style={addressStyles.actionBtn} onClick={onEdit} title="Edit"><EditSmallIcon /></button>
+          <button style={{ ...addressStyles.actionBtn, color: "#e57373" }} onClick={onDelete} title="Delete"><TrashIcon /></button>
         </div>
       </div>
-      {isCompany && addr.company_name && <div className="text-[13px] font-semibold text-gray-900">{addr.company_name}</div>}
-      <div className="flex flex-col gap-0.5">
-        {addr.street && <div className="text-[13px] text-gray-600 leading-relaxed">{addr.street}</div>}
-        {(addr.barangay || addr.city) && <div className="text-[13px] text-gray-600 leading-relaxed">{[addr.barangay, addr.city].filter(Boolean).join(", ")}</div>}
-        {(addr.province || addr.postal_code) && <div className="text-[13px] text-gray-600 leading-relaxed">{[addr.province, addr.postal_code].filter(Boolean).join(" ")}</div>}
-        {addr.country && <div className="text-[13px] text-gray-400 leading-relaxed">{addr.country}</div>}
+      {isCompany && addr.company_name && <div style={addressStyles.companyName}>{addr.company_name}</div>}
+      <div style={addressStyles.addressBlock}>
+        {addr.street && <div style={addressStyles.line}>{addr.street}</div>}
+        {(addr.barangay || addr.city) && <div style={addressStyles.line}>{[addr.barangay, addr.city].filter(Boolean).join(", ")}</div>}
+        {(addr.province || addr.postal_code) && <div style={addressStyles.line}>{[addr.province, addr.postal_code].filter(Boolean).join(" ")}</div>}
+        {addr.country && <div style={{ ...addressStyles.line, color: "#999" }}>{addr.country}</div>}
       </div>
       {isCompany && (addr.company_number || addr.company_email) && (
-        <div className="flex flex-col gap-0.5 pt-1.5 border-t border-gray-100 mt-1">
-          {addr.company_number && <span className="text-xs text-gray-400">📞 {addr.company_number}</span>}
-          {addr.company_email && <span className="text-xs text-gray-400">✉ {addr.company_email}</span>}
+        <div style={addressStyles.contactBlock}>
+          {addr.company_number && <span style={addressStyles.contact}>📞 {addr.company_number}</span>}
+          {addr.company_email && <span style={addressStyles.contact}>✉ {addr.company_email}</span>}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Card Header ──────────────────────────────────────────────────────────────
-function CardHeader({ icon, title, subtitle, action }) {
-  return (
-    <div className="flex items-start justify-between gap-3 px-7 py-[22px] border-b border-gray-100">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 border bg-emerald-50 border-emerald-100 rounded-xl text-emerald-600">
-          {icon}
-        </div>
-        <div>
-          <div className="font-bold text-[15px] text-gray-800">{title}</div>
-          <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>
-        </div>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-// ─── Breadcrumb ───────────────────────────────────────────────────────────────
-function Breadcrumb({ label }) {
-  return (
-    <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-[18px] py-[7px] text-[13px] font-medium text-emerald-600 mb-5 self-start">
-      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />
-      {label}
     </div>
   );
 }
@@ -783,22 +694,34 @@ function Breadcrumb({ label }) {
 function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, setAddresses }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
-    first_name: user?.first_name || "", last_name: user?.last_name || "",
-    email: user?.email || "", phone_number: user?.phone_number || "",
-    company_name: user?.company_name || "", position: user?.position || "",
+    first_name:    user?.first_name    || "",
+    last_name:     user?.last_name     || "",
+    email:         user?.email         || "",
+    phone_number:  user?.phone_number  || "",
+    company_name:  user?.company_name  || "",
+    position:      user?.position      || "",
     business_type: user?.business_type || "",
   });
-  const [showModal, setShowModal] = useState(false);
+
+  const [showModal, setShowModal]           = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingIndex, setEditingIndex]     = useState(null);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const handleSave = () => { if (onUserUpdate) onUserUpdate(form); setIsEditing(false); };
+
+  const handleSave = () => {
+    if (onUserUpdate) onUserUpdate(form);
+    setIsEditing(false);
+  };
+
   const handleCancel = () => {
     setForm({
-      first_name: user?.first_name || "", last_name: user?.last_name || "",
-      email: user?.email || "", phone_number: user?.phone_number || "",
-      company_name: user?.company_name || "", position: user?.position || "",
+      first_name:    user?.first_name    || "",
+      last_name:     user?.last_name     || "",
+      email:         user?.email         || "",
+      phone_number:  user?.phone_number  || "",
+      company_name:  user?.company_name  || "",
+      position:      user?.position      || "",
       business_type: user?.business_type || "",
     });
     setIsEditing(false);
@@ -807,33 +730,43 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
   const handleSaveAddress = async (addr) => {
     try {
       if (editingIndex !== null) {
-        const res = await apiUpdateAddress(addresses[editingIndex].id, addr);
-        const updated = [...addresses]; updated[editingIndex] = res.data; setAddresses(updated);
+        const addrId = addresses[editingIndex].id;
+        const res = await apiUpdateAddress(addrId, addr);
+        const updated = [...addresses];
+        updated[editingIndex] = res.data;
+        setAddresses(updated);
         toast.success("Address updated successfully");
       } else {
         const res = await apiAddAddress(addr);
         setAddresses([...addresses, res.data]);
         toast.success("Address added successfully");
       }
-    } catch { toast.error("Failed to save address"); }
-    finally { setEditingAddress(null); setEditingIndex(null); setShowModal(false); }
+    } catch (error) {
+      console.error("Address save failed:", error);
+      toast.error("Failed to save address");
+    } finally {
+      setEditingAddress(null);
+      setEditingIndex(null);
+      setShowModal(false);
+    }
   };
 
   const handleEditAddress   = (idx) => { setEditingAddress(addresses[idx]); setEditingIndex(idx); setShowModal(true); };
   const handleDeleteAddress = async (idx) => {
-    try { await apiDeleteAddress(addresses[idx].id); setAddresses(addresses.filter((_, i) => i !== idx)); toast.success("Address removed"); }
-    catch { toast.error("Failed to delete address"); }
+    try {
+      await apiDeleteAddress(addresses[idx].id);
+      setAddresses(addresses.filter((_, i) => i !== idx));
+      toast.success("Address removed");
+    } catch {
+      toast.error("Failed to delete address");
+    }
   };
   const openAddModal = () => { setEditingAddress(null); setEditingIndex(null); setShowModal(true); };
 
-  const btnOutline = "inline-flex items-center gap-1.5 px-5 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg text-[13px] font-semibold cursor-pointer hover:border-emerald-200 hover:text-emerald-600 transition-all duration-150";
-  const btnDark    = "inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer hover:bg-gray-700 transition-colors duration-150";
-  const btnPrimary = "inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer transition-colors duration-150 shadow-[0_4px_20px_rgba(16,185,129,0.25)]";
-  const btnGhost   = "inline-flex items-center gap-1.5 px-4 py-1.5 bg-transparent text-emerald-600 border border-emerald-200 rounded-lg text-xs font-semibold cursor-pointer hover:bg-emerald-50 transition-colors duration-150";
-
   return (
-    <div className="flex flex-col gap-6">
-      <style>{MODAL_KEYFRAMES}</style>
+    <div className="profile-main">
+      <style>{MODAL_STYLES}</style>
+
       {showModal && (
         <AddressModal
           onClose={() => { setShowModal(false); setEditingAddress(null); setEditingIndex(null); }}
@@ -842,9 +775,11 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
         />
       )}
 
-      <Breadcrumb label="Personal Information · Manage your profile and contact details" />
+      <div className="profile-breadcrumb">
+        <span className="profile-breadcrumb__dot" />
+        Personal Information &nbsp;·&nbsp; Manage your profile and contact details
+      </div>
 
-<<<<<<< HEAD
       <div className="profile-card">
         <div className="profile-card__header">
           <div className="profile-card__header-left">
@@ -852,29 +787,26 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
             <div>
               <div className="profile-card__title">Profile Details</div>
               <div className="profile-card__subtitle">Your personal and business information</div>
-=======
-      {/* Profile Details Card */}
-      <div className="overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md hover:border-emerald-100">
-        <CardHeader
-          icon={<InfoIcon />}
-          title="Profile Details"
-          subtitle="Your personal and business information"
-          action={
-            <div className="flex gap-2">
-              {isEditing ? (
-                <>
-                  <button className={btnOutline} onClick={handleCancel}><XIcon /> Cancel</button>
-                  <button className={btnDark} onClick={handleSave}><CheckIcon /> Save</button>
-                </>
-              ) : (
-                <button className={btnOutline} onClick={() => setIsEditing(true)}><EditSmallIcon /> Edit</button>
-              )}
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
             </div>
-          }
-        />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {isEditing ? (
+              <>
+                <button className="btn-profile-outline" onClick={handleCancel} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <XIcon /> Cancel
+                </button>
+                <button onClick={handleSave} style={{ display: "flex", alignItems: "center", gap: 5, background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  <CheckIcon /> Save
+                </button>
+              </>
+            ) : (
+              <button className="btn-profile-outline" onClick={() => setIsEditing(true)}>
+                <EditSmallIcon /> Edit
+              </button>
+            )}
+          </div>
+        </div>
 
-<<<<<<< HEAD
         <div className="profile-card__user-strip">
           <ProfilePhoto user={user} onUploadSuccess={onPhotoUpdate} />
           <div style={{ marginLeft: 14 }}>
@@ -884,34 +816,22 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
             <div style={{ fontSize: 11, color: "#bbb", marginTop: 4 }}>
               Click the camera icon to change your photo
             </div>
-=======
-        {/* User strip */}
-        <div className="flex items-center gap-4 py-5 border-b border-gray-100 px-7">
-          <ProfilePhoto user={user} onUploadSuccess={onPhotoUpdate} />
-          <div className="ml-3.5">
-            <div className="text-sm font-bold text-gray-800">{user?.first_name} {user?.last_name}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{user?.email}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{user?.phone_number || "No phone number"}</div>
-            <div className="text-[11px] text-gray-300 mt-1">Click the camera icon to change your photo</div>
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
           </div>
         </div>
 
-        {/* Fields grid */}
-        <div className="px-7 py-7 grid grid-cols-2 gap-x-7 gap-y-[22px] max-sm:grid-cols-1">
+        <div className="profile-card__fields">
           <EditableField label="First Name"                  name="first_name"    value={form.first_name}    isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Last Name"                   name="last_name"     value={form.last_name}     isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Email Address"               name="email"         value={form.email}         isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Phone / Mobile Number"       name="phone_number"  value={form.phone_number}  isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Company Name (Optional)"     name="company_name"  value={form.company_name}  isEditing={isEditing} onChange={handleChange} />
           <EditableField label="Position / Title (Optional)" name="position"      value={form.position}      isEditing={isEditing} onChange={handleChange} />
-          <div className="col-span-1">
+          <div className="profile-field--full">
             <EditableField label="Business Type (Optional)"  name="business_type" value={form.business_type} isEditing={isEditing} onChange={handleChange} />
           </div>
         </div>
       </div>
 
-<<<<<<< HEAD
       <div className="profile-card">
         <div className="profile-card__header">
           <div className="profile-card__header-left">
@@ -926,38 +846,33 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
           </button>
         </div>
         <div className="profile-addresses__grid">
-=======
-      {/* Addresses Card */}
-      <div className="overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md hover:border-emerald-100">
-        <CardHeader
-          icon={<MapPinIcon />}
-          title="Addresses"
-          subtitle="Manage your saved delivery addresses"
-          action={
-            <button className={btnPrimary} onClick={openAddModal}><PlusIcon /> Add New</button>
-          }
-        />
-        <div className="grid grid-cols-2 gap-5 py-6 px-7 max-sm:grid-cols-1">
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
           {addresses.length === 0 ? (
             <>
-              {[0, 1].map((i) => (
-                <div key={i} className="border-2 border-dashed border-emerald-100 rounded-xl min-h-[150px] flex flex-col items-center justify-center gap-2.5 text-gray-400 cursor-pointer px-6 py-6 text-center text-[13px] hover:border-emerald-400 hover:bg-emerald-50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div className="w-[42px] h-[42px] rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500"><PlusIcon /></div>
-                  <span>No address saved yet</span>
-                  <button className={btnGhost} onClick={openAddModal}><PlusIcon /> Add Address</button>
-                </div>
-              ))}
+              <div className="profile-address-empty">
+                <div className="profile-address-empty__icon"><PlusIcon /></div>
+                <span>No address saved yet</span>
+                <button className="btn-profile-ghost" onClick={openAddModal}><PlusIcon /> Add Address</button>
+              </div>
+              <div className="profile-address-empty">
+                <div className="profile-address-empty__icon"><PlusIcon /></div>
+                <span>No address saved yet</span>
+                <button className="btn-profile-ghost" onClick={openAddModal}><PlusIcon /> Add Address</button>
+              </div>
             </>
           ) : (
             <>
               {addresses.map((addr, idx) => (
-                <AddressCard key={addr.id ?? idx} addr={addr} onEdit={() => handleEditAddress(idx)} onDelete={() => handleDeleteAddress(idx)} />
+                <AddressCard
+                  key={addr.id ?? idx}
+                  addr={addr}
+                  onEdit={() => handleEditAddress(idx)}
+                  onDelete={() => handleDeleteAddress(idx)}
+                />
               ))}
-              <div className="border-2 border-dashed border-emerald-100 rounded-xl min-h-[150px] flex flex-col items-center justify-center gap-2.5 text-gray-400 cursor-pointer px-6 py-6 text-center text-[13px] hover:border-emerald-400 hover:bg-emerald-50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                <div className="w-[42px] h-[42px] rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500"><PlusIcon /></div>
+              <div className="profile-address-empty">
+                <div className="profile-address-empty__icon"><PlusIcon /></div>
                 <span>Add another address</span>
-                <button className={btnGhost} onClick={openAddModal}><PlusIcon /> Add Address</button>
+                <button className="btn-profile-ghost" onClick={openAddModal}><PlusIcon /> Add Address</button>
               </div>
             </>
           )}
@@ -966,6 +881,42 @@ function PersonalInformation({ user, onUserUpdate, onPhotoUpdate, addresses, set
     </div>
   );
 }
+
+// ─── Style Objects ────────────────────────────────────────────────────────────
+const editableStyles = {
+  input: {
+    border: "1.5px solid #1a1a1a", borderRadius: 8, padding: "9px 12px",
+    fontSize: 14, color: "#1a1a1a", outline: "none", background: "#f9f9f9",
+    width: "100%", boxSizing: "border-box",
+  },
+  display: {
+    fontSize: 14, color: "#1a1a1a", padding: "9px 0",
+    borderBottom: "1px solid #f0f0f0", minHeight: 36,
+  },
+};
+
+const addressStyles = {
+  card: {
+    border: "1.5px solid #e8e8e8", borderRadius: 12, padding: "14px 16px",
+    background: "#fafafa", display: "flex", flexDirection: "column", gap: 6,
+  },
+  cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+  typeBadge: {
+    display: "inline-flex", alignItems: "center", gap: 5,
+    fontSize: 11, fontWeight: 700, padding: "3px 8px",
+    borderRadius: 20, letterSpacing: "0.03em",
+  },
+  companyName: { fontSize: 13, fontWeight: 600, color: "#1a1a1a" },
+  addressBlock: { display: "flex", flexDirection: "column", gap: 1 },
+  line: { fontSize: 13, color: "#444", lineHeight: 1.7 },
+  contactBlock: { display: "flex", flexDirection: "column", gap: 2, paddingTop: 6, borderTop: "1px solid #f0f0f0", marginTop: 4 },
+  contact: { fontSize: 12, color: "#888" },
+  actionBtn: {
+    background: "#f0f0f0", border: "none", borderRadius: 6,
+    width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer", color: "#444",
+  },
+};
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────
 const MENU_ITEMS = [
@@ -977,7 +928,6 @@ const MENU_ITEMS = [
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function ProfilePersonal() {
-<<<<<<< HEAD
   const [activeMenu, setActiveMenu]         = useState("personal");
   const [user, setUser]                     = useState(null);
   const [loading, setLoading]               = useState(true);
@@ -986,13 +936,6 @@ export default function ProfilePersonal() {
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const [completeForm, setCompleteForm]     = useState({ first_name: "", last_name: "", phone_number: "" });
   const [completing, setCompleting]         = useState(false);
-=======
-  const [activeMenu, setActiveMenu]     = useState("personal");
-  const [user, setUser]                 = useState(null);
-  const [loading, setLoading]           = useState(true);
-  const [addresses, setAddresses]       = useState([]);
-  const [ordersCount, setOrdersCount]   = useState(0);
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -1019,10 +962,15 @@ export default function ProfilePersonal() {
               const addrData = addrRes.data?.data ?? addrRes.data ?? [];
               setAddresses(Array.isArray(addrData) ? addrData : []);
             }
-          } catch (addrErr) { console.error("Failed to fetch addresses:", addrErr); }
+          } catch (addrErr) {
+            console.error("Failed to fetch addresses:", addrErr);
+          }
         }
-      } catch (error) { console.error(error); }
-      finally { setLoading(false); }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     };
     loadUser();
   }, []);
@@ -1036,7 +984,10 @@ export default function ProfilePersonal() {
           if (!Array.isArray(data)) data = [data];
           setOrdersCount(Array.isArray(data) ? data.length : 0);
         }
-      } catch { setOrdersCount(0); }
+      } catch (err) {
+        console.error("Failed to fetch orders count:", err);
+        setOrdersCount(0);
+      }
     };
     if (user) fetchOrdersCount();
   }, [user]);
@@ -1066,7 +1017,9 @@ export default function ProfilePersonal() {
     try {
       const res = await updateProfile(updatedFields);
       if (res.user) setUser(res.user);
-    } catch (error) { console.error("Update failed:", error); }
+    } catch (error) {
+      console.error("Update failed:", error);
+    }
   };
 
   const handlePhotoUpdate = (newUrl) => {
@@ -1076,32 +1029,23 @@ export default function ProfilePersonal() {
 
   const Logout = async () => {
     const data = await logout();
-<<<<<<< HEAD
     if (data) {
       window.dispatchEvent(new CustomEvent("auth-logout"));
       navigate("/login");
     }
-=======
-    if (data) { window.dispatchEvent(new CustomEvent("auth-logout")); navigate("/login"); }
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
   };
 
-  if (loading) return <p className="p-8 text-gray-400">Loading...</p>;
-  if (!user)   return <p className="p-8 text-gray-400">User not found or unauthenticated.</p>;
+  if (loading) return <p>Loading...</p>;
+  if (!user)   return <p>User not found or unauthenticated.</p>;
 
-<<<<<<< HEAD
   const initials = [user?.first_name?.[0], user?.last_name?.[0]]
     .filter(Boolean).join("").toUpperCase() || "?";
-=======
-  const initials = [user?.first_name?.[0], user?.last_name?.[0]].filter(Boolean).join("").toUpperCase() || "?";
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
 
   const renderContent = () => {
     switch (activeMenu) {
       case "orders":   return <OrdersOverview userId={user?.id} />;
       case "password": return <PasswordSecurity />;
       case "notif":    return <Notification />;
-<<<<<<< HEAD
       default:
         return (
           <PersonalInformation
@@ -1112,20 +1056,11 @@ export default function ProfilePersonal() {
             setAddresses={setAddresses}
           />
         );
-=======
-      default: return (
-        <PersonalInformation
-          user={user} onUserUpdate={handleUserUpdate} onPhotoUpdate={handlePhotoUpdate}
-          addresses={addresses} setAddresses={setAddresses}
-        />
-      );
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
     }
   };
 
   return (
     <>
-<<<<<<< HEAD
       <style>{MODAL_STYLES}</style>
 
       {/* ── Complete Profile Modal — blocks everything until filled ── */}
@@ -1166,91 +1101,21 @@ export default function ProfilePersonal() {
                   >
                     <Icon />{label}
                     {badgeValue > 0 && <span className="profile-sidebar__badge">{badgeValue}</span>}
-=======
-      <style>{MODAL_KEYFRAMES}</style>
-      {/* Page wrapper */}
-<div className="relative min-h-screen pt-[108px] pb-20 overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #f9fdf9 0%, #fff 50%, #f0faf4 100%)" }}>
-        {/* Background glow */}
-        <div className="fixed top-[-160px] right-[-160px] w-[560px] h-[560px] pointer-events-none z-0"
-          style={{ background: "radial-gradient(circle, rgba(77,123,101,0.09) 0%, transparent 70%)" }} />
-
-        <div className="max-w-[1300px] mx-auto px-10 grid grid-cols-[280px_1fr] gap-7 items-start relative z-10
-          max-[1024px]:grid-cols-[240px_1fr] max-[1024px]:gap-5 max-[1024px]:px-6
-          max-[768px]:grid-cols-1 max-[768px]:px-4">
-
-          {/* ── Sidebar ── */}
-          <aside className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-[100px] hover:shadow-lg transition-shadow duration-200 max-[768px]:static">
-
-            {/* Avatar section */}
-            <div className="px-5 pt-8 pb-6 flex flex-col items-center gap-1.5 border-b border-gray-100"
-              style={{ background: "linear-gradient(180deg, #f0faf4 0%, #fff 100%)" }}>
-              {user.profile_image ? (
-                <img src={user.profile_image} alt="Profile" className="w-[52px] h-[52px] rounded-full object-cover border-2 border-gray-200" />
-              ) : (
-                <div className="w-[52px] h-[52px] rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold">
-                  {initials}
-                </div>
-              )}
-              <span className="font-bold text-[15px] text-gray-800 mt-2">{user.first_name} {user.last_name}</span>
-              <span className="text-xs text-gray-400">{user.email}</span>
-              <span className="text-xs text-gray-400">{user.phone_number || "—"}</span>
-            </div>
-
-            {/* Nav */}
-            <nav className="px-3 pt-4 pb-2">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.08em] px-2 pb-2.5">Overview</span>
-              {MENU_ITEMS.map(({ key, label, Icon }) => {
-                const badgeValue = key === "orders" ? ordersCount : 0;
-                const isActive = activeMenu === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setActiveMenu(key)}
-                    className={`
-                      w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-l-[3px] cursor-pointer text-[13px] text-left
-                      transition-all duration-150
-                      ${isActive
-                        ? "bg-emerald-50 border-l-emerald-500 text-emerald-700 font-semibold [&_svg]:stroke-emerald-500"
-                        : "bg-transparent border-l-transparent text-gray-500 font-normal hover:bg-gray-50 hover:text-gray-800 hover:translate-x-0.5"
-                      }
-                    `}
-                  >
-                    <Icon />{label}
-                    {badgeValue > 0 && (
-                      <span className="ml-auto bg-gray-900 text-white rounded-full text-[10px] font-bold px-2 py-px">{badgeValue}</span>
-                    )}
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
                   </button>
                 );
               })}
             </nav>
 
-<<<<<<< HEAD
             <div className="profile-sidebar__divider" />
 
             <div className="profile-sidebar__logout-wrap">
               <button className="profile-sidebar__item danger" onClick={Logout}>
-=======
-            <hr className="mx-5 my-2 border-gray-100" />
-
-            {/* Logout */}
-            <div className="px-3 pb-4">
-              <button
-                onClick={Logout}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-l-[3px] border-l-transparent cursor-pointer text-[13px] text-left text-red-500 font-normal hover:bg-red-50 hover:translate-x-0.5 transition-all duration-150 [&_svg]:stroke-red-500"
-              >
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
                 <LogoutIcon /> Logout
               </button>
             </div>
           </aside>
 
-<<<<<<< HEAD
           {/* Tab Content */}
-=======
-          {/* ── Tab Content ── */}
->>>>>>> 3cf4e316729ac027f06986d6239a126bb5609430
           {renderContent()}
         </div>
       </div>
