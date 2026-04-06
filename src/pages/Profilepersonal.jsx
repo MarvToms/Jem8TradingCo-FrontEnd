@@ -339,19 +339,8 @@ function ProfilePhoto({ user, onUploadSuccess }) {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="parofile-photo-wrap">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpg,image/jpeg,image/png"
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
-=======
     <div className="relative flex-shrink-0 w-20 h-20">
       <input ref={fileInputRef} type="file" accept="image/jpg,image/jpeg,image/png" className="hidden" onChange={handleFileChange} />
->>>>>>> 37121ef4459518782904dddb48ca66657679702c
       {user?.profile_image ? (
         <img src={user.profile_image} alt="Profile" className="w-20 h-20 rounded-full object-cover border-[2.5px] border-gray-200 block" />
       ) : (

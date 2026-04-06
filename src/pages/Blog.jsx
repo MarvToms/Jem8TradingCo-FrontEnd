@@ -5,6 +5,16 @@ import { getBlogs } from '../api/blogs';
 const BASE = 'http://127.0.0.1:8000';
 
 /* ─────────────────────────────────────────────
+   Category slug map  (must match BlogCategory route params)
+───────────────────────────────────────────── */
+const CAT_SLUG = {
+  'Announcement':    'announcement',
+  'Travel Blog':     'travelblog',
+  'Business Trips':  'business',
+  'Product Updates': 'product-updates',
+};
+
+/* ─────────────────────────────────────────────
    Reusable primitives
 ───────────────────────────────────────────── */
 
@@ -21,7 +31,6 @@ const Shimmer = ({ w = '100%', h = 14, r = 6, style = {} }) => (
   />
 );
 
-/* Featured main skeleton */
 const FeaturedMainEmpty = () => (
   <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-700 to-slate-900 min-h-[320px] flex flex-col justify-end p-8">
     <Shimmer w={80} h={10} style={{ marginBottom: 16, opacity: 0.4 }} />
@@ -31,7 +40,6 @@ const FeaturedMainEmpty = () => (
   </div>
 );
 
-/* Sidebar 3 items skeleton */
 const SidebarEmpty = () => (
   <div className="flex flex-col gap-4">
     {[1, 2, 3].map((i) => (
@@ -47,7 +55,6 @@ const SidebarEmpty = () => (
   </div>
 );
 
-/* Latest announcement skeleton */
 const LatestEmpty = () => (
   <div className="p-8 mb-6 text-white rounded-2xl bg-slate-900">
     <span className="inline-block px-3 py-1 rounded-full bg-[#4d7b65] text-white text-[11px] font-bold tracking-widest mb-5">LATEST</span>
@@ -58,7 +65,6 @@ const LatestEmpty = () => (
   </div>
 );
 
-/* 2×2 announcement grid skeleton */
 const AnnouncementsEmpty = () => (
   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
     {[1, 2, 3, 4].map((i) => (
@@ -73,7 +79,6 @@ const AnnouncementsEmpty = () => (
   </div>
 );
 
-/* Two tall hero cards skeleton */
 const HeroCardsEmpty = () => (
   <div className="grid grid-cols-1 gap-5 mb-6 md:grid-cols-2">
     {[1, 2].map((i) => (
@@ -87,7 +92,6 @@ const HeroCardsEmpty = () => (
   </div>
 );
 
-/* 3-column post card grid skeleton */
 const PostCardsEmpty = () => (
   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
     {[1, 2, 3].map((i) => (
@@ -104,7 +108,6 @@ const PostCardsEmpty = () => (
   </div>
 );
 
-/* Product rows skeleton */
 const ProductRowsEmpty = () => (
   <div className="relative overflow-hidden bg-white border rounded-xl border-slate-100">
     {[1, 2, 3, 4].map((item, i, arr) => (
@@ -158,24 +161,50 @@ const excerpt = (text, n = 140) =>
   text ? (text.length > n ? text.slice(0, n).trim() + '…' : text) : '';
 
 /* ─────────────────────────────────────────────
-   Shared Section Header
+   Section Header — with optional "See All" link
 ───────────────────────────────────────────── */
-const SectionHeader = ({ label }) => (
-  <div style={{ marginBottom: 10 }}>
-    <p
-      style={{
-        fontSize: 13,
-        fontWeight: 700,
-        color: '#4d7b65',
-        textTransform: 'uppercase',
-        letterSpacing: '1.5px',
-        marginBottom: 8,
-        marginTop: 0,
-      }}
+
+const SectionHeader = ({ label, catSlug }) => (
+  <div style={{ marginBottom: 10 }} className="flex items-end justify-between">
+    <div>
+      <p
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: '#4d7b65',
+          textTransform: 'uppercase',
+          letterSpacing: '1.5px',
+          marginBottom: 8,
+          marginTop: 0,
+        }}
+      >
+        {label}
+      </p>
+      <div style={{ width: 32, height: 2, background: '#4d7b65', borderRadius: 2 }} />
+    </div>
+    {catSlug && (
+      <Link
+        to={`/blog/${catSlug}`}
+        className="flex items-center gap-1 text-xs font-bold text-[#4d7b65] no-underline hover:underline mb-1"
+      >
+        See All <span>→</span>
+      </Link>
+    )}
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   "See All" footer button — shown when there are more posts than displayed
+───────────────────────────────────────────── */
+
+const SeeAllFooter = ({ to, label }) => (
+  <div className="flex justify-center" style={{ marginTop: 20 }}>
+    <Link
+      to={to}
+      className="px-6 py-2.5 rounded-xl border border-[#c6e8d6] bg-white text-[#4d7b65] text-sm font-semibold no-underline hover:bg-[#f0faf5] transition-colors"
     >
-      {label}
-    </p>
-    <div style={{ width: 32, height: 2, background: '#4d7b65', borderRadius: 2 }} />
+      {label} →
+    </Link>
   </div>
 );
 
@@ -223,10 +252,10 @@ const Blog = () => {
         const data = await getBlogs();
         if (!mounted) return;
         const rows = Array.isArray(data) ? data : (data?.data ?? data?.posts ?? []);
-        setPosts(rows.filter((p) => p.status === 'published' || true));
+        setPosts(rows);
       } catch (err) {
         console.error('Failed to load blogs', err);
-        setError(err?.message || 'Failed to load posts');
+        if (mounted) setError(err?.message || 'Failed to load posts');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -242,6 +271,16 @@ const Blog = () => {
   const travel         = posts.filter((p) => getCategoryName(p) === 'Travel Blog');
   const business       = posts.filter((p) => getCategoryName(p) === 'Business Trips');
   const productUpdates = posts.filter((p) => getCategoryName(p) === 'Product Updates');
+
+  // Shared "Read" button class
+  const readBtnCls = 'inline-block px-4 py-1.5 rounded-lg bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors';
+
+  // Build a deep-link for a post that routes through its category page
+  const postLink = (p) => {
+    const catName = getCategoryName(p);
+    const slug = CAT_SLUG[catName];
+    return slug ? `/blog/${slug}/${p.blog_id}` : `/blog/${p.blog_id}`;
+  };
 
   return (
     <div className="min-h-screen bg-[#f8faf9] font-sans" style={{ paddingTop: 'calc(var(--header-h) + 30px)' }}>
@@ -305,7 +344,7 @@ const Blog = () => {
                 <h2 className="mb-3 text-xl font-bold leading-snug text-white">{featuredPost.blog_title}</h2>
                 <p className="mb-6 text-sm leading-relaxed text-white/70">{excerpt(featuredPost.blog_text, 200)}</p>
                 <Link
-                  to={`/blog/${featuredPost.blog_id}`}
+                  to={postLink(featuredPost)}
                   className="inline-block px-5 py-2 rounded-lg bg-white text-[#1a2e22] text-sm font-bold no-underline hover:bg-[#f0faf5] transition-colors"
                 >
                   Read Post
@@ -326,7 +365,7 @@ const Blog = () => {
               {sidebarPosts.map((p) => (
                 <Link
                   key={p.blog_id}
-                  to={`/blog/${p.blog_id}`}
+                  to={postLink(p)}
                   className="flex gap-3 items-start bg-white rounded-xl p-3 border border-slate-100 no-underline hover:border-[#4d7b65] hover:shadow-sm transition-all group"
                 >
                   <div className="flex-shrink-0 w-20 h-16 overflow-hidden rounded-lg bg-slate-100">
@@ -348,7 +387,7 @@ const Blog = () => {
 
       {/* ── ANNOUNCEMENTS ── */}
       <section className="container px-4 mx-auto" style={{ marginBottom: 88 }} ref={refs.announcement}>
-        <SectionHeader label="Announcements" />
+        <SectionHeader label="Announcements" catSlug={CAT_SLUG['Announcement']} />
         <hr className="border-slate-200" style={{ margin: '0 0 28px' }} />
 
         {loading ? (
@@ -366,7 +405,7 @@ const Blog = () => {
                   <h3 className="mb-3 text-xl font-bold leading-snug text-white">{announcements[0].blog_title}</h3>
                   <p className="mb-7 text-sm leading-relaxed text-white/60">{excerpt(announcements[0].blog_text, 220)}</p>
                   <Link
-                    to={`/blog/${announcements[0].blog_id}`}
+                    to={postLink(announcements[0])}
                     className="inline-block px-5 py-2 rounded-lg bg-[#4d7b65] text-white text-sm font-bold no-underline hover:bg-[#3a6050] transition-colors"
                   >
                     Read
@@ -390,12 +429,7 @@ const Blog = () => {
                     <div className="text-sm font-bold text-[#1a2e22] leading-snug" style={{ marginBottom: 12 }}>{p.blog_title}</div>
                     <div className="text-xs leading-relaxed text-slate-500 flex-1" style={{ marginBottom: 20 }}>{excerpt(p.blog_text, 120)}</div>
                     <div>
-                      <Link
-                        to={`/blog/${p.blog_id}`}
-                        className="inline-block px-4 py-1.5 rounded-lg bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors"
-                      >
-                        Read
-                      </Link>
+                      <Link to={postLink(p)} className={readBtnCls}>Read</Link>
                     </div>
                   </div>
                 ))}
@@ -403,13 +437,17 @@ const Blog = () => {
             ) : (
               <AnnouncementsEmpty />
             )}
+
+            {announcements.length > 4 && (
+              <SeeAllFooter to={`/blog/${CAT_SLUG['Announcement']}`} label="See All Announcements" />
+            )}
           </>
         )}
       </section>
 
       {/* ── TRAVEL BLOG ── */}
       <section className="container px-4 mx-auto" style={{ marginBottom: 88 }} ref={refs.travel}>
-        <SectionHeader label="Travel Blog" />
+        <SectionHeader label="Travel Blog" catSlug={CAT_SLUG['Travel Blog']} />
         <hr className="border-slate-200" style={{ margin: '0 0 28px' }} />
 
         {loading ? (
@@ -432,7 +470,7 @@ const Blog = () => {
                     <p className="text-xs leading-relaxed text-white/60">{excerpt(p.blog_text, 160)}</p>
                   </div>
                   <Link
-                    to={`/blog/${p.blog_id}`}
+                    to={postLink(p)}
                     className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-semibold border border-white/30 no-underline hover:bg-white/30 transition-colors whitespace-nowrap"
                   >
                     Read Post
@@ -453,12 +491,7 @@ const Blog = () => {
                       <div className="text-sm font-bold text-[#1a2e22] leading-snug" style={{ marginBottom: 8 }}>{p.blog_title}</div>
                       <div className="text-xs leading-relaxed text-slate-500 flex-1" style={{ marginBottom: 16 }}>{excerpt(p.blog_text, 100)}</div>
                       <div>
-                        <Link
-                          to={`/blog/${p.blog_id}`}
-                          className="inline-block px-4 py-1.5 rounded-lg bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors"
-                        >
-                          Read
-                        </Link>
+                        <Link to={postLink(p)} className={readBtnCls}>Read</Link>
                       </div>
                     </div>
                   </div>
@@ -467,13 +500,17 @@ const Blog = () => {
             ) : (
               <PostCardsEmpty />
             )}
+
+            {travel.length > 3 && (
+              <SeeAllFooter to={`/blog/${CAT_SLUG['Travel Blog']}`} label="See All Travel Posts" />
+            )}
           </>
         )}
       </section>
 
       {/* ── BUSINESS TRIPS ── */}
       <section className="container px-4 mx-auto" style={{ marginBottom: 88 }} ref={refs.business}>
-        <SectionHeader label="Business Trips" />
+        <SectionHeader label="Business Trips" catSlug={CAT_SLUG['Business Trips']} />
         <hr className="border-slate-200" style={{ margin: '0 0 28px' }} />
 
         {loading ? (
@@ -495,7 +532,7 @@ const Blog = () => {
                     <p className="text-xs leading-relaxed text-white/60">{excerpt(p.blog_text, 160)}</p>
                   </div>
                   <Link
-                    to={`/blog/${p.blog_id}`}
+                    to={postLink(p)}
                     className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-semibold border border-white/30 no-underline hover:bg-white/30 transition-colors whitespace-nowrap"
                   >
                     Read Post
@@ -515,12 +552,7 @@ const Blog = () => {
                       <div className="text-sm font-bold text-[#1a2e22] leading-snug" style={{ marginBottom: 8 }}>{p.blog_title}</div>
                       <div className="text-xs leading-relaxed text-slate-500 flex-1" style={{ marginBottom: 16 }}>{excerpt(p.blog_text, 100)}</div>
                       <div>
-                        <Link
-                          to={`/blog/${p.blog_id}`}
-                          className="inline-block px-4 py-1.5 rounded-lg bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors"
-                        >
-                          Read
-                        </Link>
+                        <Link to={postLink(p)} className={readBtnCls}>Read</Link>
                       </div>
                     </div>
                   </div>
@@ -529,13 +561,17 @@ const Blog = () => {
             ) : (
               <PostCardsEmpty />
             )}
+
+            {business.length > 3 && (
+              <SeeAllFooter to={`/blog/${CAT_SLUG['Business Trips']}`} label="See All Business Trips" />
+            )}
           </>
         )}
       </section>
 
       {/* ── PRODUCT UPDATES ── */}
       <section className="container px-4 mx-auto" style={{ marginBottom: 96 }} ref={refs.product}>
-        <SectionHeader label="Product Updates" />
+        <SectionHeader label="Product Updates" catSlug={CAT_SLUG['Product Updates']} />
         <hr className="border-slate-200" style={{ margin: '0 0 28px' }} />
 
         {loading ? (
@@ -544,7 +580,7 @@ const Blog = () => {
           <ProductRowsEmpty />
         ) : (
           <div className="overflow-hidden bg-white border rounded-xl border-slate-100">
-            {productUpdates.map((p, i) => (
+            {productUpdates.slice(0, 5).map((p, i, arr) => (
               <React.Fragment key={p.blog_id}>
                 <div className="flex items-center hover:bg-[#f8faf9] transition-colors" style={{ gap: 20, padding: '20px 24px' }}>
                   <div className="flex-shrink-0 w-16 h-16 overflow-hidden rounded-lg bg-slate-100">
@@ -559,27 +595,23 @@ const Blog = () => {
                   </div>
                   <div className="flex-shrink-0 pl-2">
                     <Link
-                      to={`/blog/${p.blog_id}`}
+                      to={postLink(p)}
                       className="inline-block px-4 py-1.5 rounded-full bg-[#f0faf5] text-[#4d7b65] text-xs font-bold no-underline border border-[#c6e8d6] hover:bg-[#4d7b65] hover:text-white transition-colors whitespace-nowrap"
                     >
                       Read
                     </Link>
                   </div>
                 </div>
-                {i < productUpdates.length - 1 && <div className="h-px bg-slate-100" style={{ margin: '0 24px' }} />}
+                {i < arr.length - 1 && <div className="h-px bg-slate-100" style={{ margin: '0 24px' }} />}
               </React.Fragment>
             ))}
           </div>
         )}
 
-        <div className="flex justify-center" style={{ marginTop: 24 }}>
-          <button
-            disabled
-            className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-400 text-sm font-semibold cursor-not-allowed opacity-60"
-          >
-            Load More Posts
-          </button>
-        </div>
+        {/* Always show See All for Product Updates */}
+        {!loading && (
+          <SeeAllFooter to={`/blog/${CAT_SLUG['Product Updates']}`} label="See All Product Updates" />
+        )}
       </section>
 
     </div>
