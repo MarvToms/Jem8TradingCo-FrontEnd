@@ -56,6 +56,23 @@ const INITIAL_THREADS = [];
 
 const FILTER_TABS = ["Inbox", "Unread", "Done"];
 
+// Start a chat with admin by creating a message without chatroom_id so server
+// creates/finds the admin LiveChat. Returns the created chatroom id and messages.
+async function startChatWithAdmin(initialText = "Hello admin") {
+  try {
+    const created = await postChatMessage({ messages: initialText });
+    // Normalize response shapes
+    const msgObj = created?.data ?? created?.message ?? created ?? {};
+    const chatroomId = msgObj?.chatroom_id || msgObj?.chatroom?.id || msgObj?.id || null;
+    if (!chatroomId) return null;
+    const msgsResp = await getChatMessages(chatroomId);
+    const serverMessages = Array.isArray(msgsResp) ? msgsResp : msgsResp.messages || msgsResp.data || [];
+    return { chatroomId, serverMessages };
+  } catch (err) {
+    throw err;
+  }
+}
+
 export default function Messages() {
   const [threads, setThreads]           = useState(INITIAL_THREADS);
   const [activeThread, setActiveThread] = useState(null);
@@ -167,6 +184,8 @@ export default function Messages() {
         } catch (mErr) { /* ignore */ }
 
         const roomsResp = await getChatRooms();
+        // Debug: inspect raw rooms response to help diagnose empty conversation list
+        console.debug('getChatRooms response:', roomsResp);
         const rooms = Array.isArray(roomsResp) ? roomsResp : roomsResp.rooms || roomsResp.chatrooms || [];
         // Defensive filter: only include rooms that involve the current user
           const currentUid = getUserId(meResp?.data || currentUser);
@@ -184,9 +203,70 @@ export default function Messages() {
           return false;
         });
         if (!mounted) return;
-
         // (debug logs removed)
 
+        // If the URL requested a specific chatroom (eg. /messages?chatroom_id=123),
+        // try to open it even if getChatRooms didn't return it.
+        let requestedId = null;
+        try { requestedId = new URLSearchParams(window.location.search || "").get('chatroom_id'); } catch (e) { requestedId = null; }
+        if (requestedId) {
+          const found = safeRooms.find(r => String(r.id) === String(requestedId) || String(r.chatroom_id) === String(requestedId) || String(r.room_id) === String(requestedId));
+          if (found) {
+            // map and open as usual
+            const mapped = safeRooms.map((r) => ({
+              id: r.id || r.chatroom_id || r.room_id,
+              name: r.name || r.title || (r.participants ? r.participants.join(", ") : "Chat"),
+              avatar: (r.name || "").charAt(0).toUpperCase() || "J",
+              avatarBg: r.avatarBg || "#4d7b65",
+              isAdmin: !!r.is_admin,
+              unread: r.unread || 0,
+              lastTime: r.last_time || "",
+              messages: Array.isArray(r.messages) ? filterMessagesForUser(r.messages, currentUid) : [],
+            }));
+            setThreads((prev) =>
+              mapped.map((m) => ({
+                ...m,
+                messages: Array.isArray(m.messages) && m.messages.length > 0 ? m.messages : (prev.find((p) => p.id === m.id)?.messages || []),
+              }))
+            );
+            setActiveThread(found.id || found.chatroom_id || found.room_id);
+            // clear param so we don't re-run
+            requestedId = null;
+          } else {
+            // room not returned — try loading messages directly for the requested id
+            try {
+              const msgsResp = await getChatMessages(requestedId);
+              const serverMessages = Array.isArray(msgsResp) ? msgsResp : msgsResp.messages || [];
+              const newThread = {
+                id: requestedId,
+                name: 'Admin',
+                avatar: 'A',
+                avatarBg: '#4d7b65',
+                isAdmin: true,
+                unread: 0,
+                lastTime: '',
+                messages: serverMessages,
+              };
+              const mapped = safeRooms.map((r) => ({
+                id: r.id || r.chatroom_id || r.room_id,
+                name: r.name || r.title || (r.participants ? r.participants.join(", ") : "Chat"),
+                avatar: (r.name || "").charAt(0).toUpperCase() || "J",
+                avatarBg: r.avatarBg || "#4d7b65",
+                isAdmin: !!r.is_admin,
+                unread: r.unread || 0,
+                lastTime: r.last_time || "",
+                messages: Array.isArray(r.messages) ? filterMessagesForUser(r.messages, currentUid) : [],
+              }));
+              setThreads([newThread, ...mapped]);
+              setActiveThread(requestedId);
+              requestedId = null;
+            } catch (e) {
+              // if fetch failed, fall back to normal mapping below
+            }
+          }
+        }
+
+        console.debug('filtered rooms after applying user filter:', safeRooms);
         if (safeRooms.length > 0) {
           const mapped = safeRooms.map((r) => ({
             id: r.id || r.chatroom_id || r.room_id,
@@ -198,7 +278,7 @@ export default function Messages() {
             lastTime: r.last_time || "",
             messages: Array.isArray(r.messages) ? filterMessagesForUser(r.messages, currentUid) : [],
           }));
-          setThreads((prev) =>
+            setThreads((prev) =>
             mapped.map((m) => ({
               ...m,
               messages: Array.isArray(m.messages) && m.messages.length > 0 ? m.messages : (prev.find((p) => p.id === m.id)?.messages || []),
@@ -279,6 +359,107 @@ export default function Messages() {
     })();
     return () => { mounted = false; };
   }, [activeThread]);
+
+  // Auto-start helper: open existing room or create one once using a local lock
+  const AUTO_START_KEY = "chat_auto_started_v1";
+
+  async function openOrCreateUserChat() {
+    // 1) try to read existing rooms
+    try {
+      const roomsResp = await getChatRooms();
+      const rooms = Array.isArray(roomsResp) ? roomsResp : roomsResp?.rooms || roomsResp?.chatrooms || roomsResp?.data || [];
+      if (rooms.length > 0) {
+        const room = rooms[0];
+        const chatroomId = room.id || room.chatroom_id || room.room_id || null;
+        if (chatroomId) {
+          const msgsResp = await getChatMessages(chatroomId);
+          const messages = Array.isArray(msgsResp) ? msgsResp : msgsResp?.messages || msgsResp?.data || [];
+          return { chatroomId, messages };
+        }
+      }
+    } catch (e) {
+      // ignore and continue to lock/check-create
+    }
+
+    // 2) check local lock to avoid duplicate creates
+    try {
+      const lock = localStorage.getItem(AUTO_START_KEY);
+      if (lock) {
+        const parsed = JSON.parse(lock);
+        if (parsed?.chatroomId) {
+          const chatroomId = parsed.chatroomId;
+          try {
+            const msgsResp = await getChatMessages(chatroomId);
+            const messages = Array.isArray(msgsResp) ? msgsResp : msgsResp?.messages || msgsResp?.data || [];
+            return { chatroomId, messages };
+          } catch (e) {
+            // fallthrough to create if fetching failed
+          }
+        }
+      }
+    } catch (e) { /* ignore malformed lock */ }
+
+    // 3) create initial message ONCE
+    try {
+      const created = await postChatMessage({ messages: "Hello admin, I need help with an order." });
+      const msgObj = created?.data ?? created?.message ?? created ?? {};
+      const chatroomId = msgObj?.chatroom_id || msgObj?.chatroom?.id || msgObj?.id || null;
+      if (!chatroomId) return null;
+      // save lock
+      try { localStorage.setItem(AUTO_START_KEY, JSON.stringify({ chatroomId, ts: Date.now() })); } catch (e) { /* ignore */ }
+      const msgsResp = await getChatMessages(chatroomId);
+      const messages = Array.isArray(msgsResp) ? msgsResp : msgsResp?.messages || msgsResp?.data || [];
+      return { chatroomId, messages };
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  function subscribeEcho(chatroomId) {
+    if (!window.Echo) return;
+    try {
+      // ensure we aren't double-listening
+      try { window.Echo.leave('chat.' + chatroomId); } catch (e) { /* ignore */ }
+      window.Echo.private('chat.' + chatroomId).listen('NewMessage', (ev) => {
+        const payload = ev?.message || ev;
+        setThreads((prev) => prev.map((t) => t.id === chatroomId ? { ...t, messages: [...(t.messages||[]), payload] } : t));
+      });
+    } catch (e) { console.warn('Echo subscribe failed', e); }
+  }
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (unauthenticated) return;
+      if (threads.length > 0) return;
+      // avoid auto-start if URL already requested a chatroom
+      try { if (new URLSearchParams(window.location.search || "").get('chatroom_id')) return; } catch (e) { }
+
+      try {
+        const res = await openOrCreateUserChat();
+        if (!mounted || !res) return;
+        const { chatroomId, messages } = res;
+        const newThread = {
+          id: chatroomId,
+          name: 'Admin',
+          avatar: 'A',
+          avatarBg: '#4d7b65',
+          isAdmin: true,
+          unread: 0,
+          lastTime: '',
+          messages: Array.isArray(messages) ? messages : [],
+        };
+        setThreads((prev) => [newThread, ...prev]);
+        setActiveThread(chatroomId);
+        subscribeEcho(chatroomId);
+      } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        if (msg === 'Unauthenticated.') setUnauthenticated(true);
+        else console.warn('auto-start failed', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [threads.length, unauthenticated]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }

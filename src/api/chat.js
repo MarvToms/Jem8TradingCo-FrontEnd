@@ -3,10 +3,11 @@ import api from "./axios";
 export async function postChatMessage(payload) {
   try {
     // backend expects { chatroom_id, messages }
-    const body = {
-      chatroom_id: payload.chatroom_id || payload.chatroomId || payload.chatroom || null,
-      messages: payload.messages || payload.text || payload.message || payload,
-    };
+    // Only include chatroom_id if caller provided one; omitting it lets the server default to admin
+    const body = {};
+    const providedId = payload && (payload.chatroom_id ?? payload.chatroomId ?? payload.chatroom);
+    if (providedId !== undefined && providedId !== null) body.chatroom_id = providedId;
+    body.messages = payload.messages || payload.text || payload.message || payload;
     const response = await api.post("/chat/messages", body, { withCredentials: true });
     return response.data;
   } catch (error) {
