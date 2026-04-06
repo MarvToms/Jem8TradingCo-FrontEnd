@@ -16,6 +16,7 @@ import MyOrders from "./pages/MyOrders";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Messages from "./pages/Messages";
+import PrivacyPolicy from "./pages/Privacypolicy";
 
 // ── AUTH PAGES ──
 import Login from './pages/Login'
@@ -39,6 +40,7 @@ import AdminContactMessages from './pages/adminContact';
 import AdminReviews from './pages/adminReviews';
 import AdminMessage from './pages/adminMessage';
 import AdminProductView from './components/Adminproductview';
+
 // Layout for public pages (with main Header & Footer)
 function PublicLayout() {
   return (
@@ -83,10 +85,10 @@ export default function App() {
           <Route path="/password-reset" element={<PasswordReset />} />
           <Route path="/forgot-password-code" element={<ForgotPasswordCode />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
-          
         </Route>
 
-        
+       
+        <Route path="/Privacypolicy" element={<PrivacyPolicy />} />
 
         {/* ── ADMIN ROUTES ── */}
         <Route element={<AdminLayout />}>
@@ -102,8 +104,8 @@ export default function App() {
           <Route path="/adminContact" element={<AdminContactMessages />} />
           <Route path="/adminReviews" element={<AdminReviews />} />
           <Route path="/adminMessage" element={<AdminMessage />} />
-          <Route path="/admin/products"        element={<AdminProducts />} />
-          <Route path="/admin/products/:id"    element={<AdminProductView />} />
+          <Route path="/admin/products" element={<AdminProducts />} />
+          <Route path="/admin/products/:id" element={<AdminProductView />} />
           <Route path="/admin/products/:id/edit" element={<AdminProductView />} />
         </Route>
       </Routes>

@@ -454,15 +454,20 @@ export function Footer() {
           © 2026 JEM 8 Circle Trading Co. All rights reserved.
         </p>
         <div className="flex gap-5">
-          {["Privacy Policy", "Terms & Conditions", "Cookie Policy"].map((label) => (
-            <Link
-              key={label}
-              to="/contact"
-              className="text-[12px] text-[#9e9890] no-underline hover:text-[#2e6b45] transition-colors"
-            >
-              {label}
-            </Link>
-          ))}
+          {[
+          { label: "Privacy Policy",     to: "/Privacypolicy" },
+          { label: "Terms & Conditions", to: "/Privacypolicy?tab=terms" },
+          { label: "Cookie Policy", to: "/Privacypolicy?tab=cookies" },
+          
+        ].map(({ label, to }) => (
+          <Link
+            key={label}
+            to={to}
+            className="text-[12px] text-[#9e9890] no-underline hover:text-[#2e6b45] transition-colors"
+          >
+            {label}
+          </Link>
+        ))}
         </div>
       </div>
     </footer>
