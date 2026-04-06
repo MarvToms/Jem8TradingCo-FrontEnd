@@ -41,6 +41,8 @@ import AdminReviews from './pages/adminReviews';
 import AdminMessage from './pages/adminMessage';
 import AdminProductView from './components/Adminproductview';
 
+import BlogCategory from './pages/BlogCategory'
+import BlogPost from './pages/BlogPost'
 // Layout for public pages (with main Header & Footer)
 function PublicLayout() {
   return (
@@ -76,7 +78,8 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/messages" element={<Messages />} />
-
+          <Route path="/blog/:category"            element={<BlogCategory />} />
+                    <Route path="/blog/:category/:id"        element={<BlogPost />} />
           {/* Auth routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
