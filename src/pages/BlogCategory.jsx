@@ -1,23 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { getBlogs } from '../api/blogs';
-import { Header, Footer } from '../components/Layout';
 
 const BASE = 'http://127.0.0.1:8000';
 
 /* ─── Slug → display config ───────────────────────────────── */
 const CAT_CONFIG = {
-  announcement:     { name: 'Announcement',    emoji: '📣', color: 'bg-violet-100 text-violet-700 border-violet-300', dot: 'bg-violet-500' },
-  travelblog:       { name: 'Travel Blog',      emoji: '✈️', color: 'bg-sky-100 text-sky-700 border-sky-300',       dot: 'bg-sky-500'     },
-  business:         { name: 'Business Trips',   emoji: '💼', color: 'bg-amber-100 text-amber-700 border-amber-300', dot: 'bg-amber-500'   },
-  'product-updates':{ name: 'Product Updates',  emoji: '📦', color: 'bg-emerald-100 text-emerald-700 border-emerald-300', dot: 'bg-emerald-500' },
-};
-
-const SLUG_TO_ID = {
-  announcement:      1,
-  travelblog:        2,
-  business:          3,
-  'product-updates': 4,
+  announcement:      { name: 'Announcement',   emoji: '📣', color: 'bg-violet-100 text-violet-700 border-violet-300', dot: 'bg-violet-500' },
+  travelblog:        { name: 'Travel Blog',     emoji: '✈️', color: 'bg-sky-100 text-sky-700 border-sky-300',         dot: 'bg-sky-500'    },
+  business:          { name: 'Business Trips',  emoji: '💼', color: 'bg-amber-100 text-amber-700 border-amber-300',   dot: 'bg-amber-500'  },
+  'product-updates': { name: 'Product Updates', emoji: '📦', color: 'bg-emerald-100 text-emerald-700 border-emerald-300', dot: 'bg-emerald-500' },
 };
 
 /* ─── Helpers ─────────────────────────────────────────────── */
@@ -32,17 +24,32 @@ const resolveImg = (post) => {
   return null;
 };
 
-const getCategoryName = (post) => {
-  if (post.category?.category_name) return post.category.category_name;
-  const idMap = { 1: 'Announcement', 2: 'Travel Blog', 3: 'Business Trips', 4: 'Product Updates' };
-  return idMap[post.category_blog_id] ?? 'Uncategorized';
-};
-
 const excerpt = (text, n = 160) =>
   text ? (text.length > n ? text.slice(0, n).trim() + '…' : text) : '';
 
 const fmtDate = (iso) =>
   iso ? new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+
+/**
+ * Matches by category_name string — no hardcoded IDs.
+ * Works regardless of what ID the DB assigned to each category.
+ */
+function postMatchesSlug(post, slug) {
+  const cfg     = CAT_CONFIG[slug];
+  const catName = cfg?.name ?? '';
+
+  // 1. Eager-loaded relation (most reliable)
+  if (post.category?.category_name) {
+    return post.category.category_name.trim().toLowerCase() === catName.toLowerCase();
+  }
+
+  // 2. Flat string field fallback
+  if (post.category_name) {
+    return post.category_name.trim().toLowerCase() === catName.toLowerCase();
+  }
+
+  return false;
+}
 
 /* ─── Skeleton ────────────────────────────────────────────── */
 function SkeletonCard() {
@@ -77,7 +84,6 @@ function PostCard({ post, slug }) {
             <span className="text-5xl opacity-20">📄</span>
           </div>
         )}
-        {/* Status badge */}
         <div className="absolute top-3 right-3">
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize border
             ${post.status === 'published' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
@@ -126,19 +132,20 @@ export default function BlogCategory() {
     let mounted = true;
     setLoading(true);
     setError(null);
+
     getBlogs()
       .then((data) => {
         if (!mounted) return;
-        const rows  = Array.isArray(data) ? data : (data?.data ?? data?.posts ?? []);
-        const catId = SLUG_TO_ID[category];
-        const filtered = rows.filter((p) =>
-          p.category_blog_id === catId ||
-          getCategoryName(p) === cfg.name
-        );
-        setPosts(filtered);
+        const rows = Array.isArray(data) ? data : (data?.data ?? data?.posts ?? []);
+
+        const matched = rows.filter((p) => postMatchesSlug(p, category));
+        console.log(`[BlogCategory] slug="${category}" → ${matched.length} / ${rows.length} posts matched`);
+
+        setPosts(matched);
       })
       .catch((err) => { if (mounted) setError(err?.message || 'Failed to load posts'); })
       .finally(() => { if (mounted) setLoading(false); });
+
     return () => { mounted = false; };
   }, [category, cfg]);
 
@@ -150,7 +157,6 @@ export default function BlogCategory() {
 
   return (
     <div className="min-h-screen bg-[#f8faf9]">
-      
 
       {/* ── Breadcrumb ── */}
       <div className="bg-[#f8faf9] border-b border-[#e8f0eb] mt-[75px]">
@@ -215,7 +221,12 @@ export default function BlogCategory() {
           <div className="flex flex-col items-center py-20 text-center">
             <div className="text-5xl mb-4">⚠️</div>
             <p className="text-slate-500 text-sm mb-4">{error}</p>
-            <button onClick={() => window.location.reload()} className="px-5 py-2 bg-[#4d7b65] text-white rounded-xl text-sm font-bold cursor-pointer border-none">Retry</button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2 bg-[#4d7b65] text-white rounded-xl text-sm font-bold cursor-pointer border-none"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -227,7 +238,10 @@ export default function BlogCategory() {
               {search ? `No results for "${search}"` : `No posts in ${cfg.name} yet.`}
             </p>
             {search && (
-              <button onClick={() => setSearch('')} className="mt-4 px-4 py-1.5 rounded-xl border border-[#e8f0eb] bg-white text-sm text-slate-600 cursor-pointer hover:border-[#4d7b65] transition-colors">
+              <button
+                onClick={() => setSearch('')}
+                className="mt-4 px-4 py-1.5 rounded-xl border border-[#e8f0eb] bg-white text-sm text-slate-600 cursor-pointer hover:border-[#4d7b65] transition-colors"
+              >
                 Clear search
               </button>
             )}
@@ -250,7 +264,6 @@ export default function BlogCategory() {
 
       </section>
 
-      
     </div>
   );
 }
