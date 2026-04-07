@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Shella from '../assets/Shella_Ricafrente-Acibar.png';
 import Jinkie from '../assets/Jinkie_Ricafrente-Malinag.png';
 import Akiko from '../assets/Akiko_Serrano.png';
@@ -10,6 +10,10 @@ import Mark from '../assets/Mark_Edward_C_Malinag.png';
 import Daniel from '../assets/Daniel_Kian_Rodriguez_Cadena.png';
 import Kayla from '../assets/Kayla_R_Bacsafra.png';
 import Cristina from '../assets/Cristina_A_Saturnio.png';
+import officeSuppliesImg from '../assets/Office supplies & equipment.png';
+import personalCareImg   from '../assets/Personal & Home care products.png';
+import janitorialImg     from '../assets/Janitorial.png';
+import pantrySuppliesImg from '../assets/Pantry supplies.png';
 
 const BASE = 'http://127.0.0.1:8000';
 
@@ -21,8 +25,42 @@ const resolveImg = (path) => {
   return path.startsWith('http') ? path : `${BASE}/storage/${path}`;
 };
 
+// 6 enterprise images: 4 real product images + 2 placeholders
+const ENTERPRISE_IMAGES = [
+  { src: officeSuppliesImg, label: 'Office Supplies & Equipment'   },
+  { src: personalCareImg,   label: 'Personal & Home Care'          },
+  { src: pantrySuppliesImg, label: 'Pantry Supplies'               },
+  { src: janitorialImg,     label: 'Janitorial Supplies'           },
+  {
+    src: 'https://placehold.co/400x533/edf4f0/4d7b65?text=Giveaways',
+    label: 'Customized Giveaways',
+  },
+  {
+    src: 'https://placehold.co/400x533/edf4f0/4d7b65?text=Health+%26+Wellness',
+    label: 'Health & Wellness',
+  },
+];
+
 const About = () => {
   const [stats] = useState({ since: 2016, employees: '1–7', clients: 250 });
+
+  // Enterprise image cycling: show images[groupIndex*3 .. groupIndex*3+2]
+  const [groupIndex, setGroupIndex] = useState(0);
+  const [fadeIn, setFadeIn] = useState(true);
+  const totalGroups = 2; // 6 images / 3 per group = 2 groups
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFadeIn(false);
+      setTimeout(() => {
+        setGroupIndex((prev) => (prev + 1) % totalGroups);
+        setFadeIn(true);
+      }, 400); // fade out then swap
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const visibleImages = ENTERPRISE_IMAGES.slice(groupIndex * 3, groupIndex * 3 + 3);
 
   const [leaders] = useState([
     { id: 1,  name: 'Ms. Shella R. Acibar',            role: 'Co-Owner of Jem 8 Circle',                           image: Shella    },
@@ -72,8 +110,8 @@ const About = () => {
   ];
 
   return (
-<div className="bg-white">
-  
+    <div className="bg-white">
+
       {/* ===== HERO ===== */}
       <section
         className="relative overflow-hidden text-center"
@@ -82,7 +120,6 @@ const About = () => {
           padding: 'clamp(70px, 10vw, 130px) 0 clamp(60px, 8vw, 100px)',
         }}
       >
-        {/* Decorative blob */}
         <div
           className="absolute rounded-full pointer-events-none"
           style={{
@@ -93,7 +130,6 @@ const About = () => {
         />
 
         <div className="container relative z-[1]">
-          {/* Label pill */}
           <div
             className="mb-7 inline-flex items-center gap-2 rounded-full border bg-white px-[18px] py-[7px] text-[12px] font-semibold uppercase tracking-[2px]"
             style={{
@@ -140,7 +176,6 @@ const About = () => {
             they need to operate at peak efficiency — reliably, seamlessly, at scale.
           </p>
 
-          {/* Stats bar */}
           <div className="flex justify-center" style={{ paddingBottom: 'clamp(20px, 4vw, 48px)' }}>
             <div
               className="inline-flex overflow-hidden"
@@ -194,10 +229,7 @@ const About = () => {
       </section>
 
       {/* ===== MISSION & VISION ===== */}
-      <section
-        className="bg-white"
-        style={{ padding: 'clamp(60px, 8vw, 110px) 0' }}
-      >
+      <section className="bg-white" style={{ padding: 'clamp(60px, 8vw, 110px) 0' }}>
         <div className="container">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 
@@ -214,48 +246,25 @@ const About = () => {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-xl)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
             >
-              {/* decorative circle */}
               <div
                 className="absolute rounded-full pointer-events-none"
-                style={{
-                  top: '-40px', right: '-40px',
-                  width: 200, height: 200,
-                  background: 'rgba(77,123,101,0.15)',
-                }}
+                style={{ top: '-40px', right: '-40px', width: 200, height: 200, background: 'rgba(77,123,101,0.15)' }}
               />
-              {/* badge */}
               <div
                 className="inline-block mb-4 font-bold uppercase rounded-full"
-                style={{
-                  fontFamily: 'var(--font-sub)',
-                  background: 'rgba(255,255,255,0.1)',
-                  padding: '5px 14px',
-                  fontSize: 11,
-                  letterSpacing: '3px',
-                  color: 'rgba(255,255,255,0.8)',
-                }}
+                style={{ fontFamily: 'var(--font-sub)', background: 'rgba(255,255,255,0.1)', padding: '5px 14px', fontSize: 11, letterSpacing: '3px', color: 'rgba(255,255,255,0.8)' }}
               >
                 Our Mission
               </div>
               <h2
                 className="font-bold leading-[1.25]"
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 'clamp(22px, 2.5vw, 30px)',
-                  color: '#fff',
-                  marginBottom: 18,
-                }}
+                style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(22px, 2.5vw, 30px)', color: '#fff', marginBottom: 18 }}
               >
                 Advancing with heart, integrity, and smart systems.
               </h2>
               <p
                 className="leading-[1.8]"
-                style={{
-                  fontFamily: 'var(--font-sub)',
-                  fontSize: 15,
-                  color: 'rgba(255,255,255,0.75)',
-                  marginBottom: 28,
-                }}
+                style={{ fontFamily: 'var(--font-sub)', fontSize: 15, color: 'rgba(255,255,255,0.75)', marginBottom: 28 }}
               >
                 We advance JEM 8 Circle with heart, integrity, and smart systems. Through ethical distribution,
                 structured processes, and strong teamwork, we develop confident, knowledgeable, and responsible
@@ -264,20 +273,9 @@ const About = () => {
               <div className="inline-flex items-center gap-[10px]">
                 <span
                   className="inline-block rounded-full"
-                  style={{
-                    width: 8, height: 8,
-                    background: 'var(--green)',
-                    boxShadow: '0 0 0 3px rgba(77,123,101,0.3)',
-                  }}
+                  style={{ width: 8, height: 8, background: 'var(--green)', boxShadow: '0 0 0 3px rgba(77,123,101,0.3)' }}
                 />
-                <span
-                  className="font-semibold"
-                  style={{
-                    fontFamily: 'var(--font-sub)',
-                    fontSize: 13,
-                    color: 'rgba(255,255,255,0.6)',
-                  }}
-                >
+                <span style={{ fontFamily: 'var(--font-sub)', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
                   Since {stats.since}
                 </span>
               </div>
@@ -298,43 +296,23 @@ const About = () => {
             >
               <div
                 className="absolute rounded-full pointer-events-none"
-                style={{
-                  top: '-40px', right: '-40px',
-                  width: 200, height: 200,
-                  background: 'rgba(77,123,101,0.12)',
-                }}
+                style={{ top: '-40px', right: '-40px', width: 200, height: 200, background: 'rgba(77,123,101,0.12)' }}
               />
               <div
                 className="inline-block mb-4 font-bold uppercase rounded-full"
-                style={{
-                  fontFamily: 'var(--font-sub)',
-                  background: 'rgba(77,123,101,0.15)',
-                  padding: '5px 14px',
-                  fontSize: 11,
-                  letterSpacing: '3px',
-                  color: 'var(--green)',
-                }}
+                style={{ fontFamily: 'var(--font-sub)', background: 'rgba(77,123,101,0.15)', padding: '5px 14px', fontSize: 11, letterSpacing: '3px', color: 'var(--green)' }}
               >
                 Our Vision
               </div>
               <h2
                 className="font-bold leading-[1.25]"
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 'clamp(22px, 2.5vw, 30px)',
-                  color: 'var(--dark)',
-                  marginBottom: 18,
-                }}
+                style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(22px, 2.5vw, 30px)', color: 'var(--dark)', marginBottom: 18 }}
               >
                 Where wellness fuels opportunity and purpose drives action.
               </h2>
               <p
                 className="leading-[1.8]"
-                style={{
-                  fontFamily: 'var(--font-sub)',
-                  fontSize: 15,
-                  color: 'var(--gray)',
-                }}
+                style={{ fontFamily: 'var(--font-sub)', fontSize: 15, color: 'var(--gray)' }}
               >
                 To create a world where wellness fuels opportunity, leaders inspire growth, and a united team
                 transforms lives through passion, integrity, and purpose-driven action.
@@ -346,110 +324,52 @@ const About = () => {
       </section>
 
       {/* ===== LEADERSHIP ===== */}
-      <section
-        style={{
-          background: 'var(--light-gray)',
-          padding: 'clamp(60px, 8vw, 110px) 0',
-        }}
-      >
+      <section style={{ background: 'var(--light-gray)', padding: 'clamp(60px, 8vw, 110px) 0' }}>
         <div className="container">
-          {/* heading */}
           <div className="mb-[clamp(40px,6vw,64px)] text-center">
             <div
               className="mb-2 inline-flex items-center gap-2 rounded-full border bg-white px-[18px] py-[7px] text-[12px] font-semibold uppercase tracking-[2px]"
-              style={{
-                borderColor: 'var(--green-border)',
-                fontFamily: 'var(--font-sub)',
-                color: 'var(--green)',
-              }}
+              style={{ borderColor: 'var(--green-border)', fontFamily: 'var(--font-sub)', color: 'var(--green)' }}
             >
-              <span
-                className="h-1.5 w-1.5 animate-pulse rounded-full"
-                style={{ background: 'var(--green)' }}
-              />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: 'var(--green)' }} />
               Our Team
             </div>
-            <h2
-              className="block mt-2 font-bold"
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontSize: 'clamp(26px, 3vw, 38px)',
-                color: 'var(--dark)',
-              }}
-            >
+            <h2 className="block mt-2 font-bold" style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(26px, 3vw, 38px)', color: 'var(--dark)' }}>
               Leadership
             </h2>
-            <p
-              className="mt-2 leading-[1.8]"
-              style={{
-                fontFamily: 'var(--font-sub)',
-                fontSize: 'clamp(15px, 1.8vw, 18px)',
-                color: 'var(--gray)',
-              }}
-            >
+            <p className="mt-2 leading-[1.8]" style={{ fontFamily: 'var(--font-sub)', fontSize: 'clamp(15px, 1.8vw, 18px)', color: 'var(--gray)' }}>
               The people behind JEM 8 Circle Trading Co.
             </p>
           </div>
 
-          {/* grid */}
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 max-[1100px]:grid-cols-3 max-[480px]:gap-[14px]">
             {leaders.map((leader) => (
               <div
                 key={leader.id}
                 className="overflow-hidden text-center transition-all duration-300 bg-white hover:-translate-y-1 hover:shadow-lg"
-                style={{
-                  borderRadius: 'var(--r-lg)',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
+                style={{ borderRadius: 'var(--r-lg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green-border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
-                {/* image */}
-                <div
-                  className="relative w-full overflow-hidden"
-                  style={{ aspectRatio: '1/1', background: 'var(--green-light)' }}
-                >
+                <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1', background: 'var(--green-light)' }}>
                   <img
                     src={leader.image}
                     alt={leader.name}
                     className="object-cover object-top w-full h-full"
                     onError={handleImageError}
                   />
-                  {/* fallback initials */}
                   <div
                     className="absolute inset-0 items-center justify-center hidden font-bold"
-                    style={{
-                      fontFamily: 'var(--font-heading)',
-                      fontSize: 36,
-                      color: 'var(--green)',
-                      background: 'var(--green-light)',
-                    }}
+                    style={{ fontFamily: 'var(--font-heading)', fontSize: 36, color: 'var(--green)', background: 'var(--green-light)' }}
                   >
                     {getInitials(leader.name)}
                   </div>
                 </div>
-                {/* info */}
                 <div style={{ padding: '16px 14px 18px' }}>
-                  <div
-                    className="font-bold leading-[1.4]"
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: 13,
-                      color: 'var(--dark)',
-                      marginBottom: 5,
-                    }}
-                  >
+                  <div className="font-bold leading-[1.4]" style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', marginBottom: 5 }}>
                     {leader.name}
                   </div>
-                  <div
-                    className="font-medium leading-[1.4]"
-                    style={{
-                      fontFamily: 'var(--font-sub)',
-                      fontSize: 12,
-                      color: 'var(--green)',
-                    }}
-                  >
+                  <div className="font-medium leading-[1.4]" style={{ fontFamily: 'var(--font-sub)', fontSize: 12, color: 'var(--green)' }}>
                     {leader.role}
                   </div>
                 </div>
@@ -462,10 +382,7 @@ const About = () => {
       {/* ===== TRUSTED BANNER ===== */}
       <section
         className="relative overflow-hidden text-center"
-        style={{
-          background: 'var(--dark)',
-          padding: 'clamp(60px, 8vw, 100px) 0',
-        }}
+        style={{ background: 'var(--dark)', padding: 'clamp(60px, 8vw, 100px) 0' }}
       >
         <div
           className="absolute rounded-full pointer-events-none"
@@ -478,26 +395,14 @@ const About = () => {
         <div className="container relative z-[1]">
           <h2
             className="font-bold leading-[1.2]"
-            style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: 'clamp(30px, 5vw, 58px)',
-              color: '#fff',
-              marginBottom: 20,
-            }}
+            style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(30px, 5vw, 58px)', color: '#fff', marginBottom: 20 }}
           >
             Your Trusted{' '}
             <span style={{ color: 'var(--green)' }}>Supply Partner</span>
           </h2>
           <p
             className="mx-auto text-center leading-[1.8]"
-            style={{
-              fontFamily: 'var(--font-sub)',
-              fontSize: 'clamp(14px, 1.5vw, 17px)',
-              color: 'rgba(255,255,255,0.65)',
-              maxWidth: 620,
-              textAlign: 'center',
-              margin: '0 auto',
-            }}
+            style={{ fontFamily: 'var(--font-sub)', fontSize: 'clamp(14px, 1.5vw, 17px)', color: 'rgba(255,255,255,0.65)', maxWidth: 620, textAlign: 'center', margin: '0 auto' }}
           >
             From small businesses to established companies, we empower organizations of all sizes with office supplies,
             pantry and janitorial essentials, and health and wellness products — delivered with quality at the best price.
@@ -506,10 +411,7 @@ const About = () => {
       </section>
 
       {/* ===== ABOUT DETAIL ===== */}
-      <section
-        className="bg-white"
-        style={{ padding: 'clamp(60px, 8vw, 110px) 0' }}
-      >
+      <section className="bg-white" style={{ padding: 'clamp(60px, 8vw, 110px) 0' }}>
         <div className="container">
           <h2
             className="font-bold"
@@ -537,37 +439,17 @@ const About = () => {
             >
               <div
                 className="font-bold leading-[1.5]"
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 16,
-                  color: 'var(--green)',
-                  paddingTop: 4,
-                }}
+                style={{ fontFamily: 'var(--font-heading)', fontSize: 16, color: 'var(--green)', paddingTop: 4 }}
               >
                 {row.label.split('\n').map((l, j) => (
                   <span key={j}>{l}<br /></span>
                 ))}
               </div>
               <div>
-                <p
-                  className="font-bold leading-[1.4]"
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: 17,
-                    color: 'var(--dark)',
-                    marginBottom: 10,
-                  }}
-                >
+                <p className="font-bold leading-[1.4]" style={{ fontFamily: 'var(--font-body)', fontSize: 17, color: 'var(--dark)', marginBottom: 10 }}>
                   {row.title}
                 </p>
-                <p
-                  className="leading-[1.8]"
-                  style={{
-                    fontFamily: 'var(--font-sub)',
-                    fontSize: 15,
-                    color: 'var(--gray)',
-                  }}
-                >
+                <p className="leading-[1.8]" style={{ fontFamily: 'var(--font-sub)', fontSize: 15, color: 'var(--gray)' }}>
                   {row.desc}
                 </p>
               </div>
@@ -577,12 +459,7 @@ const About = () => {
       </section>
 
       {/* ===== ENTERPRISE ===== */}
-      <section
-        style={{
-          background: 'var(--light-gray)',
-          padding: 'clamp(60px, 8vw, 110px) 0',
-        }}
-      >
+      <section style={{ background: 'var(--light-gray)', padding: 'clamp(60px, 8vw, 110px) 0' }}>
         <div className="container">
           <div className="grid items-center grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
 
@@ -590,36 +467,19 @@ const About = () => {
             <div>
               <div
                 className="inline-block mb-4 font-bold uppercase rounded-full"
-                style={{
-                  fontFamily: 'var(--font-sub)',
-                  background: 'var(--green-light)',
-                  color: 'var(--green)',
-                  fontSize: 11,
-                  letterSpacing: '3px',
-                  padding: '6px 14px',
-                }}
+                style={{ fontFamily: 'var(--font-sub)', background: 'var(--green-light)', color: 'var(--green)', fontSize: 11, letterSpacing: '3px', padding: '6px 14px' }}
               >
                 Enterprise
               </div>
               <h2
                 className="font-bold leading-[1.25]"
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 'clamp(26px, 3vw, 38px)',
-                  color: 'var(--dark)',
-                  marginBottom: 16,
-                }}
+                style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(26px, 3vw, 38px)', color: 'var(--dark)', marginBottom: 16 }}
               >
                 Complete supply solutions for your business
               </h2>
               <p
                 className="leading-[1.8]"
-                style={{
-                  fontFamily: 'var(--font-sub)',
-                  fontSize: 15,
-                  color: 'var(--gray)',
-                  marginBottom: 28,
-                }}
+                style={{ fontFamily: 'var(--font-sub)', fontSize: 15, color: 'var(--gray)', marginBottom: 28 }}
               >
                 We provide a complete range of office supplies, pantry and janitorial supplies, and health and
                 wellness products tailored to your business needs. Delivering quality at the best price —
@@ -630,22 +490,11 @@ const About = () => {
                   <div
                     key={f}
                     className="flex items-center gap-3 font-semibold"
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: 15,
-                      color: 'var(--dark)',
-                    }}
+                    style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--dark)' }}
                   >
                     <span
-                      className="flex items-center font-bold text-white rounded-full shrink-0 justify-content-center"
-                      style={{
-                        width: 24, height: 24,
-                        background: 'var(--green)',
-                        fontSize: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                      className="flex items-center font-bold text-white rounded-full shrink-0"
+                      style={{ width: 24, height: 24, background: 'var(--green)', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       ✓
                     </span>
@@ -653,27 +502,49 @@ const About = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Dot indicators */}
+              <div className="flex gap-2 mt-2">
+                {[0, 1].map((i) => (
+                  <div
+                    key={i}
+                    className="h-2 rounded-full transition-all duration-500"
+                    style={{
+                      width: i === groupIndex ? 20 : 8,
+                      background: i === groupIndex ? 'var(--green)' : 'var(--green-border)',
+                    }}
+                  />
+                ))}
+              </div>
             </div>
 
-            {/* Right image grid */}
-            <div className="grid grid-cols-3 gap-3 max-[480px]:grid-cols-1">
-              {['/img/download-2-3.png', '/img/download-1.png', '/img/download-1-2.png'].map((src, i) => (
+            {/* Right — auto-cycling image grid (3 at a time) */}
+            <div
+              className="grid grid-cols-3 gap-3 max-[480px]:grid-cols-1"
+              style={{
+                opacity: fadeIn ? 1 : 0,
+                transition: 'opacity 0.4s ease',
+              }}
+            >
+              {visibleImages.map((item, i) => (
                 <div
-                  key={i}
+                  key={`${groupIndex}-${i}`}
                   className="overflow-hidden transition-all duration-300"
                   style={{
                     borderRadius: 'var(--r-md)',
                     boxShadow: 'var(--shadow-md)',
                     aspectRatio: '3/4',
                     marginTop: i === 1 ? 24 : 0,
+                    background: '#fff',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-xl)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
                 >
                   <img
-                    src={src}
-                    alt={`Product ${i + 1}`}
-                    className="object-cover w-full h-full"
+                    src={item.src}
+                    alt={item.label}
+                    className="w-full h-full"
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                   />
                 </div>
               ))}
@@ -691,57 +562,26 @@ const About = () => {
           padding: 'clamp(60px, 8vw, 100px) 0',
         }}
       >
-        {/* decorative circle */}
         <div
           className="absolute rounded-full pointer-events-none"
-          style={{
-            top: '-60px', right: '-60px',
-            width: 300, height: 300,
-            background: 'rgba(255,255,255,0.06)',
-          }}
+          style={{ top: '-60px', right: '-60px', width: 300, height: 300, background: 'rgba(255,255,255,0.06)' }}
         />
         <div className="container relative z-[1]">
           <p
             className="font-bold leading-[1.25] text-white"
-            style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: 'clamp(26px, 3.5vw, 44px)',
-              marginBottom: 12,
-            }}
+            style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(26px, 3.5vw, 44px)', marginBottom: 12 }}
           >
             From our hands to your office.
           </p>
-          <p
-            className="mb-10"
-            style={{
-              fontFamily: 'var(--font-sub)',
-              fontSize: 16,
-              color: 'rgba(255,255,255,0.75)',
-            }}
-          >
+          <p style={{ fontFamily: 'var(--font-sub)', fontSize: 16, color: 'rgba(255,255,255,0.75)', marginBottom: 40 }}>
             Ready to work with a trusted supply partner?
           </p>
           <a
             href="/contact"
             className="inline-flex items-center gap-[10px] bg-white font-bold transition-all duration-300"
-            style={{
-              fontFamily: 'var(--font-body)',
-              color: 'var(--green)',
-              borderRadius: 'var(--r-md)',
-              padding: '16px 40px',
-              fontSize: 16,
-              boxShadow: '0 8px 28px rgba(0,0,0,0.2)',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-3px)';
-              e.currentTarget.style.background = '#f0faf5';
-              e.currentTarget.style.boxShadow = '0 14px 36px rgba(0,0,0,0.25)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = '';
-              e.currentTarget.style.background = '#fff';
-              e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)';
-            }}
+            style={{ fontFamily: 'var(--font-body)', color: 'var(--green)', borderRadius: 'var(--r-md)', padding: '16px 40px', fontSize: 16, boxShadow: '0 8px 28px rgba(0,0,0,0.2)' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.background = '#f0faf5'; e.currentTarget.style.boxShadow = '0 14px 36px rgba(0,0,0,0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }}
           >
             Get Started →
           </a>

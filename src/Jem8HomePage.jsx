@@ -4,6 +4,12 @@ import { Header, Footer } from "./components/Layout";
 import { me } from "./api/auth";
 import axios from "axios";
 
+
+import officeSuppliesImg from "./assets/Office supplies & equipment.png";
+import personalCareImg   from "./assets/Personal & Home care products.png";
+import janitorialImg     from "./assets/Janitorial.png";
+import pantrySuppliesImg from "./assets/Pantry supplies.png";
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api",
   withCredentials: true,
@@ -13,23 +19,30 @@ const api = axios.create({
 const img = (w, h, label = "") =>
   `https://placehold.co/${w}x${h}/edf4f0/4d7b65?text=${encodeURIComponent(label)}`;
 
+const CAROUSEL_IMAGES = [
+  { src: officeSuppliesImg, label: "Office Supplies & Equipment" },
+  { src: personalCareImg,   label: "Personal & Home Care" },
+  { src: pantrySuppliesImg, label: "Pantry Supplies" },
+  { src: janitorialImg,     label: "Janitorial Supplies" },
+];
+
 const PRODUCT_CARDS = [
   {
     id: 1,
-    imgSrc: img(800, 500, "Office Supplies"),
+    imgSrc: officeSuppliesImg,
     title: "Office Supplies, Stationery & Equipment",
     desc: "A complete range of office essentials — pens, paper, folders, printers, and equipment. Everything your workplace needs, sourced from one trusted supplier.",
   },
   {
     id: 2,
-    imgSrc: img(800, 500, "Personal & Home Care"),
-    title: "Personal & Home Care Products",
+    imgSrc: personalCareImg,
+    title: "Personal & Home Care-Wellness Products",
     desc: "From personal hygiene products to home care essentials and everyday consumer goods — we supply both businesses and households with quality brands.",
   },
   {
     id: 3,
-    imgSrc: img(800, 500, "Pantry Supplies"),
-    title: "Pantry Supplies",
+    imgSrc: pantrySuppliesImg,
+    title: "Office Pantry Supplies",
     desc: "Keep your team fueled and happy. We supply coffee, beverages, snacks, and all the pantry essentials that make the office feel like a second home.",
   },
   {
@@ -40,7 +53,7 @@ const PRODUCT_CARDS = [
   },
   {
     id: 5,
-    imgSrc: img(800, 500, "Janitorial Supplies"),
+    imgSrc: janitorialImg,
     title: "Janitorial Supplies",
     desc: "Maintain a clean and safe workplace with our full line of janitorial products — cleaning agents, tools, sanitation supplies, and more.",
   },
@@ -58,7 +71,7 @@ const WHY_ITEMS = [
   { num: "3", title: "Dedicated & Professional Team", desc: "Every order, big or small, gets the same level of care and commitment." },
 ];
 
-/* ── Star Rating ── */
+
 function StarRating({ rating, max = 5 }) {
   return (
     <div className="flex gap-0.5">
@@ -69,7 +82,7 @@ function StarRating({ rating, max = 5 }) {
   );
 }
 
-/* ── Product Card ── */
+
 function ProductCard({ imgSrc, title, desc }) {
   return (
     <Link
@@ -95,8 +108,17 @@ function ProductCard({ imgSrc, title, desc }) {
   );
 }
 
-/* ── Hero ── */
+
 function Hero() {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % CAROUSEL_IMAGES.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <section
       className="relative flex items-center min-h-screen overflow-hidden bg-gradient-to-br from-[#f9fdf9] via-white to-[#edf4f0]"
@@ -106,7 +128,7 @@ function Hero() {
       <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-[#4d7b65]/4 pointer-events-none" />
 
       <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 items-center gap-14 pt-16 pb-20">
-        {/* Left */}
+      
         <div>
           <div className="inline-flex items-center gap-2 bg-white border border-[#b8d9c8] rounded-full px-4 py-1.5 text-[13px] font-medium text-[#4d7b65] mb-6 shadow-sm">
             <span className="w-1.5 h-1.5 bg-[#4d7b65] rounded-full animate-pulse" />
@@ -140,14 +162,37 @@ function Hero() {
           </div>
         </div>
 
-        {/* Right */}
-        <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[16/14]">
-          <img
-            src={img(693, 612, "JEM 8 Products")}
-            alt="JEM 8 Circle Trading products showcase"
-            className="object-cover w-full h-full"
-          />
-          <div className="absolute flex items-center gap-3 px-4 py-3 shadow-lg bottom-6 left-6 bg-white/95 backdrop-blur-md rounded-xl">
+       
+        <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[16/14] bg-slate-100">
+          {CAROUSEL_IMAGES.map((item, i) => (
+            <div
+              key={i}
+              className={`absolute inset-0 transition-opacity duration-700 ${
+                i === current ? "opacity-100 z-10" : "opacity-0 z-0"
+              }`}
+            >
+              <img
+                src={item.src}
+                alt={item.label}
+                className="object-cover w-full h-full"
+              />
+            </div>
+          ))}
+
+        
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            {CAROUSEL_IMAGES.map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  i === current ? "bg-[#4d7b65] w-5" : "bg-white/60 w-2"
+                }`}
+              />
+            ))}
+          </div>
+
+         
+          <div className="absolute flex items-center gap-3 px-4 py-3 shadow-lg bottom-6 left-6 bg-white/95 backdrop-blur-md rounded-xl z-20">
             <span className="text-2xl">🏆</span>
             <div>
               <strong className="block text-sm font-bold text-slate-800">Trusted Supplier</strong>
@@ -160,7 +205,7 @@ function Hero() {
   );
 }
 
-/* ── Products Section ── */
+
 function ProductsSection() {
   return (
     <section className="py-20 bg-white lg:py-28">
@@ -220,17 +265,16 @@ function WhyChooseUs() {
   );
 }
 
-/* ── Testimonials (real reviews from API) ── */
+/* ── Testimonials ── */
 function Testimonials() {
-  const [reviews, setReviews]   = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         const { data } = await api.get("/reviews");
         const all = data.data ?? [];
-        // Only show published/approved reviews, max 6
         const published = all
           .filter((r) => ["published", "approved"].includes(r.status?.toLowerCase()))
           .slice(0, 6);
@@ -248,8 +292,6 @@ function Testimonials() {
   return (
     <section className="py-20 bg-slate-50 lg:py-28">
       <div className="max-w-[1200px] mx-auto px-6">
-
-        {/* Section header */}
         <div className="flex flex-col gap-3 mb-14">
           <span className="inline-block text-[11px] font-bold tracking-[3px] uppercase text-[#4d7b65] bg-[#edf4f0] border border-[#b8d9c8] rounded-full px-3.5 py-1 self-start">
             What Clients Say
@@ -259,7 +301,6 @@ function Testimonials() {
           </h2>
         </div>
 
-        {/* Loading skeleton */}
         {loading && (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((n) => (
@@ -268,22 +309,20 @@ function Testimonials() {
           </div>
         )}
 
-        {/* No reviews */}
         {!loading && reviews.length === 0 && (
           <div className="py-16 text-sm text-center text-slate-400">
             No customer reviews yet. Be the first to leave one!
           </div>
         )}
 
-        {/* Review cards */}
         {!loading && reviews.length > 0 && (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {reviews.map((review) => {
-              const rid         = review.review_id ?? review.id;
-              const userName    = review.user?.name  ?? review.name  ?? "Customer";
-              const userRole    = review.user?.role  ?? review.role  ?? "Verified Buyer";
-              const reviewText  = review.review_text ?? review.review ?? "";
-              const rating      = Number(review.rating ?? 5);
+              const rid        = review.review_id ?? review.id;
+              const userName   = review.user?.name ?? review.name ?? "Customer";
+              const userRole   = review.user?.role ?? review.role ?? "Verified Buyer";
+              const reviewText = review.review_text ?? review.review ?? "";
+              const rating     = Number(review.rating ?? 5);
               const productName =
                 typeof review.product === "object"
                   ? (review.product?.product_name ?? review.product?.name ?? null)
@@ -294,22 +333,18 @@ function Testimonials() {
                   key={rid}
                   className="bg-white rounded-2xl px-7 py-8 border border-slate-200 shadow-sm flex flex-col gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-[#b8d9c8]"
                 >
-                  {/* Stars */}
                   <StarRating rating={rating} />
 
-                  {/* Product tag */}
                   {productName && (
                     <span className="self-start inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#edf4f0] border border-[#b8d9c8] text-[#4d7b65]">
                       📦 {productName}
                     </span>
                   )}
 
-                  {/* Review text */}
                   <p className="text-[15px] text-slate-600 leading-relaxed italic flex-1">
                     "{reviewText}"
                   </p>
 
-                  {/* Admin reply */}
                   {review.admin_reply && (
                     <div className="bg-slate-50 rounded-xl px-4 py-3 border-l-[3px] border-[#4d7b65]">
                       <div className="text-[11px] font-semibold text-[#4d7b65] mb-1">Reply from JEM 8</div>
@@ -317,7 +352,6 @@ function Testimonials() {
                     </div>
                   )}
 
-                  {/* Author */}
                   <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                     <div className="w-10 h-10 rounded-full bg-[#edf4f0] border-2 border-[#b8d9c8] flex items-center justify-center text-base font-bold text-[#4d7b65] flex-shrink-0">
                       {userName.charAt(0).toUpperCase()}
