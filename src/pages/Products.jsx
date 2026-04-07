@@ -42,7 +42,7 @@ const CATEGORY_THEMES = {
     accent: "#0d9488",
     label: "Wellness Supplies",
   },
-  giveaway: {
+  giveaway: { 
     logo: new URL("../assets/logo-giveaway.png", import.meta.url).href,
     bg: "linear-gradient(135deg, #f8f0ff 0%, #fff 55%, #faf5ff 100%)",
     accent: "#7c3aed",

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import StartChatWithAdmin from "../components/StartChatWithAdmin";
 import axios from "axios";
 
 const BASE = "http://127.0.0.1:8000/api";
@@ -49,6 +50,8 @@ export default function Contact() {
       setSending(false);
     }
   };
+
+  const navigate = useNavigate();
 
   const valid = form.firstName && form.lastName && form.email && form.message;
 
@@ -187,6 +190,14 @@ export default function Contact() {
                     <span className="ml-auto text-[#4d7b65] text-base font-bold flex-shrink-0">→</span>
                   </a>
                 ))}
+              </div>
+
+              {/* Immediate start chat (keeps existing link above) */}
+              <div className="mt-3">
+                <StartChatWithAdmin
+                  initialMessage={"Hello admin, I have a question about your products."}
+                  onStarted={({ chatroomId }) => navigate(`/messages?chatroom_id=${chatroomId}`)}
+                />
               </div>
 
               <div className="border-t border-[#f0f4f1] pt-5">

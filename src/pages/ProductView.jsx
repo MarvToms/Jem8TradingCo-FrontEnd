@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { Header, Footer } from "../components/Layout";
 import { useCart } from "../context/CartContext";
 import axios from "axios";
+import StartChatWithAdmin from "../components/StartChatWithAdmin";
 
 const BASE = "http://127.0.0.1:8000";
 
@@ -645,6 +646,16 @@ export default function ProductView() {
                 View Cart ({totalItems} item{totalItems !== 1 ? "s" : ""}) →
               </Link>
             )}
+
+            {/* Start chat with admin */}
+            <div className="mt-3">
+              <StartChatWithAdmin
+                initialMessage={`Hello admin, I'm interested in ${name} (ID ${productId})`}
+                onStarted={({ chatroomId }) => {
+                  navigate(`/messages?chatroom_id=${chatroomId}`);
+                }}
+              />
+            </div>
 
             <div className="flex flex-wrap gap-2 mt-1">
               {["🚚 Free delivery in Metro Manila","✅ Quality guaranteed","🔄 Easy returns"].map(t => (
