@@ -14,38 +14,34 @@ const api = axios.create({
 const ph = (w, h, label = "") =>
   `https://placehold.co/${w}x${h}/edf4f0/4d7b65?text=${encodeURIComponent(label)}`;
 
+// ── Aligned exactly to AdminOrders STATUS_MAP keys ──────────
 const STATUS_COLORS = {
   processing: { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
-  confirmed:  { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
-  shipped:    { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  delivered:  { bg: "#f0fdf4", color: "#166534", border: "#86efac" },
-  cancelled:  { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
-  on_the_way: { bg: "#fff7ed", color: "#d97706", border: "#fde68a" },
   ready:      { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  on_the_way: { bg: "#fff7ed", color: "#d97706", border: "#fde68a" },
+  delivered:  { bg: "#f0fdf4", color: "#166534", border: "#86efac" },
 };
 
-// Tracker labels (match PHP map): Ordered, Confirmed, Packed, Delivered
-const TRACKER_LABELS = ["Ordered", "Confirmed", "Packed", "Delivered"];
 
-const STATUS_TO_TRACKER_LABEL = {
-  pending: 'Ordered',
-  processing: 'Confirmed',
-  ready: 'Packed',
-  on_the_way: 'Packed',
-  shipped: 'Packed',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
+
+const TRACKER_LABELS = ["Ordered", "Processing", "Ready", "On The Way", "Delivered"];
+
+const STATUS_TO_TRACKER_INDEX = {
+  processing: 1,
+  ready:      2,
+  on_the_way: 3,
+  delivered:  4,
 };
 
-function getTrackerIndexFromStatus(status) {
-  const s = (status || '').toString().trim().toLowerCase();
-  const label = STATUS_TO_TRACKER_LABEL[s] || (TRACKER_LABELS.find(l => l.toLowerCase() === s) || null);
-  if (!label || label === 'Cancelled') return -1;
-  return TRACKER_LABELS.indexOf(label);
+function getTrackerIndex(status) {
+  const s = (status ?? "").toLowerCase();
+ 
+  return STATUS_TO_TRACKER_INDEX[s] ?? 0;
 }
 
 function formatStatusText(status) {
   if (!status) return "";
+
   return status
     .toString()
     .replace(/_/g, " ")
@@ -56,9 +52,8 @@ function formatStatusText(status) {
 
 function normaliseOrder(o, account) {
   const { checkout, delivery, items = [] } = o;
+ 
   const status = (delivery?.status ?? "processing").toLowerCase();
-
-  const mappedLabel = (STATUS_TO_TRACKER_LABEL[status] || status).toString();
 
   return {
     id:             delivery?.delivery_id ?? checkout?.checkout_id,
@@ -67,8 +62,7 @@ function normaliseOrder(o, account) {
                           year: "numeric", month: "long", day: "numeric",
                         })
                       : "—",
-    status, // raw backend status key (e.g. on_the_way)
-    label: mappedLabel, // human-friendly mapped label (e.g. Packed)
+    status,
     paymentMethod:  checkout?.payment_method ?? "—",
     paymentDetails: checkout?.payment_details ?? null,
     subtotal:       Number(checkout?.paid_amount ?? 0) - Number(checkout?.shipping_fee ?? 0),
@@ -81,10 +75,10 @@ function normaliseOrder(o, account) {
       phone:     account?.phone_number ?? "",
       email:     account?.email        ?? "",
       address:   delivery?.address  ?? "",
-      barangay:  delivery?.barangay  ?? "",
-      city:      delivery?.city      ?? "",
-      province:  delivery?.province  ?? "",
-      zip:       delivery?.zip       ?? "",
+      barangay:  delivery?.barangay ?? "",
+      city:      delivery?.city     ?? "",
+      province:  delivery?.province ?? "",
+      zip:       delivery?.zip      ?? "",
     },
     items: items.map((item) => ({
       id:       item.id       ?? item.product_id,
@@ -108,6 +102,15 @@ function Shell({ children }) {
     </div>
   );
 }
+
+/* ─── Tab definitions — exactly matching AdminOrders statuses ─ */
+const TABS = [
+  { key: "all",        label: "All" },
+  { key: "processing", label: "Processing" },
+  { key: "ready",      label: "Ready" },
+  { key: "on_the_way", label: "On The Way" },
+  { key: "delivered",  label: "Delivered" },
+];
 
 /* ─── Main Component ──────────────────────────────────────── */
 export default function MyOrders() {
@@ -195,7 +198,10 @@ export default function MyOrders() {
     </Shell>
   );
 
-  const filtered = activeTab === "all" ? orders : orders.filter((o) => o.status === activeTab);
+  const filtered = activeTab === "all"
+    ? orders
+    : orders.filter((o) => o.status === activeTab);
+
   const selectedOrder = orders.find((o) => String(o.id) === String(selected));
 
   return (
@@ -237,19 +243,19 @@ export default function MyOrders() {
               </span>
             </div>
 
-            {/* Tabs */}
+            {/* ── Tabs — aligned to real backend statuses ── */}
             <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
-              {["all", "processing", "confirmed", "shipped", "delivered"].map((tab) => (
+              {TABS.map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
                   className={`px-3.5 py-1.5 rounded-full border-[1.5px] text-xs font-semibold cursor-pointer transition-all whitespace-nowrap
-                    ${activeTab === tab
+                    ${activeTab === tab.key
                       ? "bg-[#4d7b65] text-white border-[#4d7b65]"
                       : "bg-white text-[#6b7c70] border-[#e8f0eb] hover:border-[#4d7b65] hover:text-[#4d7b65]"
                     }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -262,7 +268,7 @@ export default function MyOrders() {
             ) : (
               <div className="flex flex-col gap-2.5">
                 {filtered.map((order) => {
-                  const colors   = STATUS_COLORS[order.status] || STATUS_COLORS.processing;
+                  const colors   = STATUS_COLORS[order.status] ?? STATUS_COLORS.processing;
                   const isActive = String(selected) === String(order.id);
                   return (
                     <div
@@ -330,7 +336,9 @@ export default function MyOrders() {
                 <p className="text-sm text-slate-400 m-0">Select an order to view details</p>
               </div>
             ) : (() => {
-              const colors = STATUS_COLORS[selectedOrder.status] || STATUS_COLORS.processing;
+              const colors = STATUS_COLORS[selectedOrder.status] ?? STATUS_COLORS.processing;
+              const trackerIdx = getTrackerIndex(selectedOrder.status);
+
               return (
                 <div className="bg-white border-[1.5px] border-[#e8f0eb] rounded-2xl p-7">
 
@@ -348,37 +356,34 @@ export default function MyOrders() {
                     </span>
                   </div>
 
-                  {/* Tracker */}
-                  {selectedOrder.status.toString().toLowerCase() !== "cancelled" && (
-                    <div className="flex items-center mb-7 p-5 bg-[#f8faf9] rounded-xl border border-[#e8f0eb] overflow-x-auto">
-                        {TRACKER_LABELS.map((label, i) => {
-                          const currentIdx = getTrackerIndexFromStatus(selectedOrder.status);
-                          const isDone    = i < currentIdx;
-                          const isCurrent = i === currentIdx;
-                          return (
-                            <div key={label} className="flex items-center gap-2 flex-shrink-0">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all
-                                  ${isDone    ? "bg-green-600 text-white"
-                                  : isCurrent ? "bg-[#4d7b65] text-white"
-                                  :             "bg-[#e8f0eb] text-slate-400"}`}>
-                                  {isDone ? "✓" : i + 1}
-                                </div>
-                                <span className={`text-xs font-semibold transition-colors hidden sm:block
-                                  ${isDone    ? "text-green-600"
-                                  : isCurrent ? "text-[#4d7b65] font-bold"
-                                  :             "text-slate-400"}`}>
-                                  {label}
-                                </span>
-                              </div>
-                              {i < TRACKER_LABELS.length - 1 && (
-                                <div className={`min-w-6 h-0.5 mx-1.5 transition-colors flex-shrink-0 ${isDone ? "bg-green-600" : "bg-[#e8f0eb]"}`} />
-                              )}
+                  {/* ── Tracker ── aligned to: processing → ready → on_the_way → delivered */}
+                  <div className="flex items-center mb-7 p-5 bg-[#f8faf9] rounded-xl border border-[#e8f0eb] overflow-x-auto">
+                    {TRACKER_LABELS.map((label, i) => {
+                      const isDone    = i < trackerIdx;
+                      const isCurrent = i === trackerIdx;
+                      return (
+                        <div key={label} className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all
+                              ${isDone    ? "bg-green-600 text-white"
+                              : isCurrent ? "bg-[#4d7b65] text-white"
+                              :             "bg-[#e8f0eb] text-slate-400"}`}>
+                              {isDone ? "✓" : i + 1}
                             </div>
-                          );
-                        })}
-                      </div>
-                  )}
+                            <span className={`text-xs font-semibold transition-colors hidden sm:block
+                              ${isDone    ? "text-green-600"
+                              : isCurrent ? "text-[#4d7b65] font-bold"
+                              :             "text-slate-400"}`}>
+                              {label}
+                            </span>
+                          </div>
+                          {i < TRACKER_LABELS.length - 1 && (
+                            <div className={`min-w-6 h-0.5 mx-1.5 transition-colors flex-shrink-0 ${isDone ? "bg-green-600" : "bg-[#e8f0eb]"}`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
 
                   {/* Delivery Address */}
                   <div className="mb-5">

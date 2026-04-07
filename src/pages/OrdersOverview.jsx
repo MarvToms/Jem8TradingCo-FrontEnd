@@ -24,33 +24,49 @@ const RefreshIcon = () => (
   </svg>
 );
 
-const TABS = ["All", "Completed", "Pending", "Delivered", "Cancelled"];
+// ── Tabs aligned to real AdminOrders STATUS_MAP keys ─────────
+const TABS = [
+  { key: "all",        label: "All" },
+  { key: "processing", label: "Processing" },
+  { key: "ready",      label: "Ready" },
+  { key: "on_the_way", label: "On The Way" },
+  { key: "delivered",  label: "Delivered" },
+];
 
+// ── Status styles — keys match exact backend values ──────────
 const STATUS_STYLE = {
-  Completed:  { bg: "#e8f4fd", color: "#2196f3", dot: "#2196f3" },
-  Pending:    { bg: "#fff8e1", color: "#f59e0b", dot: "#f59e0b" },
-  Processing: { bg: "#fff8e1", color: "#f59e0b", dot: "#f59e0b" },
-  Delivered:  { bg: "#e8f4fd", color: "#2196f3", dot: "#2196f3" },
-  Cancelled:  { bg: "#fde8e8", color: "#ef4444", dot: "#ef4444" },
-  Shipped:    { bg: "#e8f5e9", color: "#4caf50", dot: "#4caf50" },
+  processing: { bg: "#fff7ed", color: "#c2410c", dot: "#c2410c" },
+  ready:      { bg: "#eff6ff", color: "#1d4ed8", dot: "#1d4ed8" },
+  on_the_way: { bg: "#fff7ed", color: "#d97706", dot: "#d97706" },
+  delivered:  { bg: "#f0fdf4", color: "#166534", dot: "#166534" },
 };
 
-const TRACKER_STEPS = ["Ordered", "Confirmed", "Packed", "Delivered"];
+const DEFAULT_STYLE = { bg: "#f3f4f6", color: "#6b7280", dot: "#6b7280" };
+
+
+const TRACKER_STEPS = ["Ordered", "Processing", "Ready", "On The Way", "Delivered"];
+
+const STATUS_TO_TRACKER_INDEX = {
+  processing: 1,
+  ready:      2,
+  on_the_way: 3,
+  delivered:  4,
+};
 
 function getActiveTrackerStep(status) {
-  switch (status?.toLowerCase()) {
-    case "pending":    return 0;
-    case "processing": return 1;
-    case "shipped":    return 2;
-    case "delivered":  return 3;
-    case "completed":  return 3;
-    default:           return -1;
-  }
+  const s = (status ?? "").toLowerCase();
+  
+  return STATUS_TO_TRACKER_INDEX[s] ?? 0;
+}
+
+
+function formatStatus(status) {
+  if (!status) return "—";
+  return status.replace(/_/g, " ").replace(/(^|\s)\S/g, (t) => t.toUpperCase());
 }
 
 function OrderTracker({ status }) {
   const activeStep = getActiveTrackerStep(status);
-  if (activeStep === -1) return null;
 
   return (
     <div className="relative flex items-start my-3">
@@ -80,9 +96,10 @@ function OrderTracker({ status }) {
 }
 
 function OrderCard({ order }) {
-  const orderStatus = order.delivery?.status || order.status || "Processing";
-  const s = STATUS_STYLE[orderStatus] || { bg: "#f3f4f6", color: "#6b7280", dot: "#6b7280" };
-  const canReorder = orderStatus === "Delivered" || orderStatus === "Completed";
+  // Normalize status to lowercase to match backend keys
+  const rawStatus = (order.delivery?.status || order.status || "processing").toLowerCase();
+  const s = STATUS_STYLE[rawStatus] ?? DEFAULT_STYLE;
+  const canReorder = rawStatus === "delivered";
   const items = order.cart || [];
 
   const paymentLabel =
@@ -99,7 +116,9 @@ function OrderCard({ order }) {
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-bold text-gray-900">Order #{order.checkout_id}</span>
           <span className="text-xs text-gray-400">
-            {new Date(order.created_at).toLocaleDateString()}
+            {new Date(order.created_at).toLocaleDateString("en-PH", {
+              year: "numeric", month: "short", day: "numeric",
+            })}
           </span>
         </div>
         <span
@@ -107,7 +126,7 @@ function OrderCard({ order }) {
           style={{ background: s.bg, color: s.color }}
         >
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: s.dot }} />
-          {orderStatus}
+          {formatStatus(rawStatus)}
         </span>
       </div>
 
@@ -134,10 +153,8 @@ function OrderCard({ order }) {
         )}
       </div>
 
-      {/* Tracker */}
-      {orderStatus !== "Cancelled" && orderStatus !== "Completed" && (
-        <OrderTracker status={orderStatus} />
-      )}
+      {/* Tracker — always show for valid statuses */}
+      <OrderTracker status={rawStatus} />
 
       {/* Bottom row */}
       <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
@@ -181,10 +198,12 @@ const api = axios.create({
 });
 
 export default function OrdersOverview({ userId }) {
-  const [activeTab, setActiveTab] = useState("All");
+  const [activeTab, setActiveTab] = useState("all");
   const [orders, setOrders]       = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [stats, setStats]         = useState({ total: 0, completed: 0, delivered: 0, pending: 0 });
+  const [stats, setStats]         = useState({
+    total: 0, processing: 0, ready: 0, on_the_way: 0, delivered: 0,
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -195,12 +214,25 @@ export default function OrdersOverview({ userId }) {
         if (response.status === 200) {
           let ordersData = response.data;
           if (!Array.isArray(ordersData)) ordersData = [ordersData];
-          setOrders(ordersData);
+
+          // Normalize all statuses to lowercase for consistent comparison
+          const normalized = ordersData.map((o) => ({
+            ...o,
+            delivery: o.delivery
+              ? { ...o.delivery, status: (o.delivery.status ?? "processing").toLowerCase() }
+              : { status: "processing" },
+          }));
+
+          setOrders(normalized);
+
+          
+          const count = (s) => normalized.filter((o) => o.delivery?.status === s).length;
           setStats({
-            total:     ordersData.length,
-            completed: ordersData.filter(o => o.delivery?.status === "Delivered" || o.delivery?.status === "Completed").length,
-            delivered: ordersData.filter(o => o.delivery?.status === "Delivered").length,
-            pending:   ordersData.filter(o => o.delivery?.status === "Processing" || o.delivery?.status === "Pending").length,
+            total:      normalized.length,
+            processing: count("processing"),
+            ready:      count("ready"),
+            on_the_way: count("on_the_way"),
+            delivered:  count("delivered"),
           });
         }
       } catch (error) {
@@ -211,7 +243,7 @@ export default function OrdersOverview({ userId }) {
           toast.error("Failed to load your orders");
         }
         setOrders([]);
-        setStats({ total: 0, completed: 0, delivered: 0, pending: 0 });
+        setStats({ total: 0, processing: 0, ready: 0, on_the_way: 0, delivered: 0 });
       } finally {
         setLoading(false);
       }
@@ -219,18 +251,17 @@ export default function OrdersOverview({ userId }) {
     fetchOrders();
   }, [navigate]);
 
-  const filtered = activeTab === "All"
+  const filtered = activeTab === "all"
     ? orders
-    : orders.filter(o => (o.delivery?.status || o.status) === activeTab);
+    : orders.filter((o) => o.delivery?.status === activeTab);
 
   const STAT_CARDS = [
-    { label: "TOTAL ORDERS", value: stats.total     },
-    { label: "COMPLETED",    value: stats.completed  },
+    { label: "TOTAL ORDERS", value: stats.total      },
+    { label: "PROCESSING",   value: stats.processing },
+    { label: "ON THE WAY",   value: stats.on_the_way },
     { label: "DELIVERED",    value: stats.delivered  },
-    { label: "PENDING",      value: stats.pending    },
   ];
 
-  // ── Loading state ──
   if (loading) {
     return (
       <div className="p-6 py-16 text-center">
@@ -282,17 +313,17 @@ export default function OrdersOverview({ userId }) {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 py-4 border-b border-gray-100 px-7">
-          {TABS.map(tab => (
+          {TABS.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-1.5 rounded-full border text-[13px] font-medium cursor-pointer transition-all duration-150
-                ${activeTab === tab
+                ${activeTab === tab.key
                   ? "bg-gray-900 border-gray-900 text-white font-semibold"
                   : "bg-white border-gray-200 text-gray-500 hover:border-[#c3ddd0] hover:text-[#2e6b45]"
                 }`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -303,7 +334,7 @@ export default function OrdersOverview({ userId }) {
             <div className="mb-5 text-6xl">📦</div>
             <h3 className="mb-2 text-xl font-semibold text-gray-900">No orders found</h3>
             <p className="mb-6 text-gray-500">
-              You don't have any {activeTab !== "All" ? activeTab.toLowerCase() : ""} orders yet.
+              You don't have any{activeTab !== "all" ? ` ${formatStatus(activeTab).toLowerCase()}` : ""} orders yet.
             </p>
             <button
               onClick={() => navigate("/products")}

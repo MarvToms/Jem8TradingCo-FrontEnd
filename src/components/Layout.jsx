@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import Logo from '../assets/Logo — Jem 8 Circle Trading Co (1).png';
@@ -17,6 +17,8 @@ export function Header() {
   const [profileImage, setProfileImage] = useState(null);
   const [loading, setLoading]           = useState(true);
   const [userRole, setUserRole]         = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef                     = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -24,41 +26,50 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const handler = (e) => setProfileImage(e.detail.url);
-    window.addEventListener("profile-photo-updated", handler);
-    return () => window.removeEventListener("profile-photo-updated", handler);
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close dropdown on route change
+  useEffect(() => {
+    setDropdownOpen(false);
+  }, [location.pathname]);
+
   // Function to check login status
-const checkLogin = async () => {
-  console.log("checkLogin called");
-  console.log("token in localStorage:", localStorage.getItem("token"));
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.log("NO TOKEN — bailing out");
+  const checkLogin = async () => {
+    console.log("checkLogin called");
+    console.log("token in localStorage:", localStorage.getItem("token"));
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.log("NO TOKEN — bailing out");
+        setIsLog(false);
+        setLoading(false);
+        return;
+      }
+      const res = await api.get("/me");
+      console.log("=== /me response ===", res.data);
+
+      setIsLog(true);
+      const userData = res.data?.data ?? res.data;
+      setProfileImage(userData?.profile_image ?? null);
+      setUserRole(userData?.role ?? null);
+    } catch (err) {
+      console.log("/me error:", err);
       setIsLog(false);
+      setProfileImage(null);
+      setUserRole(null);
+    } finally {
       setLoading(false);
-      return;
     }
-    const res = await api.get("/me");
-    console.log("=== /me response ===", res.data);
-    
-    setIsLog(true);
-    // handle both response shapes: { data: {...} } or flat { role, profile_image }
-    const userData = res.data?.data ?? res.data;
-    setProfileImage(userData?.profile_image ?? null);
-    setUserRole(userData?.role ?? null);
-  } catch (err) {
-    console.log("/me error:", err);
-    setIsLog(false);
-    setProfileImage(null);
-    setUserRole(null);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     checkLogin();
@@ -69,13 +80,8 @@ const checkLogin = async () => {
       setUserRole(null);
     };
 
-    const handleLogin = () => {
-      checkLogin();
-    };
-
-    const handlePhotoUpdate = (e) => {
-      setProfileImage(e.detail.url);
-    };
+    const handleLogin = () => { checkLogin(); };
+    const handlePhotoUpdate = (e) => { setProfileImage(e.detail.url); };
 
     window.addEventListener("auth-logout", handleLogout);
     window.addEventListener("auth-login", handleLogin);
@@ -96,6 +102,22 @@ const checkLogin = async () => {
 
   const isActive = (path) => location.pathname === path;
   const isAdmin  = userRole === "admin" || userRole === "administrator" || userRole === "Admin";
+
+  const handleLogout = () => {
+    setDropdownOpen(false);
+    localStorage.removeItem("token");
+    sessionStorage.clear();
+    setIsLog(false);
+    setProfileImage(null);
+    setUserRole(null);
+    window.dispatchEvent(new Event("auth-logout"));
+    navigate("/login");
+  };
+
+  const handleViewProfile = () => {
+    setDropdownOpen(false);
+    navigate("/Profilepersonal");
+  };
 
   const NAV_LINKS = [
     { to: "/",         label: "Home"      },
@@ -198,7 +220,7 @@ const checkLogin = async () => {
               Contact Us
             </Link>
 
-            {/* Login / Avatar */}
+            {/* Login / Avatar with Dropdown */}
             {!isLog ? (
               <button
                 onClick={() => navigate("/login")}
@@ -207,22 +229,55 @@ const checkLogin = async () => {
                 Login
               </button>
             ) : (
-              <button
-                onClick={() => navigate("/Profilepersonal")}
-                aria-label="My Profile"
-                title="My Profile"
-                className="w-9 h-9 rounded-full bg-[#2e6b45] border-2 border-[#2e6b4530] cursor-pointer flex items-center justify-center p-0 flex-shrink-0 shadow-[0_2px_8px_#2e6b4530] text-white font-bold text-sm overflow-hidden hover:opacity-90 transition-opacity"
-              >
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt="Profile"
-                    className="object-cover w-full h-full rounded-full"
-                  />
-                ) : (
-                  "J"
+              <div className="relative" ref={dropdownRef}>
+                {/* Avatar button */}
+                <button
+                  onClick={() => setDropdownOpen((prev) => !prev)}
+                  aria-label="My Profile"
+                  title="My Profile"
+                  className={`w-9 h-9 rounded-full bg-[#2e6b45] border-2 cursor-pointer flex items-center justify-center p-0 flex-shrink-0 text-white font-bold text-sm overflow-hidden transition-all duration-150
+                    ${dropdownOpen
+                      ? "border-[#2e6b45] shadow-[0_0_0_3px_rgba(46,107,69,0.2)]"
+                      : "border-[#2e6b4530] shadow-[0_2px_8px_#2e6b4530] hover:opacity-90"
+                    }`}
+                >
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="object-cover w-full h-full rounded-full"
+                    />
+                  ) : (
+                    "J"
+                  )}
+                </button>
+
+                {/* Dropdown menu */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-[170px] bg-white border border-gray-200 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-[1100]">
+                    {/* Arrow */}
+                    <div className="absolute -top-[6px] right-[10px] w-3 h-3 bg-white border-l border-t border-gray-200 rotate-45" />
+
+                    <button
+                      onClick={handleViewProfile}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-[13px] text-gray-700 font-medium hover:bg-[#e8f5ed] hover:text-[#2e6b45] transition-colors duration-150 text-left bg-transparent border-none cursor-pointer"
+                    >
+                      <span className="text-base">👤</span>
+                      View Profile
+                    </button>
+
+                    <div className="h-px bg-gray-100 mx-3" />
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-[13px] text-red-500 font-medium hover:bg-red-50 transition-colors duration-150 text-left bg-transparent border-none cursor-pointer"
+                    >
+                      <span className="text-base">🚪</span>
+                      Logout
+                    </button>
+                  </div>
                 )}
-              </button>
+              </div>
             )}
 
             {/* Hamburger (mobile only) */}
@@ -305,6 +360,19 @@ const checkLogin = async () => {
           >
             🛠️ Admin Dashboard
           </Link>
+        )}
+
+        {/* Mobile logout */}
+        {isLog && (
+          <>
+            <div className="h-px bg-gray-100 my-2" />
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-[15px] text-red-500 font-medium hover:bg-red-50 transition-colors text-left bg-transparent border-none cursor-pointer"
+            >
+              🚪 Logout
+            </button>
+          </>
         )}
 
         <div className="pt-6 mt-auto">
@@ -455,19 +523,18 @@ export function Footer() {
         </p>
         <div className="flex gap-5">
           {[
-          { label: "Privacy Policy",     to: "/Privacypolicy" },
-          { label: "Terms & Conditions", to: "/Privacypolicy?tab=terms" },
-          { label: "Cookie Policy", to: "/Privacypolicy?tab=cookies" },
-          
-        ].map(({ label, to }) => (
-          <Link
-            key={label}
-            to={to}
-            className="text-[12px] text-[#9e9890] no-underline hover:text-[#2e6b45] transition-colors"
-          >
-            {label}
-          </Link>
-        ))}
+            { label: "Privacy Policy",     to: "/Privacypolicy" },
+            { label: "Terms & Conditions", to: "/Privacypolicy?tab=terms" },
+            { label: "Cookie Policy",      to: "/Privacypolicy?tab=cookies" },
+          ].map(({ label, to }) => (
+            <Link
+              key={label}
+              to={to}
+              className="text-[12px] text-[#9e9890] no-underline hover:text-[#2e6b45] transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
         </div>
       </div>
     </footer>
