@@ -1,8 +1,85 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import Logo from '../assets/Logo — Jem 8 Circle Trading Co (1).png';
 import api from "../api/axios";
+
+const BASE = "http://127.0.0.1:8000";
+
+/* ══════════════════════════════════
+   SEARCH DROPDOWN
+══════════════════════════════════ */
+function SearchDropdown({ query, products, onSelect, visible }) {
+  if (!visible || !query.trim() || products.length === 0) return null;
+
+  return (
+    <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-[#e2e8f0] rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.10)] overflow-hidden z-[2000]">
+      {products.map((p) => {
+        const name     = p.product_name ?? p.name ?? "";
+        const priceRaw = parseFloat(p.price ?? 0);
+        const price    = `₱${priceRaw.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
+        const productId = p.id ?? p.product_id;
+        const rawImg   = p.images?.[0]?.image_path;
+        const imgSrc   = rawImg ? `${BASE}/storage/${rawImg}` : null;
+
+        // Highlight matching query inside name
+        const q   = query.trim().toLowerCase();
+        const idx = name.toLowerCase().indexOf(q);
+        const highlighted =
+          idx === -1 ? (
+            name
+          ) : (
+            <>
+              {name.slice(0, idx)}
+              <strong className="text-[#2e6b45]">{name.slice(idx, idx + q.length)}</strong>
+              {name.slice(idx + q.length)}
+            </>
+          );
+
+        return (
+          <button
+            key={productId}
+            onMouseDown={() => onSelect(productId)}
+            className="w-full flex items-center gap-[10px] px-[14px] py-[10px] text-left bg-transparent border-none cursor-pointer hover:bg-[#e8f5ed] transition-colors border-b border-[#f1f5f9] last:border-b-0"
+          >
+            {/* Thumbnail */}
+            <div className="w-[36px] h-[36px] rounded-[8px] bg-[#f1f5f9] flex-shrink-0 overflow-hidden">
+              {imgSrc ? (
+                <img
+                  src={imgSrc}
+                  alt={name}
+                  className="object-cover w-full h-full"
+                  onError={(e) => { e.target.style.display = "none"; }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[16px]">📦</div>
+              )}
+            </div>
+
+            {/* Name + price */}
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className="text-[13px] text-[#1e293b] font-medium leading-[1.3] truncate">
+                {highlighted}
+              </span>
+              <span className="text-[11px] text-[#2e6b45] font-semibold mt-[2px]">{price}</span>
+            </div>
+
+            {/* Arrow */}
+            <span className="text-[#b0c4bb] text-[12px] flex-shrink-0">›</span>
+          </button>
+        );
+      })}
+
+      {/* "View all results" footer */}
+      <button
+        onMouseDown={() => onSelect(null, query)}
+        className="w-full px-[14px] py-[10px] text-[12px] text-[#64748b] font-medium text-center bg-[#f8fafc] border-none cursor-pointer hover:bg-[#e8f5ed] hover:text-[#2e6b45] transition-colors"
+      >
+        View all results for &ldquo;<strong>{query}</strong>&rdquo; →
+      </button>
+    </div>
+  );
+}
 
 /* ══════════════════════════════════
    HEADER
@@ -20,13 +97,86 @@ export function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef                     = useRef(null);
 
+  // ── Search state ──
+  const [searchQuery, setSearchQuery]         = useState("");
+  const [allProducts, setAllProducts]         = useState([]);
+  const [searchResults, setSearchResults]     = useState([]);
+  const [searchVisible, setSearchVisible]     = useState(false);
+  const searchRef                             = useRef(null);
+  const debounceRef                           = useRef(null);
+
+  // Fetch all products once for search suggestions
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res  = await api.get("/admin/products");
+        const data = res.data?.data ?? res.data?.products ?? res.data;
+        setAllProducts(Array.isArray(data) ? data : []);
+      } catch {
+        // silently fail — search just won't suggest
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Debounced filter on query change
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchVisible(false);
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      const q       = searchQuery.trim().toLowerCase();
+      const matches = allProducts
+        .filter(p => (p.product_name ?? p.name ?? "").toLowerCase().includes(q))
+        .slice(0, 6);
+      setSearchResults(matches);
+      setSearchVisible(true);
+    }, 180);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery, allProducts]);
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchVisible(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSearchSelect = (productId, fallbackQuery) => {
+    setSearchVisible(false);
+    setSearchQuery("");
+    if (productId) {
+      navigate(`/products/${productId}`);
+    } else {
+      navigate(`/products?q=${encodeURIComponent(fallbackQuery ?? searchQuery)}`);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      setSearchVisible(false);
+      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+    if (e.key === "Escape") {
+      setSearchVisible(false);
+    }
+  };
+
+  // ── Scroll / auth effects (unchanged) ──
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -37,32 +187,18 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close dropdown on route change
-  useEffect(() => {
-    setDropdownOpen(false);
-  }, [location.pathname]);
+  useEffect(() => { setDropdownOpen(false); }, [location.pathname]);
 
-  // Function to check login status
   const checkLogin = async () => {
-    console.log("checkLogin called");
-    console.log("token in localStorage:", localStorage.getItem("token"));
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.log("NO TOKEN — bailing out");
-        setIsLog(false);
-        setLoading(false);
-        return;
-      }
-      const res = await api.get("/me");
-      console.log("=== /me response ===", res.data);
-
-      setIsLog(true);
+      if (!token) { setIsLog(false); setLoading(false); return; }
+      const res      = await api.get("/me");
       const userData = res.data?.data ?? res.data;
+      setIsLog(true);
       setProfileImage(userData?.profile_image ?? null);
       setUserRole(userData?.role ?? null);
-    } catch (err) {
-      console.log("/me error:", err);
+    } catch {
       setIsLog(false);
       setProfileImage(null);
       setUserRole(null);
@@ -73,18 +209,11 @@ export function Header() {
 
   useEffect(() => {
     checkLogin();
-
-    const handleLogout = () => {
-      setIsLog(false);
-      setProfileImage(null);
-      setUserRole(null);
-    };
-
-    const handleLogin = () => { checkLogin(); };
-    const handlePhotoUpdate = (e) => { setProfileImage(e.detail.url); };
-
-    window.addEventListener("auth-logout", handleLogout);
-    window.addEventListener("auth-login", handleLogin);
+    const handleLogout      = () => { setIsLog(false); setProfileImage(null); setUserRole(null); };
+    const handleLogin       = () => checkLogin();
+    const handlePhotoUpdate = (e) => setProfileImage(e.detail.url);
+    window.addEventListener("auth-logout",           handleLogout);
+    window.addEventListener("auth-login",            handleLogin);
     window.addEventListener("profile-photo-updated", handlePhotoUpdate);
     return () => {
       window.removeEventListener("auth-logout",           handleLogout);
@@ -171,18 +300,37 @@ export function Header() {
           {/* Actions */}
           <div className="flex items-center flex-shrink-0 gap-2 ml-auto md:ml-0">
 
-            {/* Search (desktop only) */}
-            <div className="hidden md:flex items-center bg-gray-100 rounded-full px-3 gap-1.5 h-9">
-              <span className="text-sm">🔍</span>
+            {/* ── Search with live suggestions (desktop only) ── */}
+            <div
+              ref={searchRef}
+              className="relative hidden md:flex items-center bg-gray-100 rounded-full px-3 gap-1.5 h-9"
+            >
+              <span className="text-sm pointer-events-none">🔍</span>
               <input
                 type="text"
                 className="border-none bg-transparent outline-none text-[13px] w-[140px] text-gray-700 placeholder-gray-400"
                 placeholder="Search products..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && e.target.value.trim()) {
-                    window.location.href = "/products";
-                  }
-                }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => { if (searchResults.length) setSearchVisible(true); }}
+                onKeyDown={handleSearchKeyDown}
+                autoComplete="off"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(""); setSearchVisible(false); }}
+                  className="bg-transparent border-none cursor-pointer text-gray-400 text-[12px] px-1 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              )}
+
+              {/* Suggestion dropdown */}
+              <SearchDropdown
+                query={searchQuery}
+                products={searchResults}
+                onSelect={handleSearchSelect}
+                visible={searchVisible}
               />
             </div>
 
@@ -230,7 +378,6 @@ export function Header() {
               </button>
             ) : (
               <div className="relative" ref={dropdownRef}>
-                {/* Avatar button */}
                 <button
                   onClick={() => setDropdownOpen((prev) => !prev)}
                   aria-label="My Profile"
@@ -242,22 +389,15 @@ export function Header() {
                     }`}
                 >
                   {profileImage ? (
-                    <img
-                      src={profileImage}
-                      alt="Profile"
-                      className="object-cover w-full h-full rounded-full"
-                    />
+                    <img src={profileImage} alt="Profile" className="object-cover w-full h-full rounded-full" />
                   ) : (
                     "J"
                   )}
                 </button>
 
-                {/* Dropdown menu */}
                 {dropdownOpen && (
                   <div className="absolute right-0 top-[calc(100%+8px)] w-[170px] bg-white border border-gray-200 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-[1100]">
-                    {/* Arrow */}
                     <div className="absolute -top-[6px] right-[10px] w-3 h-3 bg-white border-l border-t border-gray-200 rotate-45" />
-
                     <button
                       onClick={handleViewProfile}
                       className="w-full flex items-center gap-2.5 px-4 py-3 text-[13px] text-gray-700 font-medium hover:bg-[#e8f5ed] hover:text-[#2e6b45] transition-colors duration-150 text-left bg-transparent border-none cursor-pointer"
@@ -265,9 +405,7 @@ export function Header() {
                       <span className="text-base">👤</span>
                       View Profile
                     </button>
-
-                    <div className="h-px bg-gray-100 mx-3" />
-
+                    <div className="h-px mx-3 bg-gray-100" />
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-4 py-3 text-[13px] text-red-500 font-medium hover:bg-red-50 transition-colors duration-150 text-left bg-transparent border-none cursor-pointer"
@@ -324,6 +462,22 @@ export function Header() {
           JEM 8 Circle
         </div>
 
+        {/* Mobile search bar */}
+        <div className="flex items-center bg-gray-100 rounded-full px-3 gap-1.5 h-9 mb-4">
+          <span className="text-sm">🔍</span>
+          <input
+            type="text"
+            className="border-none bg-transparent outline-none text-[13px] flex-1 text-gray-700 placeholder-gray-400"
+            placeholder="Search products..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.target.value.trim()) {
+                navigate(`/products?q=${encodeURIComponent(e.target.value.trim())}`);
+                setMobileOpen(false);
+              }
+            }}
+          />
+        </div>
+
         {NAV_LINKS.map(({ to, label }) => (
           <Link
             key={to}
@@ -362,10 +516,9 @@ export function Header() {
           </Link>
         )}
 
-        {/* Mobile logout */}
         {isLog && (
           <>
-            <div className="h-px bg-gray-100 my-2" />
+            <div className="h-px my-2 bg-gray-100" />
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-[15px] text-red-500 font-medium hover:bg-red-50 transition-colors text-left bg-transparent border-none cursor-pointer"
