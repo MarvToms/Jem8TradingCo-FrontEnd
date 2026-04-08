@@ -118,6 +118,7 @@ export default function Checkout() {
           price:    `₱${Number(c.product?.price || 0).toLocaleString()}`,
           qty:      c.quantity,
           cat:      c.product?.category_id || "Product",
+          status:   c.product?.status ?? "in_stock",
         }));
 
         // ── Only keep items the user selected in Cart ──────────────────────
@@ -596,7 +597,6 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                {/* Items block */}
                 <div className="border-[1.5px] border-[#e8f0eb] rounded-xl overflow-hidden mb-4">
                   <div className="px-4 py-3 bg-[#f8faf9] border-b border-[#e8f0eb] text-[13px] font-bold text-slate-700">
                     🛒 Items ({items.length})
@@ -613,6 +613,16 @@ export default function Checkout() {
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-[#1a2e22] truncate">{item.name}</div>
                           <div className="text-xs text-slate-400 mt-0.5">Qty: {item.qty}</div>
+                         
+                          {item.status === "pre_order" ? (
+                            <div className="mt-1 inline-block text-[11px] font-semibold text-[#92400e] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-1 rounded-full">
+                              ⏳ Pre-Order — delivery may take longer
+                            </div>
+                          ) : (
+                            <div className="mt-1 inline-block text-[11px] font-semibold text-[#059669] bg-[#D1FAE5] border border-[#6EE7B7] px-2 py-1 rounded-full">
+                              ✅ In Stock
+                            </div>
+                          )}
                         </div>
                         <div className="text-[15px] font-bold text-[#4d7b65] flex-shrink-0">
                           ₱{(item.rawPrice * item.qty).toLocaleString()}
@@ -685,7 +695,6 @@ export default function Checkout() {
                 </div>
               ) : null}
 
-              {/* Selected items breakdown */}
               <div className="mb-4 bg-[#f8faf9] border border-[#e8f0eb] rounded-xl p-4">
                 <p className="text-xs font-bold text-[#4d7b65] uppercase tracking-wide mb-3 m-0">
                   Items ({items.length})
@@ -707,6 +716,12 @@ export default function Checkout() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-[#1a2e22] m-0 truncate">{item.name}</p>
                         <p className="text-[11px] text-gray-400 m-0">x{item.qty} · {item.price} each</p>
+                      
+                        {item.status === "pre_order" ? (
+                          <p className="text-[10px] text-[#92400e] m-0 mt-0.5">⏳ Pre-order</p>
+                        ) : (
+                          <p className="text-[10px] text-[#059669] m-0 mt-0.5">✅ In stock</p>
+                        )}
                       </div>
                       <span className="text-xs font-bold text-[#4d7b65] flex-shrink-0">
                         ₱{(item.rawPrice * item.qty).toLocaleString()}

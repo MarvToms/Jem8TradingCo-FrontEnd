@@ -504,9 +504,9 @@ export function Footer() {
             </div>
             <p className="text-[11px] text-[#9e9890]">
               We won't spam. Read our{" "}
-              <Link to="/contact" className="text-[#2e6b45] no-underline hover:underline">
+              <Link to="/Privacypolicy?tab=email" className="text-[#2e6b45] no-underline hover:underline">
                 email policy
-              </Link>.
+              </Link>
             </p>
           </div>
 
@@ -526,6 +526,7 @@ export function Footer() {
             { label: "Privacy Policy",     to: "/Privacypolicy" },
             { label: "Terms & Conditions", to: "/Privacypolicy?tab=terms" },
             { label: "Cookie Policy",      to: "/Privacypolicy?tab=cookies" },
+            { label: "Email Policy", to: "/Privacypolicy?tab=email" },
           ].map(({ label, to }) => (
             <Link
               key={label}

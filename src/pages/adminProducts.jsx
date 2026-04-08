@@ -138,7 +138,37 @@ const CategorySelect = ({ name, value, onChange, disabled, categories }) => (
   </div>
 );
 
-const SaleToggle = ({ checked, onChange, name }) => (
+const StatusToggle = ({ value, onChange, name }) => (
+  <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-3 mb-5">
+    <div>
+      <div className="text-[13px] font-semibold text-gray-700">Availability Status</div>
+      <div className="text-[11px] text-slate-400">Set whether this product is In Stock or Pre-Order</div>
+    </div>
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={() => onChange("in_stock")}
+        className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors cursor-pointer
+          ${value === "in_stock"
+            ? "bg-emerald-600 text-white border-emerald-600"
+            : "bg-white text-slate-500 border-slate-200 hover:border-emerald-400"}`}
+      >
+        ✅ In Stock
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("pre_order")}
+        className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors cursor-pointer
+          ${value === "pre_order"
+            ? "bg-amber-500 text-white border-amber-500"
+            : "bg-white text-slate-500 border-slate-200 hover:border-amber-400"}`}
+      >
+        🕒 Pre-Order
+      </button>
+    </div>
+  </div>
+);
+        const SaleToggle = ({ checked, onChange, name }) => (
   <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-3 mb-5">
     <div>
       <div className="text-[13px] font-semibold text-gray-700">Mark as On Sale</div>
@@ -151,7 +181,6 @@ const SaleToggle = ({ checked, onChange, name }) => (
     </label>
   </div>
 );
-
 const ColorDot = ({ color, size = "w-3 h-3" }) => {
   const dot = COLOR_DOT_MAP[color] || "#e2e8f0";
   const isGrad = dot.startsWith("linear");
@@ -946,7 +975,7 @@ const AdminProducts = () => {
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [products, setProducts]                 = useState([]);
   const [productsLoading, setProductsLoading]   = useState(false);
-  const [productStats, setProductStats]         = useState({ total: 0, inStock: 0, lowStock: 0, outOfStock: 0 });
+  const [productStats, setProductStats] = useState({ total: 0, inStock: 0, preOrder: 0 });
 
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting]     = useState(false);
@@ -954,13 +983,13 @@ const AdminProducts = () => {
 
   // ── Add form ──
   const BLANK_ADD = {
-    product_name: "", category_id: "", description: "",
-    price: "", acquired_price: "", unit: "", size: "", isSale: false,
+  product_name: "", category_id: "", description: "",
+  price: "", acquired_price: "", unit: "", size: "", isSale: false, status: "in_stock",
   };
   const [addForm, setAddForm]         = useState(BLANK_ADD);
   const [addImages, setAddImages]     = useState([]);
   const [addPreviews, setAddPreviews] = useState([]);
-  const [addVariants, setAddVariants] = useState([]);
+ 
 
   // ── Edit form ──
   const [editForm, setEditForm]           = useState({ ...BLANK_ADD });
@@ -968,7 +997,7 @@ const AdminProducts = () => {
   const [newPreviews, setNewPreviews]     = useState([]);
   const [removedImageIds, setRemovedImageIds] = useState([]);
   const [editColor, setEditColor]         = useState("");
-  const [editStocks, setEditStocks]       = useState(0);
+  
 
   // ────────────────────────────────────────────
   // Data fetching
@@ -980,13 +1009,11 @@ const AdminProducts = () => {
       const data = res.data?.data ?? res.data?.products ?? res.data;
       const list = Array.isArray(data) ? data : [];
       setProducts(list);
-      const getStock = p => parseInt(p.product_stocks ?? p.stock ?? 0);
       setProductStats({
-        total:      list.length,
-        inStock:    list.filter(p => getStock(p) > 10).length,
-        lowStock:   list.filter(p => { const s = getStock(p); return s > 0 && s <= 10; }).length,
-        outOfStock: list.filter(p => getStock(p) === 0).length,
-      });
+      total:    list.length,
+      inStock:  list.filter(p => (p.status ?? "in_stock") !== "pre_order").length,
+      preOrder: list.filter(p => (p.status ?? "") === "pre_order").length,
+    });
     } catch (err) {
       console.error("Failed to fetch products:", err);
     } finally {
@@ -1022,17 +1049,15 @@ const AdminProducts = () => {
     setSelectedProducts(selectedProducts.length === products.length ? [] : products.map(p => p.product_id ?? p.id));
 
   const getStock  = (p) => parseInt(p.product_stocks ?? p.stock ?? 0);
-  const getStatus = (stock) => {
-    const s = Number(stock ?? 0);
-    if (s === 0) return "Out of Stock";
-    if (s <= 10) return "On-Hold";
-    return "In Stock";
-  };
-  const getStatusClass = (status) => ({
-    "On-Hold":      "bg-amber-50 text-amber-600 border border-yellow-300",
-    "In Stock":     "bg-emerald-50 text-emerald-600 border border-emerald-200",
-    "Out of Stock": "bg-red-50 text-red-600 border border-red-300",
-  }[status] || "bg-amber-50 text-amber-600 border border-yellow-300");
+  const getStatus = (status) => {
+  if (status === "pre_order" || status === "Pre-Order") return "Pre-Order";
+  return "In Stock";
+};
+
+const getStatusClass = (status) => ({
+  "Pre-Order": "bg-amber-50 text-amber-600 border border-yellow-300",
+  "In Stock":  "bg-emerald-50 text-emerald-600 border border-emerald-200",
+}[status] || "bg-emerald-50 text-emerald-600 border border-emerald-200");
 
   const resolveCat = (raw, fallback) =>
     typeof raw === "object" && raw !== null
@@ -1077,9 +1102,9 @@ const AdminProducts = () => {
       unit:           product.unit  ?? "",
       size:           product.size  ?? "",
       isSale:         product.isSale == 1,
+      status:         product.status ?? "in_stock",
     });
     setEditColor(product.color ?? "");
-    setEditStocks(parseInt(product.product_stocks ?? 0));
     setNewImages([]);
     setNewPreviews([]);
     setRemovedImageIds([]);
@@ -1111,7 +1136,7 @@ const AdminProducts = () => {
       const fd = new FormData();
       fd.append("product_name",   addForm.product_name);
       fd.append("category_id",    addForm.category_id);
-      fd.append("product_stocks", stocks ?? 0);
+      fd.append("status", addForm.status ?? "in_stock");
       fd.append("description",    addForm.description);
       fd.append("price",          addForm.price);
       fd.append("acquired_price", addForm.acquired_price || 0);
@@ -1124,20 +1149,13 @@ const AdminProducts = () => {
     };
 
     try {
-      if (addVariants.length > 0) {
-        for (const v of addVariants) {
-          const fd = buildFd(v.color, v.stocks);
-          await axios.post(`${BASE}/api/admin/products`, fd, { withCredentials: true });
-        }
-      } else {
-        const fd = buildFd("", 0);
-        await axios.post(`${BASE}/api/admin/products`, fd, { withCredentials: true });
-      }
+      const fd = buildFd("", 0);
+      await axios.post(`${BASE}/api/admin/products`, fd, { withCredentials: true });
+
       setShowAddModal(false);
       setAddForm(BLANK_ADD);
       setAddImages([]);
       setAddPreviews([]);
-      setAddVariants([]);
       fetchProducts();
     } catch (err) {
       console.error(err.response?.data || err);
@@ -1176,7 +1194,7 @@ const AdminProducts = () => {
     fd.append("acquired_price", editForm.acquired_price || 0);
     fd.append("unit",           editForm.unit);
     fd.append("size",           editForm.size);
-    fd.append("product_stocks", editStocks);
+    fd.append("status", editForm.status ?? "in_stock");
     fd.append("isSale",         editForm.isSale ? 1 : 0);
     if (editColor) fd.append("color", editColor);
     removedImageIds.forEach(id => fd.append("remove_images[]", id));
@@ -1287,7 +1305,12 @@ const AdminProducts = () => {
                 className={`${inputCls} h-20 resize-y`} />
             </div>
 
-            <ColorVariantsEditor variants={addVariants} onChange={setAddVariants} />
+            
+
+            <StatusToggle
+              value={addForm.status}
+              onChange={(val) => setAddForm(prev => ({ ...prev, status: val }))}
+            />
 
             <SaleToggle checked={addForm.isSale} onChange={handleAddChange} name="isSale" />
 
@@ -1299,7 +1322,7 @@ const AdminProducts = () => {
               <button type="submit" disabled={submitting}
                 className={`flex-[2] py-2.5 border-none rounded-lg text-white text-[13px] font-bold shadow-[0_2px_8px_rgba(21,93,252,0.3)] transition-colors
                   ${submitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 cursor-pointer hover:bg-blue-700"}`}>
-                {submitting ? "Creating…" : `+ Create${addVariants.length > 1 ? ` ${addVariants.length} Variants` : " Product"}`}
+                {submitting ? "Creating…" : "+ Create Product"}
               </button>
             </div>
           </form>
@@ -1326,7 +1349,7 @@ const AdminProducts = () => {
                   <div className="absolute top-2.5 left-2.5 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">SALE</div>
                 )}
                 {(() => {
-                  const st = getStatus(getStock(activeProduct));
+                  const st = getStatus(activeProduct.status);
                   return (
                     <span className={`${getStatusClass(st)} absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold`}>
                       {st}
@@ -1363,7 +1386,6 @@ const AdminProducts = () => {
 
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { label: "Stock",    value: getStock(activeProduct) + " pcs", icon: "📦" },
                   { label: "Color",    value: activeProduct.color || "—",        icon: "🎨",
                     extra: activeProduct.color
                       ? <ColorDot color={activeProduct.color} size="w-4 h-4" />
@@ -1488,16 +1510,7 @@ const AdminProducts = () => {
                 </div>
               </div>
 
-              <div>
-                <label className={labelCls}>Stocks</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editStocks}
-                  onChange={e => setEditStocks(parseInt(e.target.value) || 0)}
-                  className={inputCls}
-                />
-              </div>
+              
 
               <div>
                 <label className={labelCls}>Price (₱)</label>
@@ -1529,6 +1542,10 @@ const AdminProducts = () => {
 
             <SaleToggle checked={editForm.isSale} onChange={handleEditChange} name="isSale" />
 
+            <StatusToggle
+            value={editForm.status}
+            onChange={(val) => setEditForm(prev => ({ ...prev, status: val }))}
+          />
             <div className="flex gap-2.5">
               <button type="button" onClick={() => setShowEditModal(false)}
                 className="flex-1 py-2.5 border border-slate-200 rounded-lg bg-white text-gray-700 text-[13px] font-semibold cursor-pointer hover:bg-slate-50 transition-colors">
@@ -1597,29 +1614,28 @@ const AdminProducts = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4">
-          {[
-            { label: "Total Products", value: productStats.total,      bg: "bg-blue-50",    accent: "text-blue-600",    border: "border-blue-100",    icon: "📦", iconBg: "bg-blue-100" },
-            { label: "In Stock",       value: productStats.inStock,     bg: "bg-emerald-50", accent: "text-emerald-600", border: "border-emerald-100", icon: "✅", iconBg: "bg-emerald-100" },
-            { label: "Low Stock",      value: productStats.lowStock,    bg: "bg-amber-50",   accent: "text-amber-600",   border: "border-amber-100",   icon: "⚠️", iconBg: "bg-amber-100" },
-            { label: "Out of Stock",   value: productStats.outOfStock,  bg: "bg-red-50",     accent: "text-red-600",     border: "border-red-100",     icon: "❌", iconBg: "bg-red-100" },
-          ].map(stat => (
-            <div
-              key={stat.label}
-              className={`bg-white rounded-2xl px-6 py-5 flex items-center justify-between shadow-sm border ${stat.border} hover:shadow-md transition-shadow`}
-            >
-              <div>
-                <div className={`text-4xl font-extrabold ${stat.accent} leading-none mb-1`}>
-                  {stat.value}
-                </div>
-                <div className="text-[13px] font-medium text-gray-500 mt-1">{stat.label}</div>
+        <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-3">
+        {[
+          { label: "Total Products", value: productStats.total,    bg: "bg-blue-50",    accent: "text-blue-600",    border: "border-blue-100",    icon: "📦", iconBg: "bg-blue-100" },
+          { label: "In Stock",       value: productStats.inStock,  bg: "bg-emerald-50", accent: "text-emerald-600", border: "border-emerald-100", icon: "✅", iconBg: "bg-emerald-100" },
+          { label: "Pre-Order",      value: productStats.preOrder, bg: "bg-amber-50",   accent: "text-amber-600",   border: "border-amber-100",   icon: "🕒", iconBg: "bg-amber-100" },
+        ].map(stat => (
+          <div
+            key={stat.label}
+            className={`bg-white rounded-2xl px-6 py-5 flex items-center justify-between shadow-sm border ${stat.border} hover:shadow-md transition-shadow`}
+          >
+            <div>
+              <div className={`text-4xl font-extrabold ${stat.accent} leading-none mb-1`}>
+                {stat.value}
               </div>
-              <div className={`w-14 h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center text-2xl flex-shrink-0`}>
-                {stat.icon}
-              </div>
+              <div className="text-[13px] font-medium text-gray-500 mt-1">{stat.label}</div>
             </div>
-          ))}
-        </div>
+            <div className={`w-14 h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center text-2xl flex-shrink-0`}>
+              {stat.icon}
+            </div>
+          </div>
+        ))}
+      </div>
 
         {/* Table card */}
         <div className="overflow-hidden bg-white shadow-sm rounded-2xl">
@@ -1681,7 +1697,7 @@ const AdminProducts = () => {
                     {["Product", "Category", "Color", "Size", "Unit", "Status"].map(h => (
                       <th key={h} className="p-3 font-semibold text-left text-gray-700 whitespace-nowrap">{h}</th>
                     ))}
-                    {["Stock", "Price"].map(h => (
+                    {["Price"].map(h => (
                       <th key={h} className="p-3 font-semibold text-right text-gray-700 whitespace-nowrap">{h}</th>
                     ))}
                     <th className="p-3 font-semibold text-center text-gray-700 whitespace-nowrap">Actions</th>
@@ -1696,7 +1712,7 @@ const AdminProducts = () => {
                     const unit     = product.unit ?? "—";
                     const stock    = getStock(product);
                     const price    = parseFloat(product.price ?? 0);
-                    const status   = getStatus(stock);
+                    const status = getStatus(product.status);
                     const thumb    = product.images?.[0]?.image_path
                       ? `${BASE}/storage/${product.images[0].image_path}`
                       : null;
@@ -1752,7 +1768,7 @@ const AdminProducts = () => {
                           </span>
                         </td>
 
-                        <td className="p-3 font-medium text-right text-gray-700">{stock}</td>
+                        
                         <td className="p-3 font-medium text-right text-gray-700">₱{price.toFixed(2)}</td>
 
                         <td className="p-3">
