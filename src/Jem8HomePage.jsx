@@ -32,36 +32,42 @@ const PRODUCT_CARDS = [
     imgSrc: officeSuppliesImg,
     title: "Office Supplies, Stationery & Equipment",
     desc: "A complete range of office essentials — pens, paper, folders, printers, and equipment. Everything your workplace needs, sourced from one trusted supplier.",
+    category: "office",
   },
   {
     id: 2,
     imgSrc: personalCareImg,
     title: "Personal & Home Care-Wellness Products",
     desc: "From personal hygiene products to home care essentials and everyday consumer goods — we supply both businesses and households with quality brands.",
+    category: "personal",
   },
   {
     id: 3,
     imgSrc: pantrySuppliesImg,
     title: "Office Pantry Supplies",
     desc: "Keep your team fueled and happy. We supply coffee, beverages, snacks, and all the pantry essentials that make the office feel like a second home.",
+    category: "pantry",
   },
   {
     id: 4,
     imgSrc: img(800, 500, "Giveaways"),
     title: "Customized Items for Giveaways",
     desc: "Boost your brand with custom merchandise and giveaways. We also offer in-house embroidery services to personalize uniforms, caps, bags, and corporate gifts.",
+    category: "giveaway",
   },
   {
     id: 5,
     imgSrc: janitorialImg,
     title: "Janitorial Supplies",
     desc: "Maintain a clean and safe workplace with our full line of janitorial products — cleaning agents, tools, sanitation supplies, and more.",
+    category: "janitor",
   },
   {
     id: 6,
     imgSrc: img(800, 500, "Health & Wellness"),
     title: "Health & Wellness Products",
     desc: "We proudly carry IAM Amazing Pure Organic Barley — a premium wellness product packed with nutrients to support a healthier lifestyle for you and your family.",
+    category: "wellness",
   },
 ];
 
@@ -83,12 +89,13 @@ function StarRating({ rating, max = 5 }) {
 }
 
 
-function ProductCard({ imgSrc, title, desc }) {
+function ProductCard({ imgSrc, title, desc, category }) {
   return (
     <Link
-      to="/products"
+      to={`/products?category=${category}`}
       className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col no-underline text-inherit transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5 hover:border-[#b8d9c8]"
     >
+      {/* rest of the card stays the same */}
       <div className="w-full overflow-hidden bg-slate-100 aspect-[16/10]">
         <img
           src={imgSrc}

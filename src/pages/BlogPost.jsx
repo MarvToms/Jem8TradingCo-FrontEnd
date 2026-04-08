@@ -18,6 +18,14 @@ const CAT_CONFIG = {
   'product-updates': { name: 'Product Updates', emoji: '📦' },
 };
 
+/* Slug → category_name string — no IDs needed */
+const SLUG_TO_CAT_NAME = {
+  announcement:      'Announcement',
+  travelblog:        'Travel Blog',
+  business:          'Business Trips',
+  'product-updates': 'Product Updates',
+};
+
 /* ─── Helpers ─────────────────────────────────────────────── */
 const resolveImgFromObj = (imgObj) => {
   if (!imgObj?.url) return null;
@@ -55,7 +63,6 @@ export default function BlogPost() {
   const [error,        setError]        = useState(null);
   const [activeImg,    setActiveImg]    = useState(0);
 
-  // Redirect unknown category slugs
   useEffect(() => {
     if (!cfg) navigate('/blog', { replace: true });
   }, [cfg, navigate]);
@@ -77,10 +84,17 @@ export default function BlogPost() {
       .then((res) => {
         if (!mounted || !res) return;
         const all = Array.isArray(res.data) ? res.data : (res.data?.data ?? res.data?.posts ?? []);
-        const catId = { announcement: 1, travelblog: 2, business: 3, 'product-updates': 4 }[category];
+
+        // Match by category_name string — no hardcoded IDs
+        const targetCatName = SLUG_TO_CAT_NAME[category] ?? '';
         const related = all
-          .filter((p) => (p.category_blog_id === catId) && String(p.blog_id) !== String(id))
+          .filter((p) => {
+            const pCatName = p.category?.category_name ?? p.category_name ?? '';
+            return pCatName.toLowerCase() === targetCatName.toLowerCase()
+              && String(p.blog_id) !== String(id);
+          })
           .slice(0, 3);
+
         setRelatedPosts(related);
       })
       .catch((err) => {
@@ -95,18 +109,12 @@ export default function BlogPost() {
 
   if (error || !post) {
     return (
-      <div
-        className="min-h-screen bg-[#f8faf9]"
-        style={{ paddingTop: 'var(--header-h, 75px)' }}
-      >
+      <div className="min-h-screen bg-[#f8faf9]" style={{ paddingTop: 'var(--header-h, 75px)' }}>
         <div className="container mx-auto px-4 py-32 text-center">
           <div className="text-5xl mb-4">😕</div>
           <h2 className="text-2xl font-bold text-[#1a2e22] mb-3">Post not found</h2>
           <p className="text-slate-500 mb-6 text-sm">{error}</p>
-          <Link
-            to={`/blog/${category}`}
-            className="inline-block px-6 py-2.5 bg-[#4d7b65] text-white rounded-xl text-sm font-bold no-underline"
-          >
+          <Link to={`/blog/${category}`} className="inline-block px-6 py-2.5 bg-[#4d7b65] text-white rounded-xl text-sm font-bold no-underline">
             ← Back to {cfg?.name ?? 'Blog'}
           </Link>
         </div>
@@ -123,14 +131,9 @@ export default function BlogPost() {
 
       {/* ── Hero Image ── */}
       {mainImg ? (
-        <div className="relative overflow-hidden bg-[#1a2e22]" style={{ height: 100  }}>
-          <img
-            src={mainImg}
-            alt={post.blog_title}
-            className="w-full h-full object-cover opacity-50 blur-sm "
-          />
+        <div className="relative overflow-hidden bg-[#1a2e22]" style={{ height: 100 }}>
+          <img src={mainImg} alt={post.blog_title} className="w-full h-full object-cover opacity-50 blur-sm" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1a2e22]/80 via-transparent to-transparent" />
-          {/* Category badge */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-bold border border-white/30">
               <span>{cfg?.emoji}</span> {catName}
@@ -138,7 +141,6 @@ export default function BlogPost() {
           </div>
         </div>
       ) : (
-        /* Thin spacer so breadcrumb doesn't slam into the header when there's no image */
         <div style={{ height: 24 }} />
       )}
 
@@ -177,14 +179,11 @@ export default function BlogPost() {
         </div>
 
         {/* Title */}
-        <h1
-          className="text-3xl font-bold text-[#1a2e22] leading-snug mb-6"
-          style={{ fontFamily: "'Georgia', serif" }}
-        >
+        <h1 className="text-3xl font-bold text-[#1a2e22] leading-snug mb-6" style={{ fontFamily: "'Georgia', serif" }}>
           {post.blog_title}
         </h1>
 
-        {/* Thumbnail strip — only when multiple images */}
+        {/* Thumbnail strip */}
         {images.length > 1 && (
           <div className="flex gap-2 mb-6 flex-wrap">
             {images.map((img, i) => {
@@ -216,14 +215,10 @@ export default function BlogPost() {
           )}
         </div>
 
-        {/* Single image shown below content */}
+        {/* Single image */}
         {images.length === 1 && mainImg && (
           <div className="mt-8">
-            <img
-              src={mainImg}
-              alt={post.blog_title}
-              className="w-full rounded-2xl border border-[#e8f0eb] object-cover max-h-[400px]"
-            />
+            <img src={mainImg} alt={post.blog_title} className="w-full rounded-2xl border border-[#e8f0eb] object-cover max-h-[400px]" />
           </div>
         )}
 
@@ -251,16 +246,10 @@ export default function BlogPost() {
 
         {/* Actions */}
         <div className="mt-10 pt-6 border-t border-[#e8f0eb] flex items-center gap-3 flex-wrap py-5">
-          <Link
-            to={`/blog/${category}`}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-[1.5px] border-[#c0ddd0] bg-white text-[#4d7b65] text-sm font-bold no-underline hover:bg-[#f0f7f3] transition-colors"
-          >
+          <Link to={`/blog/${category}`} className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-[1.5px] border-[#c0ddd0] bg-white text-[#4d7b65] text-sm font-bold no-underline hover:bg-[#f0f7f3] transition-colors">
             ← All {cfg?.name}
           </Link>
-          <Link
-            to="/blog"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4d7b65] text-white text-sm font-bold no-underline hover:bg-[#3d6552] transition-colors"
-          >
+          <Link to="/blog" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4d7b65] text-white text-sm font-bold no-underline hover:bg-[#3d6552] transition-colors">
             All Blogs
           </Link>
         </div>
@@ -270,45 +259,25 @@ export default function BlogPost() {
       {relatedPosts.length > 0 && (
         <section className="bg-white border-t border-[#e8f0eb] py-12">
           <div className="container mx-auto px-4 max-w-5xl">
-            <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-2">
-              More from {cfg?.name}
-            </p>
-            <h2
-              className="text-xl font-bold text-[#1a2e22] mb-7"
-              style={{ fontFamily: "'Georgia', serif" }}
-            >
+            <p className="text-[11px] font-bold tracking-[2px] text-[#4d7b65] uppercase mb-2">More from {cfg?.name}</p>
+            <h2 className="text-xl font-bold text-[#1a2e22] mb-7" style={{ fontFamily: "'Georgia', serif" }}>
               You May Also Like
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               {relatedPosts.map((p) => {
-                const thumb = Array.isArray(p.images) && p.images[0]
-                  ? resolveImgFromObj(p.images[0])
-                  : null;
+                const thumb = Array.isArray(p.images) && p.images[0] ? resolveImgFromObj(p.images[0]) : null;
                 return (
-                  <Link
-                    key={p.blog_id}
-                    to={`/blog/${category}/${p.blog_id}`}
-                    className="bg-[#f8faf9] rounded-2xl border border-[#e8f0eb] overflow-hidden no-underline group hover:border-[#4d7b65] hover:shadow-sm transition-all"
-                  >
+                  <Link key={p.blog_id} to={`/blog/${category}/${p.blog_id}`} className="bg-[#f8faf9] rounded-2xl border border-[#e8f0eb] overflow-hidden no-underline group hover:border-[#4d7b65] hover:shadow-sm transition-all">
                     <div className="h-36 bg-[#e8f0eb] overflow-hidden">
                       {thumb ? (
-                        <img
-                          src={thumb}
-                          alt={p.blog_title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                        <img src={thumb} alt={p.blog_title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-3xl opacity-20">📄</div>
                       )}
                     </div>
                     <div className="p-4">
-                      {p.created_at && (
-                        <div className="text-[10px] text-slate-400 mb-1">{fmtDate(p.created_at)}</div>
-                      )}
-                      <div
-                        className="text-sm font-bold text-[#1a2e22] leading-snug line-clamp-2 group-hover:text-[#4d7b65] transition-colors"
-                        style={{ fontFamily: "'Georgia', serif" }}
-                      >
+                      {p.created_at && <div className="text-[10px] text-slate-400 mb-1">{fmtDate(p.created_at)}</div>}
+                      <div className="text-sm font-bold text-[#1a2e22] leading-snug line-clamp-2 group-hover:text-[#4d7b65] transition-colors" style={{ fontFamily: "'Georgia', serif" }}>
                         {p.blog_title}
                       </div>
                     </div>

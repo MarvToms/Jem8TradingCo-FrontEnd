@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet} from 'react-router-dom'
 import { Header, Footer } from './components/Layout'
 import { CartProvider } from "./context/CartContext";
 import { ToastContainer } from "react-toastify";
@@ -16,7 +16,7 @@ import MyOrders from "./pages/MyOrders";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Messages from "./pages/Messages";
-import PrivacyPolicy from "./pages/Privacypolicy";
+import Privacypolicy from "./pages/Privacypolicy";
 
 // ── AUTH PAGES ──
 import Login from './pages/Login'
@@ -62,6 +62,7 @@ function AdminLayout() {
 export default function App() {
   return (
     <CartProvider>
+      
       <Routes>
         {/* ── PUBLIC ROUTES ── */}
         <Route element={<PublicLayout />}>
@@ -80,6 +81,8 @@ export default function App() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/blog/:category"            element={<BlogCategory />} />
                     <Route path="/blog/:category/:id"        element={<BlogPost />} />
+                    <Route path="/Privacypolicy" element={<Privacypolicy />} />
+          
           {/* Auth routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -91,7 +94,7 @@ export default function App() {
         </Route>
 
        
-        <Route path="/Privacypolicy" element={<PrivacyPolicy />} />
+          
 
         {/* ── ADMIN ROUTES ── */}
         <Route element={<AdminLayout />}>
