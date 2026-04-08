@@ -51,9 +51,26 @@ function formatStatusText(status) {
 }
 
 function normaliseOrder(o, account) {
-  const { checkout, delivery, items = [] } = o;
- 
+  const { checkout, delivery } = o;
   const status = (delivery?.status ?? "processing").toLowerCase();
+
+  // ── Build items array from checkout.cart.product ──────────────
+  const cartItem = checkout?.cart ?? null;
+  const product  = cartItem?.product ?? null;
+
+  const imageUrl = product?.primary_image_url
+    ?? (product?.images?.find((img) => img.is_primary)?.image_path
+        ? `http://127.0.0.1:8000/storage/${product.images.find((img) => img.is_primary).image_path}`
+        : "");
+
+  const items = product ? [{
+    id:       product.product_id,
+    name:     product.product_name ?? "Item",
+    image:    imageUrl,
+    qty:      Number(cartItem?.quantity ?? 1),
+    price:    `₱${Number(product.price ?? 0).toLocaleString()}`,
+    rawPrice: Number(product.price ?? 0),
+  }] : [];
 
   return {
     id:             delivery?.delivery_id ?? checkout?.checkout_id,
@@ -74,20 +91,13 @@ function normaliseOrder(o, account) {
       lastName:  account?.last_name    ?? "",
       phone:     account?.phone_number ?? "",
       email:     account?.email        ?? "",
-      address:   delivery?.address  ?? "",
-      barangay:  delivery?.barangay ?? "",
-      city:      delivery?.city     ?? "",
-      province:  delivery?.province ?? "",
-      zip:       delivery?.zip      ?? "",
+      address:   delivery?.address     ?? "",
+      barangay:  delivery?.barangay    ?? "",
+      city:      delivery?.city        ?? "",
+      province:  delivery?.province    ?? "",
+      zip:       delivery?.zip         ?? "",
     },
-    items: items.map((item) => ({
-      id:       item.id       ?? item.product_id,
-      name:     item.name     ?? item.product_name ?? "Item",
-      image:    item.image    ?? item.product_image ?? "",
-      qty:      Number(item.qty ?? item.quantity ?? 1),
-      price:    `₱${Number(item.unit_price ?? item.price ?? 0).toLocaleString()}`,
-      rawPrice: Number(item.unit_price ?? item.price ?? 0),
-    })),
+    items,
   };
 }
 
@@ -130,6 +140,7 @@ export default function MyOrders() {
 
     api.get("/my-deliveries")
       .then(({ data }) => {
+        console.log(data)
         if (cancelled) return;
         const account    = data.account ?? {};
         const rawOrders  = Array.isArray(data.orders) ? data.orders : (data.data ?? []);

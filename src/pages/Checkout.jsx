@@ -183,7 +183,7 @@ export default function Checkout() {
   const handlePayFieldChange = (e) => setPayFields((f) => ({ ...f, [e.target.name]: e.target.value }));
   const activePayment = PAYMENT_METHODS.find((m) => m.id === payMethod);
 
-  const handlePlaceOrder = async () => {
+const handlePlaceOrder = async () => {
     setPlacing(true);
     setPlaceError(null);
     let resolvedAddress;
@@ -209,6 +209,7 @@ export default function Checkout() {
         } catch {}
       }
     }
+
     const billingAddress = [
       resolvedAddress.address, resolvedAddress.barangay,
       resolvedAddress.city, resolvedAddress.province, resolvedAddress.zip,
@@ -221,13 +222,25 @@ export default function Checkout() {
       billing_address: billingAddress,
     };
 
+    // ✅ Fix: collect all cart item IDs from the items array
+    const cartIds = items.map((i) => i.id).filter(Boolean);
+
+    if (cartIds.length === 0) {
+      setPlaceError("No valid cart items found. Please go back to your cart.");
+      setPlacing(false);
+      return;
+    }
+
     const payload = {
-      cart_id: items[0].id,
+      cart_ids: cartIds,           // ✅ array of all selected cart IDs
       payment_method:       payMethod,
       payment_details:      paymentDetails,
       shipping_fee:         shippingFee,
       special_instructions: specialNote || null,
     };
+
+    console.log("Checkout payload:", payload);
+    console.log("Cart IDs:", cartIds);
 
     try {
       const res = await axios.post(`${BASE}/checkout`, payload, { withCredentials: true });
