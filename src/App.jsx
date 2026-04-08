@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet} from 'react-router-dom'
 import { Header, Footer } from './components/Layout'
 import { CartProvider } from "./context/CartContext";
 import { ToastContainer } from "react-toastify";
@@ -62,6 +62,7 @@ function AdminLayout() {
 export default function App() {
   return (
     <CartProvider>
+      
       <Routes>
         {/* ── PUBLIC ROUTES ── */}
         <Route element={<PublicLayout />}>

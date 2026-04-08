@@ -222,9 +222,7 @@ function ProductCard({ product, onToast }) {
               </span>
             )}
           </div>
-          <div className="absolute top-[10px] right-[10px] w-[32px] h-[32px] bg-white/90 rounded-full flex items-center justify-center text-[15px] opacity-0 scale-[0.8] transition-all duration-200 shadow-sm group-hover:opacity-100 group-hover:scale-100">
-            🤍
-          </div>
+          
         </div>
 
         <div className="px-[16px] pt-[14px] pb-[16px] flex-1 flex flex-col">
