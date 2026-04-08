@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import AdminNav from "../components/AdminNav";
 
-// ── Axios instance ─────────────────────────────────────────────────────────────
 const api = axios.create({
   baseURL: "http://127.0.0.1:8000/api",
   withCredentials: true,
@@ -11,7 +10,6 @@ const api = axios.create({
 
 const ITEMS_PER_PAGE = 20;
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
 const STATUS_MAP = {
   processing: {
     label: "Processing",
@@ -62,7 +60,6 @@ const fmtDate = (d) =>
       })
     : "—";
 
-// ── Sort options ───────────────────────────────────────────────────────────────
 const SORT_OPTIONS = [
   { value: "id_desc",     label: "ID: Newest First" },
   { value: "id_asc",      label: "ID: Oldest First" },
@@ -72,11 +69,48 @@ const SORT_OPTIONS = [
   { value: "amount_asc",  label: "Amount: Lowest" },
 ];
 
+// ── Product cell helper ────────────────────────────────────────────────────────
+function ProductCell({ checkout }) {
+  const product  = checkout?.cart?.product ?? null;
+  const cart     = checkout?.cart ?? null;
+  const imageUrl = product?.primary_image_url
+    ?? (product?.images?.find((img) => img.is_primary)?.image_path
+        ? `http://127.0.0.1:8000/storage/${product.images.find((img) => img.is_primary).image_path}`
+        : null);
+
+  if (!product) return <span className="text-gray-400">—</span>;
+
+  return (
+    <div className="flex items-center gap-2.5 min-w-[180px] max-w-[240px]">
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={product.product_name}
+          className="w-9 h-9 rounded-lg object-cover bg-gray-100 border border-gray-200 flex-shrink-0"
+          onError={(e) => { e.target.style.display = "none"; }}
+        />
+      ) : (
+        <div className="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex-shrink-0 flex items-center justify-center text-gray-400 text-xs">
+          📦
+        </div>
+      )}
+      <div className="min-w-0">
+        <div className="text-gray-900 font-medium truncate text-xs leading-tight" title={product.product_name}>
+          {product.product_name}
+        </div>
+        <div className="text-gray-400 text-[11px] mt-0.5">
+          Qty: {cart?.quantity ?? 1} · ₱{fmt(product.price)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Status Update Modal ────────────────────────────────────────────────────────
 function StatusModal({ delivery, onClose, onUpdated }) {
   const [status, setStatus] = useState(delivery.status ?? "processing");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error,  setError]  = useState("");
 
   const handleSave = async () => {
     setSaving(true);
@@ -92,11 +126,21 @@ function StatusModal({ delivery, onClose, onUpdated }) {
     }
   };
 
+  const checkout = delivery.checkout;
+  const product  = checkout?.cart?.product ?? null;
+
   return (
     <div className="fixed inset-0 bg-black/35 flex items-center justify-center z-[999]">
       <div className="bg-white rounded-2xl p-7 w-[min(420px,90vw)] shadow-2xl">
         <h2 className="mb-1 text-base font-bold text-gray-900">Update Delivery Status</h2>
-        <p className="mb-5 text-xs text-gray-500">Order #{delivery.checkout_id}</p>
+        <p className="mb-1 text-xs text-gray-500">Order #{checkout?.checkout_id}</p>
+
+        {/* Product preview inside modal */}
+        {product && (
+          <div className="flex items-center gap-2.5 mb-4 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+            <ProductCell checkout={checkout} />
+          </div>
+        )}
 
         <div className="flex flex-col gap-2.5 mb-5">
           {Object.entries(STATUS_MAP).map(([key, cfg]) => (
@@ -114,7 +158,7 @@ function StatusModal({ delivery, onClose, onUpdated }) {
                 onChange={() => setStatus(key)}
                 className={cfg.radio}
               />
-              <span className={`text-xs font-semibold ${cfg.badge.split(" ").find(c => c.startsWith("text-"))}`}>
+              <span className={`text-xs font-semibold ${cfg.badge.split(" ").find((c) => c.startsWith("text-"))}`}>
                 {cfg.label}
               </span>
             </label>
@@ -147,15 +191,15 @@ function StatusModal({ delivery, onClose, onUpdated }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function AdminOrders() {
-  const [sidebarOpen, setSidebarOpen]   = useState(false);
-  const [deliveries, setDeliveries]     = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState("");
-  const [searchTerm, setSearchTerm]     = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [sortBy, setSortBy]             = useState("id_desc");
-  const [currentPage, setCurrentPage]   = useState(1);
-  const [modalTarget, setModalTarget]   = useState(null);
+  const [sidebarOpen,   setSidebarOpen]   = useState(false);
+  const [deliveries,    setDeliveries]    = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState("");
+  const [searchTerm,    setSearchTerm]    = useState("");
+  const [statusFilter,  setStatusFilter]  = useState("All");
+  const [sortBy,        setSortBy]        = useState("id_desc");
+  const [currentPage,   setCurrentPage]   = useState(1);
+  const [modalTarget,   setModalTarget]   = useState(null);
 
   const fetchDeliveries = useCallback(async () => {
     setLoading(true);
@@ -164,7 +208,7 @@ export default function AdminOrders() {
       const params = statusFilter !== "All" ? { status: statusFilter } : {};
       const res = await api.get("/deliveries", { params });
       const rawDeliveries = res.data.deliveries ?? [];
-
+      console.log(res)
       const missingUserIds = [
         ...new Set(
           rawDeliveries
@@ -204,11 +248,7 @@ export default function AdminOrders() {
     }
   }, [statusFilter]);
 
-  useEffect(() => {
-    fetchDeliveries();
-  }, [fetchDeliveries]);
-
-  // Reset to page 1 when search/sort changes
+  useEffect(() => { fetchDeliveries(); }, [fetchDeliveries]);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, sortBy]);
 
   const handleUpdated = (updated) => {
@@ -234,24 +274,23 @@ export default function AdminOrders() {
     { label: "Revenue",    value: `₱${fmt(totalRevenue)}`, icon: "💰", bg: "bg-orange-50", accent: "text-orange-600" },
   ];
 
-  // ── Filter + Sort + Paginate ───────────────────────────────────────────────
   const filtered = useMemo(() => {
     const searched = deliveries.filter((d) => {
       const user = d.checkout?.user;
       const name = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.toLowerCase();
       const checkoutId = String(d.checkout?.checkout_id ?? d.checkout_id ?? "").toLowerCase();
+      const productName = (d.checkout?.cart?.product?.product_name ?? "").toLowerCase();
       return (
         name.includes(searchTerm.toLowerCase()) ||
-        checkoutId.includes(searchTerm.toLowerCase())
+        checkoutId.includes(searchTerm.toLowerCase()) ||
+        productName.includes(searchTerm.toLowerCase())
       );
     });
 
     return [...searched].sort((a, b) => {
       switch (sortBy) {
-        case "id_desc":
-          return (b.checkout?.checkout_id ?? 0) - (a.checkout?.checkout_id ?? 0);
-        case "id_asc":
-          return (a.checkout?.checkout_id ?? 0) - (b.checkout?.checkout_id ?? 0);
+        case "id_desc":   return (b.checkout?.checkout_id ?? 0) - (a.checkout?.checkout_id ?? 0);
+        case "id_asc":    return (a.checkout?.checkout_id ?? 0) - (b.checkout?.checkout_id ?? 0);
         case "name_asc": {
           const na = `${a.checkout?.user?.first_name ?? ""} ${a.checkout?.user?.last_name ?? ""}`.toLowerCase();
           const nb = `${b.checkout?.user?.first_name ?? ""} ${b.checkout?.user?.last_name ?? ""}`.toLowerCase();
@@ -262,20 +301,16 @@ export default function AdminOrders() {
           const nb = `${b.checkout?.user?.first_name ?? ""} ${b.checkout?.user?.last_name ?? ""}`.toLowerCase();
           return nb.localeCompare(na);
         }
-        case "amount_desc":
-          return Number(b.checkout?.paid_amount ?? 0) - Number(a.checkout?.paid_amount ?? 0);
-        case "amount_asc":
-          return Number(a.checkout?.paid_amount ?? 0) - Number(b.checkout?.paid_amount ?? 0);
-        default:
-          return 0;
+        case "amount_desc": return Number(b.checkout?.paid_amount ?? 0) - Number(a.checkout?.paid_amount ?? 0);
+        case "amount_asc":  return Number(a.checkout?.paid_amount ?? 0) - Number(b.checkout?.paid_amount ?? 0);
+        default: return 0;
       }
     });
   }, [deliveries, searchTerm, sortBy]);
 
-  const totalPages  = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated   = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginated  = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  // ── Pagination range (show max 5 page buttons) ─────────────────────────────
   const pageNumbers = useMemo(() => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
     const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
@@ -297,7 +332,7 @@ export default function AdminOrders() {
 
         <main className="flex-1 min-w-0 px-5 py-6 overflow-x-hidden">
 
-          {/* ── Top bar ── */}
+          {/* Top bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div className="flex items-center gap-3">
               <button
@@ -308,9 +343,7 @@ export default function AdminOrders() {
               </button>
               <div>
                 <h1 className="m-0 text-xl font-bold text-gray-900">Orders</h1>
-                <p className="text-xs text-gray-500 mt-0.5 mb-0">
-                  Manage deliveries and order statuses
-                </p>
+                <p className="text-xs text-gray-500 mt-0.5 mb-0">Manage deliveries and order statuses</p>
               </div>
             </div>
             <button
@@ -321,13 +354,10 @@ export default function AdminOrders() {
             </button>
           </div>
 
-          {/* ── Summary Stats ── */}
+          {/* Summary Stats */}
           <div className="grid grid-cols-2 gap-3 mb-5 sm:grid-cols-3 lg:grid-cols-6">
             {summaryStats.map((s) => (
-              <div
-                key={s.label}
-                className="bg-white rounded-xl px-4 py-3.5 flex items-center justify-between shadow-sm"
-              >
+              <div key={s.label} className="bg-white rounded-xl px-4 py-3.5 flex items-center justify-between shadow-sm">
                 <div>
                   <div className={`text-lg font-bold ${s.accent}`}>{s.value}</div>
                   <div className="text-[11px] text-gray-500 mt-0.5">{s.label}</div>
@@ -339,7 +369,7 @@ export default function AdminOrders() {
             ))}
           </div>
 
-          {/* ── Table Card ── */}
+          {/* Table Card */}
           <div className="overflow-hidden bg-white shadow-sm rounded-2xl">
 
             {/* Search & Filter */}
@@ -348,7 +378,7 @@ export default function AdminOrders() {
                 <span className="text-sm text-gray-400">🔍</span>
                 <input
                   type="text"
-                  placeholder="Search by name, order ID..."
+                  placeholder="Search by name, order ID, product..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full text-xs text-gray-700 placeholder-gray-400 bg-transparent border-none outline-none"
@@ -382,14 +412,10 @@ export default function AdminOrders() {
               </button>
             </div>
 
-            {/* Loading */}
             {loading && (
-              <div className="py-12 text-sm text-center text-gray-400">
-                Loading orders…
-              </div>
+              <div className="py-12 text-sm text-center text-gray-400">Loading orders…</div>
             )}
 
-            {/* Error */}
             {error && !loading && (
               <div className="flex items-center gap-2 px-4 py-3 m-4 text-xs text-red-600 border border-red-300 rounded-lg bg-red-50">
                 ⚠️ {error}
@@ -402,13 +428,12 @@ export default function AdminOrders() {
               </div>
             )}
 
-            {/* Table */}
             {!loading && !error && (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      {["Order ID", "Client", "Contact", "Payment", "Shipping Fee", "Total Paid", "Status", "Date", "Action"].map((h) => (
+                      {["Order ID", "Product", "Client", "Contact", "Payment", "Shipping Fee", "Total Paid", "Status", "Date", "Action"].map((h) => (
                         <th
                           key={h}
                           className="px-3.5 py-3 text-left font-semibold text-gray-700 whitespace-nowrap text-[11px] uppercase tracking-wide"
@@ -431,8 +456,14 @@ export default function AdminOrders() {
                           <td className="px-3.5 py-3.5 text-blue-600 font-semibold whitespace-nowrap">
                             #{checkout?.checkout_id ?? "—"}
                           </td>
+
+                          {/* ── Product column ── */}
+                          <td className="px-3.5 py-3.5">
+                            <ProductCell checkout={checkout} />
+                          </td>
+
                           <td className="px-3.5 py-3.5 text-gray-900 whitespace-nowrap">
-                            {user ? `${user.first_name} ${user.last_name}` : "—"}
+                            {user?.name ?? "—"}
                           </td>
                           <td className="px-3.5 py-3.5 text-gray-500 leading-relaxed">
                             <div>{user?.email ?? "—"}</div>
@@ -469,7 +500,7 @@ export default function AdminOrders() {
 
                     {paginated.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="py-10 text-xs text-center text-gray-400">
+                        <td colSpan={10} className="py-10 text-xs text-center text-gray-400">
                           No orders found.
                         </td>
                       </tr>
@@ -479,14 +510,13 @@ export default function AdminOrders() {
               </div>
             )}
 
-            {/* ── Pagination Footer ── */}
+            {/* Pagination */}
             {!loading && !error && (
               <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
                 <span>
                   Showing {paginated.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} orders
                 </span>
                 <div className="flex items-center gap-1.5">
-                  {/* Prev */}
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
@@ -494,8 +524,6 @@ export default function AdminOrders() {
                   >
                     ‹
                   </button>
-
-                  {/* Page numbers */}
                   {pageNumbers.map((p) => (
                     <button
                       key={p}
@@ -509,8 +537,6 @@ export default function AdminOrders() {
                       {p}
                     </button>
                   ))}
-
-                  {/* Next */}
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
@@ -522,7 +548,6 @@ export default function AdminOrders() {
               </div>
             )}
           </div>
-
         </main>
       </div>
     </>
