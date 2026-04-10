@@ -848,12 +848,14 @@ export default function Products() {
             >
               Shop Wellness →
             </button>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-transparent border-2 border-white/30 text-white rounded-[10px] font-semibold text-[15px] transition-all duration-200 hover:border-white/60 hover:-translate-y-[2px] no-underline"
-            >
-              Learn More
-            </Link>
+<a
+  href="https://www.iamworldwideonlinestore.com/pages/about-us"
+  target="_blank"
+  rel="noreferrer"
+  className="inline-flex items-center gap-[8px] px-[28px] py-[13px] bg-transparent border-2 border-white/30 text-white rounded-[10px] font-semibold text-[15px] transition-all duration-200 hover:border-white/60 hover:-translate-y-[2px] no-underline"
+>
+  Learn More
+</a>
           </div>
         </div>
       </section>
