@@ -390,11 +390,7 @@ export default function ProductView() {
   const handleAdd = async () => {
     if (cartLoading) return;
     const isBackorder = product.status === "pre_order";
-    if (!isBackorder && qty > stock) {
-      setCartError(`Insufficient stock. Only ${stock} left.`);
-      setTimeout(() => setCartError(null), 4500);
-      return;
-    }
+   
     setCartLoading(true);
     setCartError(null);
     const productToAdd = isBackorder ? { ...product, backorder: true } : product;
@@ -428,11 +424,7 @@ export default function ProductView() {
   const handleBuyNow = async () => {
     if (cartLoading) return;
     const isBackorder = product.status === "pre_order";
-    if (!isBackorder && qty > stock) {
-      setCartError(`Insufficient stock. Only ${stock} left.`);
-      setTimeout(() => setCartError(null), 4500);
-      return;
-    }
+   
     setCartLoading(true);
     setCartError(null);
     const productToAdd = isBackorder ? { ...product, backorder: true } : product;
@@ -460,9 +452,11 @@ export default function ProductView() {
     }
   };
 
-const stockStatus = product.status === "pre_order"
+const isPreOrder  = product.status === "pre_order";
+const stockStatus = isPreOrder
   ? { label: "Pre-Order", color: "#92400E", bg: "#FEF3C7" }
   : { label: "In Stock",  color: "#059669", bg: "#D1FAE5" };
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -564,7 +558,7 @@ const stockStatus = product.status === "pre_order"
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3 w-fit"
               style={{ background: stockStatus.bg, color: stockStatus.color }}
             >
-              <span>{stock > 0 ? "●" : "○"}</span>
+             <span>●</span>
               {stockStatus.label}
               
             </div>

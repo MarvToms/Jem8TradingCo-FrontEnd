@@ -90,9 +90,8 @@ export default function Checkout() {
   const location = useLocation();
 
   // ── Selected item IDs passed from Cart ───────────────────────────────────
-  const selectedItemIds = new Set(
-    (location.state?.selectedItems ?? []).map((i) => i.id)
-  );
+ const selectedItems   = location.state?.selectedItems ?? [];
+const selectedItemIds = new Set(selectedItems.map((i) => i.id));
 
   const [items, setItems]             = useState([]);
   const [loadingCart, setLoadingCart] = useState(true);
@@ -223,8 +222,8 @@ const handlePlaceOrder = async () => {
       billing_address: billingAddress,
     };
 
-    // ✅ Fix: collect all cart item IDs from the items array
-    const cartIds = items.map((i) => i.id).filter(Boolean);
+    
+   const cartIds = selectedItems.flatMap((i) => i.allIds ?? [i.id]).filter(Boolean);
 
     if (cartIds.length === 0) {
       setPlaceError("No valid cart items found. Please go back to your cart.");
@@ -233,7 +232,7 @@ const handlePlaceOrder = async () => {
     }
 
     const payload = {
-      cart_ids: cartIds,           // ✅ array of all selected cart IDs
+      cart_ids: cartIds,          
       payment_method:       payMethod,
       payment_details:      paymentDetails,
       shipping_fee:         shippingFee,

@@ -69,7 +69,6 @@ const SORT_OPTIONS = [
   { value: "amount_asc",  label: "Amount: Lowest" },
 ];
 
-// ── Product cell helper ────────────────────────────────────────────────────────
 function ProductCell({ checkout }) {
   const product  = checkout?.cart?.product ?? null;
   const cart     = checkout?.cart ?? null;
@@ -80,8 +79,10 @@ function ProductCell({ checkout }) {
 
   if (!product) return <span className="text-gray-400">—</span>;
 
+  const isPreOrder = product.status === "pre_order";
+
   return (
-    <div className="flex items-center gap-2.5 min-w-[180px] max-w-[240px]">
+    <div className="flex items-center gap-2.5 min-w-[180px] max-w-[260px]">
       {imageUrl ? (
         <img
           src={imageUrl}
@@ -95,12 +96,23 @@ function ProductCell({ checkout }) {
         </div>
       )}
       <div className="min-w-0">
-        <div className="text-gray-900 font-medium truncate text-xs leading-tight" title={product.product_name}>
+        <div
+          className="text-gray-900 font-medium truncate text-xs leading-tight"
+          title={product.product_name}
+        >
           {product.product_name}
         </div>
         <div className="text-gray-400 text-[11px] mt-0.5">
           Qty: {cart?.quantity ?? 1} · ₱{fmt(product.price)}
         </div>
+        <span className={`inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border
+          ${isPreOrder
+            ? "text-amber-700 bg-amber-50 border-amber-200"
+            : "text-emerald-700 bg-emerald-50 border-emerald-200"
+          }`}
+        >
+          {isPreOrder ? "⏳ Pre-order" : "✅ In stock"}
+        </span>
       </div>
     </div>
   );
@@ -137,10 +149,10 @@ function StatusModal({ delivery, onClose, onUpdated }) {
 
         {/* Product preview inside modal */}
         {product && (
-          <div className="flex items-center gap-2.5 mb-4 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
-            <ProductCell checkout={checkout} />
-          </div>
-        )}
+        <div className="flex items-center gap-2.5 mb-4 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+          <ProductCell checkout={checkout} />
+        </div>
+      )}
 
         <div className="flex flex-col gap-2.5 mb-5">
           {Object.entries(STATUS_MAP).map(([key, cfg]) => (
@@ -463,7 +475,7 @@ export default function AdminOrders() {
                           </td>
 
                           <td className="px-3.5 py-3.5 text-gray-900 whitespace-nowrap">
-                            {user?.name ?? "—"}
+                            {user ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() : "—"}
                           </td>
                           <td className="px-3.5 py-3.5 text-gray-500 leading-relaxed">
                             <div>{user?.email ?? "—"}</div>

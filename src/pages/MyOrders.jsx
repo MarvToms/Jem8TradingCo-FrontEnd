@@ -70,6 +70,7 @@ function normaliseOrder(o, account) {
     qty:      Number(cartItem?.quantity ?? 1),
     price:    `₱${Number(product.price ?? 0).toLocaleString()}`,
     rawPrice: Number(product.price ?? 0),
+    status:   product.status ?? "in_stock", 
   }] : [];
 
   return {
@@ -324,6 +325,15 @@ export default function MyOrders() {
                       </div>
 
                       {/* Footer */}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {order.items.map((item) => (
+                          item.status === "pre_order" && (
+                            <span key={item.id} className="text-[10px] font-semibold text-[#92400e] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-full">
+                              ⏳ Pre-Order
+                            </span>
+                          )
+                        ))}
+                      </div>
                       <div className="flex justify-between items-center pt-2.5 border-t border-[#f3f8f5]">
                         <span className="text-xs text-[#6b7c70] bg-[#f3f8f5] px-2.5 py-1 rounded-full capitalize">
                           {order.paymentMethod}
@@ -454,6 +464,15 @@ export default function MyOrders() {
                                 {item.name}
                               </Link>
                               <div className="text-xs text-slate-400 mt-0.5">Qty: {item.qty} × {item.price}</div>
+                              {item.status === "pre_order" ? (
+                                  <div className="mt-1 inline-block text-[11px] font-semibold text-[#92400e] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-1 rounded-full">
+                                    ⏳ Pre-Order — delivery may take longer
+                                  </div>
+                                ) : (
+                                  <div className="mt-1 inline-block text-[11px] font-semibold text-[#059669] bg-[#D1FAE5] border border-[#6EE7B7] px-2 py-1 rounded-full">
+                                    ✅ In Stock
+                                  </div>
+                                )}
                             </div>
                             <div className="text-[15px] font-bold text-[#4d7b65] flex-shrink-0">
                               ₱{(item.rawPrice * item.qty).toLocaleString()}
