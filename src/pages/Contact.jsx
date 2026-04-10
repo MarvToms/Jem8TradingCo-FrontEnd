@@ -7,13 +7,15 @@ const BASE = "http://127.0.0.1:8000/api";
 
 const CHAT_OPTIONS = [
   { icon: "✉️", label: "Send us an email",      value: "jem8circletrading@gmail.com", href: "mailto:jem8circletrading@gmail.com" },
-  { icon: "📘", label: "Message us on Facebook", value: "facebook.com/jem8circle",      href: "https://facebook.com" },
+  { icon: "📘", label: "Message us on Facebook", value: "facebook.com/jem8circle",      href: "https://www.facebook.com/jem.cirle" },
   { icon: "💬", label: "Start a live chat",      value: "Available Mon–Fri, 9am–5pm",  href: "/messages" },
 ];
 
 const CALL_OPTIONS = [
-  { label: "(02) 8805-1432" },
-  { label: "(02) 8785-0587" },
+  { label: "(02) 8805-1432",          type: "landline" },
+  { label: "Ma'am Shella - +63 932 840 5179", type: "mobile" },
+  { label: "Ma'am Jinkie - +63 917 546 2540", type: "mobile" },
+  { label: "Ma'am Akiko - +63 906 370 3588",  type: "mobile" },
 ];
 
 export default function Contact() {
@@ -202,17 +204,20 @@ export default function Contact() {
 
               <div className="border-t border-[#f0f4f1] pt-5">
                 <div className="text-xs font-bold text-[#393e46] mb-2.5">📞 Call Us</div>
-                <div className="flex gap-2.5 flex-wrap mb-2">
-{CALL_OPTIONS.map((c) => (
-  <span
-    key={c.label}
-    className="text-sm font-bold text-[#4d7b65] bg-[#f3f8f5] px-4 py-2 rounded-xl border border-[#d1e8da]"
-  >
-    {c.label}
-  </span>
-))}
-
-                </div>
+                <div className="flex flex-col gap-2 mb-2">
+  {CALL_OPTIONS.map((c) => (
+    <span
+      key={c.label}
+      className={`text-sm font-bold text-[#4d7b65] px-4 py-2 rounded-xl border border-[#d1e8da] ${
+        c.type === "landline"
+          ? "bg-[#e8f5ee] tracking-wide"
+          : "bg-[#f3f8f5] pl-6"
+      }`}
+    >
+      {c.type === "landline" ? "☎️ " : "📱 "}{c.label}
+    </span>
+  ))}
+</div>
                 <div className="text-xs text-[#9ca3af]">Mon–Fri, 9am–5pm</div>
               </div>
             </div>
@@ -224,7 +229,7 @@ export default function Contact() {
             <div className="flex flex-col gap-3 mb-6">
               {[
                 { icon: "📍", title: "Our Office",     body: "Unit 202P, Cityland 10 Tower 1\nHV Dela Costa St., Salcedo Village\nMakati City, Metro Manila 1227" },
-                { icon: "📧", title: "Email Us",       body: "jem8circletrading@gmail.com\njem8.jinkieacibar@gmail.com\njem8.jinkiedelacruz@gmail.com" },
+                { icon: "📧", title: "Email Us",       body: "sales1.jem8circle@gmail.com\nsales2.jem8circle@gmail.com\nsales3.jem8circle@gmail.com\nsales4.jem8circle@gmail.com\nsales8.jem8circle@gmail.com" },
                 { icon: "🕐", title: "Business Hours", body: "Monday – Friday: 9:00 AM – 5:00 PM\nSaturday: 9:00 AM – 12:00 PM\nSunday & Holidays: Closed" },
               ].map((info) => (
                 <div

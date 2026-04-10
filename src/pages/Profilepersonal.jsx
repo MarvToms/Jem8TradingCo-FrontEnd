@@ -700,25 +700,24 @@ export default function ProfilePersonal() {
               <span className="text-xs text-gray-400">{user.phone_number || "—"}</span>
             </div>
 
-            <nav className="px-3 pt-4 pb-2">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.08em] px-2 pb-2.5">Overview</span>
-              {MENU_ITEMS.map(({ key, label, Icon }) => {
-                const badgeValue = key === "orders" ? ordersCount : 0;
-                const isActive = activeMenu === key;
-                return (
-                  <button key={key} onClick={() => setActiveMenu(key)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-l-[3px] cursor-pointer text-[13px] text-left transition-all duration-150
-                      ${isActive
-                        ? "bg-emerald-50 border-l-emerald-500 text-emerald-700 font-semibold [&_svg]:stroke-emerald-500"
-                        : "bg-transparent border-l-transparent text-gray-500 font-normal hover:bg-gray-50 hover:text-gray-800 hover:translate-x-0.5"
-                      }`}>
-                    <Icon />{label}
-                    {badgeValue > 0 && <span className="ml-auto bg-gray-900 text-white rounded-full text-[10px] font-bold px-2 py-px">{badgeValue}</span>}
-                  </button>
-                );
-              })}
-            </nav>
-
+<nav className="px-3 pt-4 pb-2">
+  <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.08em] px-2 pb-2.5">Overview</span>
+  {MENU_ITEMS.filter(({ key }) => !(key === "password" && user?.google_id)).map(({ key, label, Icon }) => {
+    const badgeValue = key === "orders" ? ordersCount : 0;
+    const isActive = activeMenu === key;
+    return (
+      <button key={key} onClick={() => setActiveMenu(key)}
+        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-l-[3px] cursor-pointer text-[13px] text-left transition-all duration-150
+          ${isActive
+            ? "bg-emerald-50 border-l-emerald-500 text-emerald-700 font-semibold [&_svg]:stroke-emerald-500"
+            : "bg-transparent border-l-transparent text-gray-500 font-normal hover:bg-gray-50 hover:text-gray-800 hover:translate-x-0.5"
+          }`}>
+        <Icon />{label}
+        {badgeValue > 0 && <span className="ml-auto bg-gray-900 text-white rounded-full text-[10px] font-bold px-2 py-px">{badgeValue}</span>}
+      </button>
+    );
+  })}
+</nav>
             <hr className="mx-5 my-2 border-gray-100" />
 
             <div className="px-3 pb-4">

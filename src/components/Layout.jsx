@@ -617,17 +617,6 @@ export function Footer() {
               📞 (02) 8805-1432 · (02) 8785-0587<br />
               📧 jem8circletrading@gmail.com
             </div>
-            <div className="flex gap-2">
-              {["📘", "📸", "🎵", "💬"].map((icon, i) => (
-                <button
-                  key={i}
-                  className="w-9 h-9 rounded-lg bg-[#e8e4de] border border-[#d6d0c8] cursor-pointer text-base flex items-center justify-center hover:bg-[#2e6b45] hover:text-white transition-colors"
-                  aria-label="Social media"
-                >
-                  {icon}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Quick Links */}
