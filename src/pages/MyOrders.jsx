@@ -51,9 +51,27 @@ function formatStatusText(status) {
 }
 
 function normaliseOrder(o, account) {
-  const { checkout, delivery, items = [] } = o;
- 
+  const { checkout, delivery } = o;
   const status = (delivery?.status ?? "processing").toLowerCase();
+
+  // ── Build items array from checkout.cart.product ──────────────
+  const cartItem = checkout?.cart ?? null;
+  const product  = cartItem?.product ?? null;
+
+  const imageUrl = product?.primary_image_url
+    ?? (product?.images?.find((img) => img.is_primary)?.image_path
+        ? `http://127.0.0.1:8000/storage/${product.images.find((img) => img.is_primary).image_path}`
+        : "");
+
+  const items = product ? [{
+    id:       product.product_id,
+    name:     product.product_name ?? "Item",
+    image:    imageUrl,
+    qty:      Number(cartItem?.quantity ?? 1),
+    price:    `₱${Number(product.price ?? 0).toLocaleString()}`,
+    rawPrice: Number(product.price ?? 0),
+    status:   product.status ?? "in_stock", 
+  }] : [];
 
   return {
     id:             delivery?.delivery_id ?? checkout?.checkout_id,
@@ -74,20 +92,13 @@ function normaliseOrder(o, account) {
       lastName:  account?.last_name    ?? "",
       phone:     account?.phone_number ?? "",
       email:     account?.email        ?? "",
-      address:   delivery?.address  ?? "",
-      barangay:  delivery?.barangay ?? "",
-      city:      delivery?.city     ?? "",
-      province:  delivery?.province ?? "",
-      zip:       delivery?.zip      ?? "",
+      address:   delivery?.address     ?? "",
+      barangay:  delivery?.barangay    ?? "",
+      city:      delivery?.city        ?? "",
+      province:  delivery?.province    ?? "",
+      zip:       delivery?.zip         ?? "",
     },
-    items: items.map((item) => ({
-      id:       item.id       ?? item.product_id,
-      name:     item.name     ?? item.product_name ?? "Item",
-      image:    item.image    ?? item.product_image ?? "",
-      qty:      Number(item.qty ?? item.quantity ?? 1),
-      price:    `₱${Number(item.unit_price ?? item.price ?? 0).toLocaleString()}`,
-      rawPrice: Number(item.unit_price ?? item.price ?? 0),
-    })),
+    items,
   };
 }
 
@@ -130,6 +141,7 @@ export default function MyOrders() {
 
     api.get("/my-deliveries")
       .then(({ data }) => {
+        console.log(data)
         if (cancelled) return;
         const account    = data.account ?? {};
         const rawOrders  = Array.isArray(data.orders) ? data.orders : (data.data ?? []);
@@ -313,6 +325,15 @@ export default function MyOrders() {
                       </div>
 
                       {/* Footer */}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {order.items.map((item) => (
+                          item.status === "pre_order" && (
+                            <span key={item.id} className="text-[10px] font-semibold text-[#92400e] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-full">
+                              ⏳ Pre-Order
+                            </span>
+                          )
+                        ))}
+                      </div>
                       <div className="flex justify-between items-center pt-2.5 border-t border-[#f3f8f5]">
                         <span className="text-xs text-[#6b7c70] bg-[#f3f8f5] px-2.5 py-1 rounded-full capitalize">
                           {order.paymentMethod}
@@ -443,6 +464,15 @@ export default function MyOrders() {
                                 {item.name}
                               </Link>
                               <div className="text-xs text-slate-400 mt-0.5">Qty: {item.qty} × {item.price}</div>
+                              {item.status === "pre_order" ? (
+                                  <div className="mt-1 inline-block text-[11px] font-semibold text-[#92400e] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-1 rounded-full">
+                                    ⏳ Pre-Order — delivery may take longer
+                                  </div>
+                                ) : (
+                                  <div className="mt-1 inline-block text-[11px] font-semibold text-[#059669] bg-[#D1FAE5] border border-[#6EE7B7] px-2 py-1 rounded-full">
+                                    ✅ In Stock
+                                  </div>
+                                )}
                             </div>
                             <div className="text-[15px] font-bold text-[#4d7b65] flex-shrink-0">
                               ₱{(item.rawPrice * item.qty).toLocaleString()}

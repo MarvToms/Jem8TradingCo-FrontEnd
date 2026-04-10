@@ -62,14 +62,14 @@ export default function Contact() {
       <section className="relative bg-gradient-to-br from-[#1a3828] via-[#2d5a3d] to-[#4d7b65] py-16 text-center overflow-hidden">
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse at 70% 50%, rgba(255,255,255,0.06) 0%, transparent 60%)" }} />
-        <div className="relative container mx-auto px-5 flex flex-col items-center">
+        <div className="container relative flex flex-col items-center px-5 mx-auto">
           <span className="inline-block bg-white/15 text-[#c8ecd8] border border-white/35 rounded-full px-6 py-2 text-xs font-bold tracking-[2px] uppercase mb-6">
             We're Here to Help
           </span>
-          <h1 className="font-serif text-4xl md:text-5xl text-white mb-4 leading-tight">
+          <h1 className="mb-4 font-serif text-4xl leading-tight text-white md:text-5xl">
             Talk to Our Friendly<br />Sales Team
           </h1>
-          <p className="text-white/75 text-lg">
+          <p className="text-lg text-white/75">
             We'll help you find the perfect plan, no matter your business size.
           </p>
         </div>
@@ -77,7 +77,7 @@ export default function Contact() {
 
       {/* ── MAIN ── */}
       <section className="py-14">
-        <div className="container mx-auto px-5 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="container grid items-start grid-cols-1 gap-8 px-5 mx-auto lg:grid-cols-2">
 
           {/* LEFT */}
           <div>
@@ -89,7 +89,7 @@ export default function Contact() {
               </h2>
 
               {sent ? (
-                <div className="flex flex-col items-center text-center py-6 gap-3">
+                <div className="flex flex-col items-center gap-3 py-6 text-center">
                   <div className="text-5xl">✅</div>
                   <h3 className="font-serif text-2xl text-[#1a2e22]">Message Sent!</h3>
                   <p className="text-[#4b5563] text-sm">Thank you for reaching out. Our team will get back to you within 1 business day.</p>
@@ -102,7 +102,7 @@ export default function Contact() {
                 </div>
               ) : (
                 <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-[#374151]">First Name *</label>
                       <input
@@ -150,7 +150,7 @@ export default function Contact() {
                   </div>
 
                   {error && (
-                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                    <div className="px-4 py-3 text-sm text-red-600 border border-red-200 bg-red-50 rounded-xl">
                       ⚠️ {error}
                     </div>
                   )}
@@ -182,7 +182,7 @@ export default function Contact() {
                     key={opt.label} href={opt.href}
                     className="flex items-center gap-3.5 px-4 py-3.5 border border-[#e8f0eb] rounded-xl bg-[#fafcfb] no-underline transition-all hover:border-[#4d7b65] hover:bg-[#f3f8f5] hover:translate-x-1"
                   >
-                    <span className="text-2xl flex-shrink-0">{opt.icon}</span>
+                    <span className="flex-shrink-0 text-2xl">{opt.icon}</span>
                     <div>
                       <div className="text-sm font-bold text-[#1a2e22]">{opt.label}</div>
                       <div className="text-xs text-[#6b7c70] mt-0.5">{opt.value}</div>
@@ -201,17 +201,17 @@ export default function Contact() {
               </div>
 
               <div className="border-t border-[#f0f4f1] pt-5">
-                <div className="text-xs font-bold text-[#374151] mb-2.5">📞 Call Us</div>
+                <div className="text-xs font-bold text-[#393e46] mb-2.5">📞 Call Us</div>
                 <div className="flex gap-2.5 flex-wrap mb-2">
-                  {CALL_OPTIONS.map((c) => (
-                    <a
-                      key={c.label}
-                      href={`tel:${c.label.replace(/\D/g, "")}`}
-                      className="text-sm font-bold text-[#4d7b65] bg-[#f3f8f5] px-4 py-2 rounded-xl border border-[#d1e8da] no-underline transition-all hover:bg-[#4d7b65] hover:text-white"
-                    >
-                      {c.label}
-                    </a>
-                  ))}
+{CALL_OPTIONS.map((c) => (
+  <span
+    key={c.label}
+    className="text-sm font-bold text-[#4d7b65] bg-[#f3f8f5] px-4 py-2 rounded-xl border border-[#d1e8da]"
+  >
+    {c.label}
+  </span>
+))}
+
                 </div>
                 <div className="text-xs text-[#9ca3af]">Mon–Fri, 9am–5pm</div>
               </div>
@@ -258,13 +258,14 @@ export default function Contact() {
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
-              <a
-                href="https://goo.gl/maps/example"
-                target="_blank" rel="noreferrer"
-                className="block px-5 py-3.5 text-sm font-bold text-[#4d7b65] no-underline border-t border-[#f0f4f1] transition-colors hover:bg-[#f3f8f5]"
-              >
-                📌 Get Directions →
-              </a>
+ <a
+  href="https://www.google.com/maps?q=Cityland+10+Tower+1+Salcedo+Village+Makati"
+  target="_blank"
+  rel="noreferrer"
+  className="block px-5 py-3.5 text-sm font-bold text-[#4d7b65] no-underline border-t border-[#f0f4f1] transition-colors hover:bg-[#f3f8f5]"
+>
+  📌 Get Directions →
+</a>
             </div>
           </div>
 
@@ -273,9 +274,9 @@ export default function Contact() {
 
       {/* ── CTA ── */}
       <section className="bg-gradient-to-br from-[#2d5a3d] to-[#4d7b65] py-16 text-center">
-        <div className="container mx-auto px-5">
-          <h2 className="font-serif text-3xl text-white mb-3">Ready to Place an Order?</h2>
-          <p className="text-white/80 text-base mb-7">
+        <div className="container px-5 mx-auto">
+          <h2 className="mb-3 font-serif text-3xl text-white">Ready to Place an Order?</h2>
+          <p className="text-base text-white/80 mb-7">
             Browse our full catalog and add items to your cart — or contact us for a custom bulk quote.
           </p>
           <div className="flex gap-3.5 justify-center flex-wrap">
