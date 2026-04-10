@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import AdminNav from '../components/AdminNav';
-import '../style/adminBackup.css';
 
-// ── Axios instance (same pattern as your other admin pages) ─────────────────
+// ── Axios instance ───────────────────────────────────────────────────────────
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api',
   withCredentials: true,
@@ -91,20 +90,33 @@ const formatBytes = (bytes) => {
 
 const formatDate = (isoString) => {
   if (!isoString) return '—';
-  const d    = new Date(isoString);
-  const pad  = (n) => String(n).padStart(2, '0');
-  const h    = d.getHours();
+  const d   = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, '0');
+  const h   = d.getHours();
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} - ${pad(h % 12 || 12)}:${pad(d.getMinutes())} ${h >= 12 ? 'PM' : 'AM'}`;
 };
 
-const normaliseBackup = (raw) => ({
-  id:       raw.id,
-  filename: raw.file_name ?? `backup_${raw.id}`,
-  type:     TYPE_LABEL_MAP[raw.backup_type] ?? 'Database',
-  size:     formatBytes(raw.backup_size),
-  date:     formatDate(raw.created_at),
-  status:   raw.status === 'completed' ? 'Complete' : (raw.status ?? 'Unknown'),
-});
+// ✅ PRIMARY KEY FIX: model uses backup_id not id
+const normaliseBackup = (raw) => {
+  const id = raw.backup_id ?? raw.id;
+  return {
+    id,
+    filename: raw.file_name ?? `backup_${id}`,
+    type:     TYPE_LABEL_MAP[raw.backup_type] ?? 'Database',
+    size:     formatBytes(raw.backup_size),
+    date:     formatDate(raw.created_at),
+    status:   raw.status === 'completed' ? 'Complete' : (raw.status ?? 'Unknown'),
+  };
+};
+
+// ── Spinner ──────────────────────────────────────────────────────────────────
+function Spinner({ lg = false }) {
+  return (
+    <span
+      className={`inline-block rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin ${lg ? 'w-6 h-6' : 'w-3.5 h-3.5'}`}
+    />
+  );
+}
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function AdminBackup() {
@@ -146,10 +158,7 @@ export default function AdminBackup() {
 
   // ── Run backup ─────────────────────────────────────────────────────────────
   const handleRunNow = async (key) => {
-    if (key === 'restore') {
-      fileInputRef.current?.click();
-      return;
-    }
+    if (key === 'restore') { fileInputRef.current?.click(); return; }
     setRunningKey(key);
     try {
       const res = await api.post('/admin/backups/run', { backup_type: BACKUP_TYPE_MAP[key] });
@@ -201,9 +210,22 @@ export default function AdminBackup() {
 
   // ── Download ───────────────────────────────────────────────────────────────
   const handleDownload = async (b) => {
+    if (!b.id) {
+      showToast('Cannot download — backup ID is missing', 'error');
+      return;
+    }
     showToast(`↓ Preparing download for ${b.filename}…`);
     try {
       const res = await api.get(`/admin/backups/${b.id}/download`, { responseType: 'blob' });
+
+      const contentType = res.headers['content-type'] ?? '';
+      if (contentType.includes('application/json')) {
+        const text = await res.data.text();
+        const json = JSON.parse(text);
+        showToast(json.message ?? 'Download failed', 'error');
+        return;
+      }
+
       const url  = URL.createObjectURL(res.data);
       const a    = document.createElement('a');
       a.href     = url;
@@ -213,7 +235,17 @@ export default function AdminBackup() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      showToast(err.response?.data?.message ?? 'Network error – download failed', 'error');
+      if (err.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        try {
+          const json = JSON.parse(text);
+          showToast(json.message ?? 'Download failed', 'error');
+        } catch {
+          showToast('Download failed', 'error');
+        }
+      } else {
+        showToast(err.response?.data?.message ?? 'Network error – download failed', 'error');
+      }
     }
   };
 
@@ -242,29 +274,46 @@ export default function AdminBackup() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="br-layout">
+    <div className="flex min-h-screen w-full bg-[#eaf2ed]">
       <AdminNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="br-body">
+      <div className="flex flex-1 min-w-0 flex-col bg-[#eaf2ed] overflow-y-auto">
 
-        {/* Mobile top bar */}
-        <div className="br-topbar">
-          <button className="br-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">☰</button>
-          <div className="br-topbar__heading">
-            <span className="br-topbar__icon">💾</span>
-            <span className="br-topbar__label">Backup &amp; Recovery</span>
+        {/* ── Mobile top bar ── */}
+        <div className="flex md:hidden items-center gap-3 px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-30">
+          <button
+            className="bg-transparent border-none text-xl cursor-pointer text-gray-700 flex items-center justify-center p-1 flex-shrink-0"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">💾</span>
+            <span className="font-bold text-[15px] text-gray-900" style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}>
+              Backup &amp; Recovery
+            </span>
           </div>
         </div>
 
-        <div className="br-page">
+        <div className="flex-1 px-10 pt-8 pb-16 w-full box-border text-[#1e1e1e] max-lg:px-6 max-md:px-3 max-md:pt-4">
 
-          {/* Desktop header */}
-          <div className="br-page-header">
+          {/* ── Desktop page header ── */}
+          <div className="hidden md:flex items-start justify-between gap-4 mb-7 flex-wrap">
             <div>
-              <h2 className="br-page-header__title">Backup &amp; Recovery</h2>
-              <p className="br-page-header__sub">Manage database and file backups</p>
+              <h2 className="font-semibold text-2xl text-black m-0 mb-1 leading-tight" style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}>
+                Backup &amp; Recovery
+              </h2>
+              <p className="text-sm text-[#6b6a6a] m-0" style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}>
+                Manage database and file backups
+              </p>
             </div>
-            <button className="br-refresh-btn" onClick={handleRefresh} aria-label="Refresh backup data">
+            <button
+              className="inline-flex items-center gap-2 h-[38px] px-[18px] rounded-full border border-[#cac4d0] bg-transparent text-[13px] font-medium text-[#49454f] cursor-pointer transition-colors whitespace-nowrap hover:bg-[#f3f0f6]"
+              style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}
+              onClick={handleRefresh}
+              aria-label="Refresh backup data"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="23 4 23 10 17 10"/>
                 <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
@@ -273,21 +322,30 @@ export default function AdminBackup() {
             </button>
           </div>
 
-          {/* Backup Action Cards */}
-          <div className="br-cards">
+          {/* ── Backup action cards ── */}
+          <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
             {backupCards.map((card) => (
-              <div key={card.key} className="br-card">
-                <div className="br-card__icon">{card.icon}</div>
-                <h3 className="br-card__title">{card.title}</h3>
-                <p className="br-card__desc">{card.desc}</p>
+              <div
+                key={card.key}
+                className="bg-white border border-[#c2c2c2] rounded-[15px] p-7 flex flex-col gap-1.5 transition-shadow hover:shadow-md"
+              >
+                <div className="w-9 h-9 flex items-center justify-center bg-[#eff6ff] rounded-lg mb-1 flex-shrink-0">
+                  {card.icon}
+                </div>
+                <h3 className="font-semibold text-sm text-[#111111] m-0" style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}>
+                  {card.title}
+                </h3>
+                <p className="text-xs text-[#6b6a6a] m-0 mb-2.5 leading-snug" style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}>
+                  {card.desc}
+                </p>
                 <button
-                  className="br-run-btn"
+                  className="inline-flex items-center gap-1.5 h-8 px-3.5 border-none rounded-md bg-transparent text-[13px] font-medium text-[#1458b8] cursor-pointer transition-colors self-start mt-auto hover:bg-[#eff6ff] disabled:opacity-65 disabled:cursor-not-allowed"
                   onClick={() => handleRunNow(card.key)}
                   disabled={runningKey === card.key || (card.key === 'restore' && restoring)}
                   aria-label={`Run ${card.title}`}
                 >
                   {(runningKey === card.key || (card.key === 'restore' && restoring)) ? (
-                    <span className="br-spinner" />
+                    <Spinner />
                   ) : (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <polygon points="5 3 19 12 5 21 5 3"/>
@@ -308,54 +366,63 @@ export default function AdminBackup() {
             ref={fileInputRef}
             type="file"
             accept=".sql,.zip,.tar,.gz"
-            style={{ display: 'none' }}
+            className="hidden"
             onChange={handleFileRestore}
           />
 
-          {/* Backup History */}
-          <div className="br-history">
-            <h3 className="br-history__title">Backup History</h3>
-            <div className="br-table-wrap">
+          {/* ── Backup history ── */}
+          <div className="bg-white border border-[#c2c2c2] rounded-[15px] overflow-hidden">
+            <h3
+              className="font-normal text-[13px] text-black m-0 px-4 py-2.5 border-b border-[#c2c2c2] bg-white"
+              style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}
+            >
+              Backup History
+            </h3>
+            <div className="w-full overflow-x-auto">
               {loading ? (
-                <div className="br-loading">
-                  <span className="br-spinner br-spinner--lg" />
+                <div className="flex items-center justify-center gap-3 py-10 text-[13px] text-gray-500">
+                  <Spinner lg />
                   <span>Loading backups…</span>
                 </div>
               ) : (
-                <table className="br-table">
+                <table className="w-full border-collapse text-sm min-w-[600px]" style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}>
                   <thead>
-                    <tr>
-                      <th className="br-th">Filename</th>
-                      <th className="br-th">Type</th>
-                      <th className="br-th">Size</th>
-                      <th className="br-th">Date</th>
-                      <th className="br-th">Status</th>
-                      <th className="br-th br-th--actions">Actions</th>
+                    <tr className="bg-[#e6e6e6] border-b border-[#c2c2c2]">
+                      {['Filename', 'Type', 'Size', 'Date', 'Status', 'Actions'].map((h) => (
+                        <th
+                          key={h}
+                          className={`px-4 py-2.5 font-normal text-[13px] text-black text-left whitespace-nowrap ${h === 'Actions' ? 'text-center' : ''}`}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {backups.map((b) => {
                       const tc = TYPE_COLORS[b.type] ?? TYPE_COLORS.Database;
                       return (
-                        <tr key={b.id} className="br-row">
-                          <td className="br-td br-td--name">{b.filename}</td>
-                          <td className="br-td">
+                        <tr key={b.id} className="border-b border-[#c2c2c2] last:border-b-0 transition-colors hover:bg-[#f5faf7]">
+                          <td className="px-4 py-[9px] align-middle text-[#696868] text-[13px] font-normal">{b.filename}</td>
+                          <td className="px-4 py-[9px] align-middle">
                             <span
-                              className="br-type-badge"
+                              className="inline-flex items-center justify-center px-3 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap"
                               style={{ background: tc.bg, borderColor: tc.border, color: tc.text }}
                             >
                               {b.type}
                             </span>
                           </td>
-                          <td className="br-td">{b.size}</td>
-                          <td className="br-td br-td--date">{b.date}</td>
-                          <td className="br-td">
-                            <span className="br-status-badge">● {b.status}</span>
+                          <td className="px-4 py-[9px] align-middle text-[#696868] text-[13px]">{b.size}</td>
+                          <td className="px-4 py-[9px] align-middle text-[#696868] text-[13px] whitespace-nowrap">{b.date}</td>
+                          <td className="px-4 py-[9px] align-middle">
+                            <span className="inline-flex items-center justify-center px-3 py-0.5 rounded-full border border-[#baeada] bg-[#e4f6f0] text-xs font-medium text-emerald-600 whitespace-nowrap">
+                              ● {b.status}
+                            </span>
                           </td>
-                          <td className="br-td br-td--actions">
-                            <div className="br-action-btns">
+                          <td className="px-4 py-[9px] align-middle text-center">
+                            <div className="flex items-center justify-center gap-1.5">
                               <button
-                                className="br-action-btn br-action-btn--dl"
+                                className="w-7 h-7 rounded-md flex items-center justify-center border-none cursor-pointer transition-colors bg-[#eff6ff] text-blue-600 hover:bg-[#dbeafe]"
                                 onClick={() => handleDownload(b)}
                                 title="Download"
                               >
@@ -366,7 +433,7 @@ export default function AdminBackup() {
                                 </svg>
                               </button>
                               <button
-                                className="br-action-btn br-action-btn--del"
+                                className="w-7 h-7 rounded-md flex items-center justify-center border-none cursor-pointer transition-colors bg-[#fef2f2] text-red-500 hover:bg-[#fee2e2]"
                                 onClick={() => setDeleteTarget(b.id)}
                                 title="Delete"
                               >
@@ -384,7 +451,9 @@ export default function AdminBackup() {
                     })}
                     {backups.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="br-empty">No backup records found.</td>
+                        <td colSpan={6} className="text-center py-8 text-[#aaaaaa] text-[13px]">
+                          No backup records found.
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -396,22 +465,38 @@ export default function AdminBackup() {
         </div>
       </div>
 
-      {/* Delete Confirm Modal */}
+      {/* ── Delete confirm modal ── */}
       {deleteTarget !== null && (
-        <div className="br-overlay" onClick={() => setDeleteTarget(null)}>
-          <div className="br-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="br-modal__icon-wrap">
-              <span className="br-modal__icon">🗑️</span>
+        <div
+          className="fixed inset-0 bg-black/45 z-[200] flex items-center justify-center p-4"
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-2xl px-7 pt-8 pb-6 w-full max-w-[380px] shadow-2xl flex flex-col items-center text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4 text-2xl">
+              🗑️
             </div>
-            <h3 className="br-modal__title">Delete Backup?</h3>
-            <p className="br-modal__body">
+            <h3 className="font-semibold text-[17px] text-[#111111] m-0 mb-2.5" style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}>
+              Delete Backup?
+            </h3>
+            <p className="text-[13px] text-[#666666] leading-relaxed m-0 mb-6" style={{ fontFamily: 'Inter, Helvetica, sans-serif' }}>
               This backup file will be permanently removed and cannot be recovered. Are you sure?
             </p>
-            <div className="br-modal__actions">
-              <button className="br-modal-btn br-modal-btn--outline" onClick={() => setDeleteTarget(null)}>
+            <div className="flex gap-2.5 w-full">
+              <button
+                className="flex-1 h-[38px] rounded-lg bg-transparent border border-[#cccccc] text-[#333333] text-[13px] font-medium cursor-pointer hover:bg-[#f5f5f5]"
+                style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}
+                onClick={() => setDeleteTarget(null)}
+              >
                 Cancel
               </button>
-              <button className="br-modal-btn br-modal-btn--danger" onClick={confirmDelete}>
+              <button
+                className="flex-1 h-[38px] rounded-lg bg-red-500 text-white text-[13px] font-medium cursor-pointer border-none hover:opacity-85"
+                style={{ fontFamily: 'Poppins, Helvetica, sans-serif' }}
+                onClick={confirmDelete}
+              >
                 Delete
               </button>
             </div>
@@ -419,9 +504,14 @@ export default function AdminBackup() {
         </div>
       )}
 
-      {/* Toast */}
+      {/* ── Toast ── */}
       {toastMsg && (
-        <div className={`br-toast ${toastType === 'error' ? 'br-toast--error' : ''}`}>
+        <div
+          className={`fixed bottom-7 left-1/2 -translate-x-1/2 text-white text-[13px] px-[22px] py-2.5 rounded-full shadow-lg z-[300] whitespace-nowrap ${
+            toastType === 'error' ? 'bg-red-600' : 'bg-[#111827]'
+          }`}
+          style={{ fontFamily: 'Inter, Helvetica, sans-serif' }}
+        >
           {toastMsg}
         </div>
       )}
